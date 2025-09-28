@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'pin_page.dart';
 import 'register_page.dart';
-import 'forget_pass.dart'; // <-- add this import
+import 'forget_pass.dart';
+import 'route_helper.dart'; // <-- add this import
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -23,19 +24,26 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                'FitWise',
-                style: TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF65A30D),
-                ),
+          const Text(
+            'FitWise',
+             style: TextStyle(
+              fontSize: 46,                         // slightly bigger
+               fontWeight: FontWeight.w900,          // extra bold
+              color: Color(0xFF65A30D),
+             letterSpacing: 1.5,                   // spacing for emphasis
+               ),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Smarter Goals. Safer Gain.',
-                style: TextStyle(fontSize: 16, color: Colors.black54),
-              ),
+            const SizedBox(height: 10),
+            const Text(
+            'Smarter Goals. Safer Gain.',
+            style: TextStyle(
+              fontSize: 18,                         // a little larger
+              fontStyle: FontStyle.italic,          // italic for slogan
+              color: Colors.black87,
+              letterSpacing: 0.5,
+          ),
+            textAlign: TextAlign.center,
+           ),
               const SizedBox(height: 40),
               TextField(
                 controller: _emailController,
@@ -60,7 +68,7 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const ForgetPassPage()),
+                      createRoute(const ForgetPassPage()),
                     );
                   },
                   child: const Text('Forgot Password?'),
@@ -78,7 +86,7 @@ class _LoginPageState extends State<LoginPage> {
                 onPressed: () {
                   // TODO: Handle login
                 },
-                child: const Text('Login', style: TextStyle(fontSize: 18)),
+                child: const Text('Login', style: TextStyle(fontSize: 18, color: Colors.white)),
               ),
               const SizedBox(height: 30),
               const Divider(thickness: 1),
@@ -88,7 +96,7 @@ class _LoginPageState extends State<LoginPage> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const PinPage()),
+                    createRoute(const PinPage()),
                   );
                 },
                 child: const Text(
@@ -105,7 +113,7 @@ class _LoginPageState extends State<LoginPage> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const RegisterPage()),
+                    createRoute(const RegisterPage()),
                   );
                 },
                 child: const Text(

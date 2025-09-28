@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'login_page.dart';
+import 'route_helper.dart';
 
 class PinPage extends StatefulWidget {
   const PinPage({super.key});
@@ -28,84 +30,102 @@ class _PinPageState extends State<PinPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        elevation: 0,
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pushReplacement(
+          context,
+          createRouteRight(const LoginPage()), // slide right on system back
+        );
+        return false;
+      },
+      child: Scaffold(
         backgroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.black87),
-      ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text(
-            "Enter your 4-digit PIN",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // PIN Circles
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(4, (index) {
-              bool filled = index < pin.length;
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 10),
-                width: 18,
-                height: 18,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: filled ? const Color(0xFF65A30D) : Colors.grey[300],
-                ),
-              );
-            }),
-          ),
-          const SizedBox(height: 50),
-
-          // Keypad
-          GridView.builder(
-            shrinkWrap: true,
-            itemCount: 12,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 1.2,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 60),
-            itemBuilder: (context, index) {
-              if (index == 9) {
-                return const SizedBox.shrink();
-              } else if (index == 10) {
-                return _buildButton("0");
-              } else if (index == 11) {
-                return _buildButton("⌫", isDelete: true);
-              }
-              return _buildButton("${index + 1}");
-            },
-          ),
-
-          const SizedBox(height: 20),
-
-          // Forgot PIN
-          TextButton(
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.white,
+          iconTheme: const IconThemeData(color: Colors.black87),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
             onPressed: () {
-              // TODO: Handle forgot PIN
+              Navigator.pushReplacement(
+                context,
+                createRouteRight(const LoginPage()), // slide right on back arrow
+              );
             },
-            child: const Text(
-              "Forgot PIN?",
+          ),
+        ),
+        body: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              "Enter your 4-digit PIN",
               style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
                 color: Colors.black87,
-                fontSize: 16,
-                decoration: TextDecoration.underline,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 20),
+
+            // PIN Circles
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(4, (index) {
+                bool filled = index < pin.length;
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 10),
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: filled ? const Color(0xFF65A30D) : Colors.grey[300],
+                  ),
+                );
+              }),
+            ),
+            const SizedBox(height: 50),
+
+            // Keypad
+            GridView.builder(
+              shrinkWrap: true,
+              itemCount: 12,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 1.2,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 60),
+              itemBuilder: (context, index) {
+                if (index == 9) {
+                  return const SizedBox.shrink();
+                } else if (index == 10) {
+                  return _buildButton("0");
+                } else if (index == 11) {
+                  return _buildButton("⌫", isDelete: true);
+                }
+                return _buildButton("${index + 1}");
+              },
+            ),
+
+            const SizedBox(height: 20),
+
+            // Forgot PIN
+            TextButton(
+              onPressed: () {
+                // TODO: Handle forgot PIN
+              },
+              child: const Text(
+                "Forgot PIN?",
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontSize: 16,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

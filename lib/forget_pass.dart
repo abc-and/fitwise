@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'login_page.dart'; // 👈 make sure this import exists
+import 'route_helper.dart'; // 👈 for createRouteRight
 
 class ForgetPassPage extends StatefulWidget {
   const ForgetPassPage({super.key});
@@ -23,6 +25,15 @@ class _ForgetPassPageState extends State<ForgetPassPage> {
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              createRouteRight(const LoginPage()), // 👈 slide back to LoginPage
+            );
+          },
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(30),
@@ -87,7 +98,10 @@ class _ForgetPassPageState extends State<ForgetPassPage> {
               },
               child: const Text(
                 "Send Reset Link",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
               ),
             )
           ],
