@@ -3,9 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'register_page.dart';
 import 'forget_pass.dart';
-// IMPORTANT: Now we only import DashboardScreen from dashboard.dart
 import 'dashboard.dart'; 
 import 'route_helper.dart';
+import 'onboarding_page.dart'; // Ensure this is correctly imported
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,7 +18,6 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  // Kept for consistency, though not strictly needed here
   final FirebaseFirestore _firestore = FirebaseFirestore.instance; 
   
   bool _obscurePassword = true;
@@ -26,24 +25,62 @@ class _LoginPageState extends State<LoginPage> {
   bool _isForgotPasswordHovered = false;
   bool _isRegisterHovered = false;
 
+  // NOTE: Hardcoded primary colors for consistency in this file
+  static const Color _primaryColor = Color(0xFF65A30D); 
+  static const Color _darkPrimaryColor = Color(0xFF527A0A);
+
   @override
   void initState() {
     super.initState();
     _checkForExistingSession();
   }
 
-  // Check if a Firebase user is already signed in and navigate to Dashboard.
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  // Check if a Firebase user is already signed in and navigate accordingly.
   Future<void> _checkForExistingSession() async {
     try {
       final user = _auth.currentUser;
       
       if (user != null) {
-        // User is logged in, redirect straight to the dashboard.
+        // Use the existing user's email to check for profile data
+        final userEmail = user.email;
+        
+        if (userEmail == null || userEmail.isEmpty) {
+            // Handle case where user somehow lacks an email (unlikely with email/pass login)
+            if (mounted) {
+              setState(() => _isLoading = false);
+              _showSnackBar('User email is missing, please sign out and sign in again.', isError: true);
+            }
+            return;
+        }
+
+        // Check if this user already has profile data in Firestore using email
+        final querySnapshot = await _firestore
+            .collection("user_info")
+            .where('email', isEqualTo: userEmail)
+            .limit(1)
+            .get();
+        
         if (mounted) {
-             Navigator.pushReplacement(
-                 context,
-                 createRouteRight(const DashboardScreen()), 
-             );
+          if (querySnapshot.docs.isEmpty) {
+            // New user (no profile doc) → go to onboarding wizard
+            Navigator.pushReplacement(
+              context,
+              createRouteRight(const OnboardingPage()),
+            );
+          } else {
+            // Existing user (has profile doc) → go to dashboard
+            Navigator.pushReplacement(
+              context,
+              createRouteRight(const DashboardScreen()),
+            );
+          }
         }
         return;
       }
@@ -62,12 +99,10 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _showSnackBar(String message, {bool isError = true}) {
-    // NOTE: Hardcoding the color here since AppColors is now in dashboard.dart
-    const Color primaryColor = Color(0xFF65A30D); 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.redAccent : primaryColor,
+        backgroundColor: isError ? Colors.redAccent : _primaryColor,
         duration: const Duration(seconds: 3),
       ),
     );
@@ -86,19 +121,37 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Sign in with Firebase
+      // 1. Sign in with Firebase (Authentication)
       await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
       
-      // 2. Navigate straight to dashboard upon successful login
-      _showSnackBar('Login successful! Welcome to FitWise.', isError: false);
+      // 2. Query the 'user_info' collection using the logged-in email.
+      // This is the check to see if the profile has been created (i.e., onboarding complete).
+      final querySnapshot = await _firestore
+          .collection("user_info")
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      // 3. Conditional Navigation based on whether a profile was found
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          createRouteRight(const DashboardScreen()),
-        );
+        _showSnackBar('Login successful! Welcome to FitWise.', isError: false);
+        
+        if (querySnapshot.docs.isEmpty) {
+          // No document found matching the email -> First time setup (Onboarding)
+          Navigator.pushReplacement(
+            context,
+            createRouteRight(const OnboardingPage()),
+          );
+        } else {
+          // Document found -> User has a profile (Dashboard)
+          Navigator.pushReplacement(
+            context,
+            createRouteRight(const DashboardScreen()),
+          );
+        }
       }
       
     } on FirebaseAuthException catch (e) {
@@ -114,30 +167,22 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       _showSnackBar('An error occurred: ${e.toString()}');
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
+      // Stop loading only if navigation didn't succeed (i.e., an error occurred or session check failed)
+      if (mounted && Navigator.of(context).canPop()) { 
+          setState(() => _isLoading = false);
       }
     }
   }
 
   @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    // NOTE: Hardcoding the primary color used in the Login UI since AppColors is moved.
-    const Color primaryColor = Color(0xFF65A30D);
 
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: Colors.white,
         body: Center(
           child: CircularProgressIndicator(
-            color: primaryColor,
+            color: _primaryColor,
           ),
         ),
       );
@@ -158,7 +203,7 @@ class _LoginPageState extends State<LoginPage> {
               style: TextStyle(
                 fontSize: 42,
                 fontWeight: FontWeight.bold,
-                color: primaryColor,
+                color: _primaryColor,
               ),
             ),
             const SizedBox(height: 10),
@@ -228,8 +273,8 @@ class _LoginPageState extends State<LoginPage> {
                     "Forgot Password?",
                     style: TextStyle(
                       color: _isForgotPasswordHovered 
-                          ? const Color(0xFF527A0A) 
-                          : primaryColor,
+                          ? _darkPrimaryColor 
+                          : _primaryColor,
                       fontWeight: FontWeight.w500,
                       decoration: _isForgotPasswordHovered 
                           ? TextDecoration.underline 
@@ -245,7 +290,7 @@ class _LoginPageState extends State<LoginPage> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 55),
-                backgroundColor: primaryColor,
+                backgroundColor: _primaryColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -292,8 +337,8 @@ class _LoginPageState extends State<LoginPage> {
                       "Register",
                       style: TextStyle(
                         color: _isRegisterHovered 
-                            ? const Color(0xFF527A0A) 
-                            : primaryColor,
+                            ? _darkPrimaryColor 
+                            : _primaryColor,
                         fontWeight: FontWeight.bold,
                         decoration: TextDecoration.underline,
                       ),
@@ -302,6 +347,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ],
             ),
+            const SizedBox(height: 80),
           ],
         ),
       ),
