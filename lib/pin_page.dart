@@ -2,18 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_page.dart';
-import 'dashboard.dart';
-import 'route_helper.dart';
+import 'dashboard.dart'; // Assuming this file exists
+import 'route_helper.dart'; // Assuming this file exists
+import 'package:crypto/crypto.dart'; // REQUIRED for MPIN Hashing
+import 'dart:convert'; // REQUIRED for MPIN Hashing
 
 class PinPage extends StatefulWidget {
-  final String email; // Pass email from login page
-  final String password; // Pass password from login page
-  
-  const PinPage({
-    super.key,
-    required this.email,
-    required this.password,
-  });
+  // CORRECTED: No longer requires email or password as it relies on
+  // the user already being authenticated by Firebase on the LoginPage.
+  const PinPage({super.key});
 
   @override
   State<PinPage> createState() => _PinPageState();
@@ -50,38 +47,45 @@ class _PinPageState extends State<PinPage> {
   Future<void> _verifyPin() async {
     if (_isLoading) return;
 
+    final user = _auth.currentUser;
+    if (user == null) {
+      _showError('No active user session. Please log in.');
+      await _auth.signOut();
+      if (mounted) {
+        Navigator.pushReplacement(context, createRouteRight(const LoginPage()));
+      }
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // 1. Sign in with email and password first
-      final userCredential = await _auth.signInWithEmailAndPassword(
-        email: widget.email,
-        password: widget.password,
-      );
-
-      // 2. Get the stored MPIN from Firestore
+      // 1. Get the stored MPIN HASH from Firestore using the current user's UID
       final userDoc = await _firestore
           .collection('users')
-          .doc(userCredential.user!.uid)
+          .doc(user.uid)
           .get();
 
       if (!userDoc.exists) {
         _showError('User data not found. Please contact support.');
         await _auth.signOut();
-        setState(() {
-          pin = "";
-          _isLoading = false;
-        });
+        if (mounted) {
+           Navigator.pushReplacement(context, createRouteRight(const LoginPage()));
+        }
         return;
       }
 
-      final storedMpin = userDoc.data()?['mpin'];
+      final storedMpinHash = userDoc.data()?['mpin'];
 
-      // 3. Verify the PIN
-      if (storedMpin == pin) {
+      // 2. HASH the user's input PIN for secure comparison (FIX APPLIED HERE)
+      String hashedPinInput = sha256.convert(utf8.encode(pin)).toString();
+
+      // 3. Compare the HASHES
+      if (storedMpinHash == hashedPinInput) {
         // Success! Navigate to Dashboard
+        _showSuccess('PIN accepted!');
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -91,28 +95,12 @@ class _PinPageState extends State<PinPage> {
       } else {
         // Wrong PIN
         _showError('Incorrect PIN. Please try again.');
-        await _auth.signOut(); // Sign out if PIN is wrong
         setState(() {
           pin = "";
         });
       }
-    } on FirebaseAuthException catch (e) {
-      String errorMessage;
-      if (e.code == 'user-not-found') {
-        errorMessage = 'No user found with this email.';
-      } else if (e.code == 'wrong-password') {
-        errorMessage = 'Incorrect password.';
-      } else if (e.code == 'too-many-requests') {
-        errorMessage = 'Too many attempts. Please try again later.';
-      } else {
-        errorMessage = 'Authentication failed: ${e.message}';
-      }
-      _showError(errorMessage);
-      setState(() {
-        pin = "";
-      });
     } catch (e) {
-      _showError('An error occurred: $e');
+      _showError('An error occurred: ${e.toString()}');
       setState(() {
         pin = "";
       });
@@ -134,6 +122,17 @@ class _PinPageState extends State<PinPage> {
       ),
     );
   }
+  
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFF65A30D),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
 
   Future<void> _handleForgotPin() async {
     // Show dialog to confirm password reset
@@ -143,7 +142,7 @@ class _PinPageState extends State<PinPage> {
         title: const Text('Forgot PIN?'),
         content: const Text(
           'To reset your PIN, you\'ll need to use password login. '
-          'Would you like to return to the login page?'
+          'You will be logged out and returned to the main login page.'
         ),
         actions: [
           TextButton(
@@ -151,8 +150,10 @@ class _PinPageState extends State<PinPage> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
+              // Ensure the Firebase user is signed out before going to LoginPage
+              await _auth.signOut(); 
               Navigator.pushReplacement(
                 context,
                 createRouteRight(const LoginPage()),
@@ -172,6 +173,8 @@ class _PinPageState extends State<PinPage> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
+        // Sign out when the user presses back from the PIN page
+        await _auth.signOut();
         Navigator.pushReplacement(
           context,
           createRouteRight(const LoginPage()),
@@ -186,7 +189,9 @@ class _PinPageState extends State<PinPage> {
           iconTheme: const IconThemeData(color: Colors.black87),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () {
+            onPressed: () async {
+               // Sign out when pressing the back button
+              await _auth.signOut();
               Navigator.pushReplacement(
                 context,
                 createRouteRight(const LoginPage()),

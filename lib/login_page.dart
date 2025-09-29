@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'register_page.dart';
-import 'pin_page.dart'; // Import PIN page
+import 'forget_pass.dart';
+// IMPORTANT: Now we only import DashboardScreen from dashboard.dart
+import 'dashboard.dart'; 
 import 'route_helper.dart';
 
 class LoginPage extends StatefulWidget {
@@ -13,47 +17,107 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  // Kept for consistency, though not strictly needed here
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance; 
+  
   bool _obscurePassword = true;
-  bool _isLoading = false;
+  bool _isLoading = true;
+  bool _isForgotPasswordHovered = false;
+  bool _isRegisterHovered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkForExistingSession();
+  }
+
+  // Check if a Firebase user is already signed in and navigate to Dashboard.
+  Future<void> _checkForExistingSession() async {
+    try {
+      final user = _auth.currentUser;
+      
+      if (user != null) {
+        // User is logged in, redirect straight to the dashboard.
+        if (mounted) {
+             Navigator.pushReplacement(
+                 context,
+                 createRouteRight(const DashboardScreen()), 
+             );
+        }
+        return;
+      }
+      
+      // If no active session, show the login form
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      // In case of any Firebase error during initial check
+      setState(() {
+        _isLoading = false;
+      });
+      _showSnackBar('Error checking session: ${e.toString()}');
+    }
+  }
 
   void _showSnackBar(String message, {bool isError = true}) {
+    // NOTE: Hardcoding the color here since AppColors is now in dashboard.dart
+    const Color primaryColor = Color(0xFF65A30D); 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.redAccent : const Color(0xFF65A30D),
+        backgroundColor: isError ? Colors.redAccent : primaryColor,
         duration: const Duration(seconds: 3),
       ),
     );
   }
 
-  // Navigate to PIN page after basic validation
-  void _proceedToPin() {
-    if (_isLoading) return;
-
+  // Login with email and password
+  Future<void> _loginWithPassword() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    // Basic validation
     if (email.isEmpty || password.isEmpty) {
       _showSnackBar('Please enter both email and password.');
       return;
     }
 
-    if (!email.contains('@')) {
-      _showSnackBar('Please enter a valid email address.');
-      return;
-    }
+    setState(() => _isLoading = true);
 
-    // Navigate to PIN page with credentials
-    Navigator.pushReplacement(
-      context,
-      createRouteLeft(
-        PinPage(
-          email: email,
-          password: password,
-        ),
-      ),
-    );
+    try {
+      // 1. Sign in with Firebase
+      await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      
+      // 2. Navigate straight to dashboard upon successful login
+      _showSnackBar('Login successful! Welcome to FitWise.', isError: false);
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          createRouteRight(const DashboardScreen()),
+        );
+      }
+      
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = 'Login failed. Please try again.';
+      if (e.code == 'user-not-found') {
+        errorMessage = 'No user found with this email.';
+      } else if (e.code == 'wrong-password') {
+        errorMessage = 'Incorrect password.';
+      } else if (e.code == 'too-many-requests') {
+        errorMessage = 'Too many failed login attempts. Try again later.';
+      }
+      _showSnackBar(errorMessage);
+    } catch (e) {
+      _showSnackBar('An error occurred: ${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -65,6 +129,20 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    // NOTE: Hardcoding the primary color used in the Login UI since AppColors is moved.
+    const Color primaryColor = Color(0xFF65A30D);
+
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: primaryColor,
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -80,7 +158,7 @@ class _LoginPageState extends State<LoginPage> {
               style: TextStyle(
                 fontSize: 42,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF65A30D),
+                color: primaryColor,
               ),
             ),
             const SizedBox(height: 10),
@@ -93,7 +171,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 60),
 
-            // Email field
+            // Email input
             TextField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
@@ -128,20 +206,52 @@ class _LoginPageState extends State<LoginPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
+              onSubmitted: (_) => _loginWithPassword(),
+            ),
+            const SizedBox(height: 10),
+
+            // Forgot Password link
+            Align(
+              alignment: Alignment.centerRight,
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                onEnter: (_) => setState(() => _isForgotPasswordHovered = true),
+                onExit: (_) => setState(() => _isForgotPasswordHovered = false),
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      createRouteRight(const ForgetPassPage()),
+                    );
+                  },
+                  child: Text(
+                    "Forgot Password?",
+                    style: TextStyle(
+                      color: _isForgotPasswordHovered 
+                          ? const Color(0xFF527A0A) 
+                          : primaryColor,
+                      fontWeight: FontWeight.w500,
+                      decoration: _isForgotPasswordHovered 
+                          ? TextDecoration.underline 
+                          : TextDecoration.none,
+                    ),
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 30),
 
-            // Login button - goes to PIN page
+            // Continue button
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 55),
-                backgroundColor: const Color(0xFF65A30D),
+                backgroundColor: primaryColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
                 elevation: 3,
               ),
-              onPressed: _isLoading ? null : _proceedToPin,
+              onPressed: _isLoading ? null : _loginWithPassword,
               child: _isLoading
                   ? const SizedBox(
                       height: 24,
@@ -169,17 +279,21 @@ class _LoginPageState extends State<LoginPage> {
                 const Text("Don't have an account? "),
                 MouseRegion(
                   cursor: SystemMouseCursors.click,
+                  onEnter: (_) => setState(() => _isRegisterHovered = true),
+                  onExit: (_) => setState(() => _isRegisterHovered = false),
                   child: GestureDetector(
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
-                        createRouteLeft(const RegisterPage()),
+                        createRouteRight(const RegisterPage()),
                       );
                     },
-                    child: const Text(
+                    child: Text(
                       "Register",
                       style: TextStyle(
-                        color: Color(0xFF65A30D),
+                        color: _isRegisterHovered 
+                            ? const Color(0xFF527A0A) 
+                            : primaryColor,
                         fontWeight: FontWeight.bold,
                         decoration: TextDecoration.underline,
                       ),

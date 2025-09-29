@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+// import 'package:flutter/services.dart'; // Not needed since we removed digits-only input
 import 'login_page.dart';
 import 'route_helper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // For storing MPIN
-import 'package:crypto/crypto.dart';
-import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dashboard.dart'; // Still needed for the type reference, even if not directly navigated to
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -23,13 +22,10 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
-  final TextEditingController _mpinController = TextEditingController();
-  final TextEditingController _confirmMpinController = TextEditingController();
+  // MPIN controllers removed
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _obscureMpin = true;
-  bool _obscureConfirmMpin = true;
   bool _isLoading = false;
 
   void _showSnackBar(String message, {bool isError = true}) {
@@ -54,13 +50,10 @@ class _RegisterPageState extends State<RegisterPage> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
-    final mpin = _mpinController.text.trim();
-    final confirmMpin = _confirmMpinController.text.trim();
 
     // Validation
-    if (username.isEmpty || email.isEmpty || password.isEmpty || 
-        confirmPassword.isEmpty || mpin.isEmpty || confirmMpin.isEmpty) {
-      _showSnackBar('All fields must be filled out.');
+    if (username.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      _showSnackBar('Username, email, and passwords must be filled out.');
       setState(() => _isLoading = false);
       return;
     }
@@ -79,20 +72,6 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    // MPIN validation
-    if (mpin.length != 4) {
-      _showSnackBar('MPIN must be exactly 4 digits.');
-      setState(() => _isLoading = false);
-      return;
-    }
-
-    // Confirm MPIN match
-    if (mpin != confirmMpin) {
-      _showSnackBar('MPINs do not match.');
-      setState(() => _isLoading = false);
-      return;
-    }
-
     try {
       // 1. Create the user with email and password
       final userCredential = await _auth.createUserWithEmailAndPassword(
@@ -103,17 +82,26 @@ class _RegisterPageState extends State<RegisterPage> {
       // 2. Update the display name
       await userCredential.user?.updateDisplayName(username);
 
-      // 3. Store MPIN in Firestore
-      String hashedMpin = sha256.convert(utf8.encode(mpin)).toString();
+      // 3. Store user data in Firestore (WITHOUT MPIN)
       await _firestore.collection('users').doc(userCredential.user!.uid).set({
         'username': username,
         'email': email,
-        'mpin': hashedMpin, // In production, hash this!
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // 4. Show success message
-      _showSnackBar('Registration successful! Redirecting to Home.', isError: false);
+      // 4. Sign out the newly created user
+      await _auth.signOut();
+      
+      // 5. Show success message and navigate back to Login Page
+      _showSnackBar('Registration successful! Please log in with your new credentials.', isError: false);
+      
+      if (mounted) {
+          // Navigate back to the Login Page (replacing the current registration screen)
+          Navigator.pushReplacement(
+              context,
+              createRouteRight(const LoginPage()),
+          );
+      }
       
     } on FirebaseAuthException catch (e) {
       String errorMessage;
@@ -144,8 +132,6 @@ class _RegisterPageState extends State<RegisterPage> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _mpinController.dispose();
-    _confirmMpinController.dispose();
     super.dispose();
   }
 
@@ -208,7 +194,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 decoration: InputDecoration(
                   labelText: 'Username',
                   prefixIcon: const Icon(Icons.person),
-                  border: OutlineInputBorder(
+                  border: OutlineInputBorder( // Visible border applied
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
@@ -222,7 +208,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 decoration: InputDecoration(
                   labelText: 'Email',
                   prefixIcon: const Icon(Icons.email),
-                  border: OutlineInputBorder(
+                  border: OutlineInputBorder( // Visible border applied
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
@@ -246,7 +232,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       });
                     },
                   ),
-                  border: OutlineInputBorder(
+                  border: OutlineInputBorder( // Visible border applied
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
@@ -270,71 +256,9 @@ class _RegisterPageState extends State<RegisterPage> {
                       });
                     },
                   ),
-                  border: OutlineInputBorder(
+                  border: OutlineInputBorder( // Visible border applied
                     borderRadius: BorderRadius.circular(12),
                   ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // MPIN
-              TextField(
-                controller: _mpinController,
-                obscureText: _obscureMpin,
-                keyboardType: TextInputType.number,
-                maxLength: 4,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-                decoration: InputDecoration(
-                  labelText: '4-Digit MPIN',
-                  prefixIcon: const Icon(Icons.pin),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureMpin ? Icons.visibility_off : Icons.visibility,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscureMpin = !_obscureMpin;
-                      });
-                    },
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  counterText: '',
-                  helperText: 'Create a 4-digit PIN for quick access',
-                  helperStyle: const TextStyle(fontSize: 12),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Confirm MPIN
-              TextField(
-                controller: _confirmMpinController,
-                obscureText: _obscureConfirmMpin,
-                keyboardType: TextInputType.number,
-                maxLength: 4,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-                decoration: InputDecoration(
-                  labelText: 'Confirm MPIN',
-                  prefixIcon: const Icon(Icons.pin_outlined),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirmMpin ? Icons.visibility_off : Icons.visibility,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscureConfirmMpin = !_obscureConfirmMpin;
-                      });
-                    },
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  counterText: '',
                 ),
               ),
               const SizedBox(height: 30),
