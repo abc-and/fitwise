@@ -3,8 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'register_page.dart';
 import 'forget_pass.dart';
-import 'dashboard.dart'; 
-import 'route_helper.dart';
+import 'dashboard.dart';
+import 'route_helper.dart'; // Assuming this provides the createRouteRight function
 import 'onboarding_page.dart'; // Ensure this is correctly imported
 
 class LoginPage extends StatefulWidget {
@@ -21,7 +21,8 @@ class _LoginPageState extends State<LoginPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance; 
   
   bool _obscurePassword = true;
-  bool _isLoading = true;
+  // Initialize to true to show loading screen while checking session
+  bool _isLoading = true; 
   bool _isForgotPasswordHovered = false;
   bool _isRegisterHovered = false;
 
@@ -48,11 +49,9 @@ class _LoginPageState extends State<LoginPage> {
       final user = _auth.currentUser;
       
       if (user != null) {
-        // Use the existing user's email to check for profile data
         final userEmail = user.email;
         
         if (userEmail == null || userEmail.isEmpty) {
-            // Handle case where user somehow lacks an email (unlikely with email/pass login)
             if (mounted) {
               setState(() => _isLoading = false);
               _showSnackBar('User email is missing, please sign out and sign in again.', isError: true);
@@ -99,6 +98,9 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _showSnackBar(String message, {bool isError = true}) {
+    // Only show snackbar if the widget is still in the tree
+    if (!mounted) return; 
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -108,7 +110,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // Login with email and password
+  // Login with email and password (with FIX)
   Future<void> _loginWithPassword() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
@@ -118,6 +120,7 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
+    // Set loading state at the start
     setState(() => _isLoading = true);
 
     try {
@@ -127,8 +130,7 @@ class _LoginPageState extends State<LoginPage> {
         password: password,
       );
       
-      // 2. Query the 'user_info' collection using the logged-in email.
-      // This is the check to see if the profile has been created (i.e., onboarding complete).
+      // 2. Query the 'user_info' collection
       final querySnapshot = await _firestore
           .collection("user_info")
           .where('email', isEqualTo: email)
@@ -140,13 +142,13 @@ class _LoginPageState extends State<LoginPage> {
         _showSnackBar('Login successful! Welcome to FitWise.', isError: false);
         
         if (querySnapshot.docs.isEmpty) {
-          // No document found matching the email -> First time setup (Onboarding)
+          // No document found -> Onboarding
           Navigator.pushReplacement(
             context,
             createRouteRight(const OnboardingPage()),
           );
         } else {
-          // Document found -> User has a profile (Dashboard)
+          // Document found -> Dashboard
           Navigator.pushReplacement(
             context,
             createRouteRight(const DashboardScreen()),
@@ -160,23 +162,34 @@ class _LoginPageState extends State<LoginPage> {
         errorMessage = 'No user found with this email.';
       } else if (e.code == 'wrong-password') {
         errorMessage = 'Incorrect password.';
+      } else if (e.code == 'invalid-email') {
+        errorMessage = 'The email address is not valid.';
       } else if (e.code == 'too-many-requests') {
         errorMessage = 'Too many failed login attempts. Try again later.';
       }
+
+      // Show the specific error message to the user
       _showSnackBar(errorMessage);
-    } catch (e) {
-      _showSnackBar('An error occurred: ${e.toString()}');
-    } finally {
-      // Stop loading only if navigation didn't succeed (i.e., an error occurred or session check failed)
-      if (mounted && Navigator.of(context).canPop()) { 
-          setState(() => _isLoading = false);
+
+      // **FIX: Reset loading state on error**
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
-    }
+      
+    } catch (e) {
+      _showSnackBar('An unexpected error occurred: ${e.toString()}');
+
+      // **FIX: Reset loading state on other errors**
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    } 
   }
 
   @override
   Widget build(BuildContext context) {
 
+    // Show a full-screen loading spinner while checking for an existing session
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: Colors.white,
@@ -188,6 +201,7 @@ class _LoginPageState extends State<LoginPage> {
       );
     }
 
+    // Main Login UI
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -296,8 +310,10 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 elevation: 3,
               ),
+              // Disable the button if loading is true
               onPressed: _isLoading ? null : _loginWithPassword,
               child: _isLoading
+                  // Show small loader inside button if _isLoading is true
                   ? const SizedBox(
                       height: 24,
                       width: 24,
@@ -306,6 +322,7 @@ class _LoginPageState extends State<LoginPage> {
                         strokeWidth: 3,
                       ),
                     )
+                  // Show text if _isLoading is false
                   : const Text(
                       'Continue',
                       style: TextStyle(
