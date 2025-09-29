@@ -3,14 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 // Note: We import LoginPage here to navigate back to it on logout
 import 'login_page.dart'; 
 import 'route_helper.dart';
+import 'constants/app_colors.dart';
 
 // --- Color Palette ---
 // These colors are defined here for dashboard elements and UI consistency
-class AppColors {
-  // Use a slightly darker green for better contrast in the tab bar and header
-  static const Color primary = Color(0xFF65A30D); 
-  static const Color mediumGray = Color(0xFF9F9F9F);
-}
 
 // --- Placeholder Screens ---
 
