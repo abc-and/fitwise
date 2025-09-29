@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "873552712801",
+    "project_id": "fitwiseapp-4c568",
+    "storage_bucket": "fitwiseapp-4c568.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:873552712801:android:63631f2395c4724f5e4620",
+        "android_client_info": {
+          "package_name": "com.example.fitwise"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCz3fsLfMwyV9PrK-T4k26zoLsxbVtAnkQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
