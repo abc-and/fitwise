@@ -36,7 +36,7 @@ class LoginNavigation {
       // Onboarding complete, go to dashboard
       Navigator.pushReplacement(
         context,
-        createRouteRight(const DashboardScreen()),
+        createRouteRight(const HomeDashboard()),
       );
     } else {
       // Onboarding not complete, go to onboarding page

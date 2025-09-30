@@ -89,7 +89,7 @@ class _PinPageState extends State<PinPage> {
         if (mounted) {
           Navigator.pushReplacement(
             context,
-            createRouteRight(const DashboardScreen()),
+            createRouteRight(const HomeDashboard()),
           );
         }
       } else {

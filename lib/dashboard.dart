@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_page.dart';
 import 'route_helper.dart';
-import 'constants/app_colors.dart'; 
+import 'constants/app_colors.dart';
 
 Route createRouteLeft(Widget page) {
   return PageRouteBuilder(
@@ -13,20 +13,89 @@ Route createRouteLeft(Widget page) {
       const begin = Offset(-1.0, 0.0);
       const end = Offset.zero;
       const curve = Curves.ease;
-
       final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-      return SlideTransition(
-        position: animation.drive(tween),
-        child: child,
-      );
+      return SlideTransition(position: animation.drive(tween), child: child);
     },
   );
 }
 
-// --- Main Dashboard Implementation ---
+// --- BMR/BMI Calculator Helper Class ---
+class HealthCalculator {
+  // Calculate BMR using Mifflin-St Jeor Equation
+  static double calculateBMR({
+    required double weightKg,
+    required double heightCm,
+    required int age,
+    required String sex,
+    String? activityLevel,
+    String? reproductiveStatus,
+  }) {
+    double bmr;
+    
+    // Base BMR calculation
+    if (sex.toLowerCase() == 'male') {
+      bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age) + 5;
+    } else {
+      bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age) - 161;
+      
+      // Adjust for reproductive status (females only)
+      if (reproductiveStatus != null) {
+        switch (reproductiveStatus) {
+          case 'Pregnant':
+            bmr += 300; // Additional calories during pregnancy
+            break;
+          case 'Breastfeeding':
+            bmr += 500; // Additional calories while breastfeeding
+            break;
+          case 'On Period':
+            bmr += 50; // Slight increase during menstruation
+            break;
+        }
+      }
+    }
+    
+    // Apply activity multiplier
+    if (activityLevel != null) {
+      double multiplier = 1.2; // Default: Sedentary
+      switch (activityLevel) {
+        case 'Lightly Active':
+          multiplier = 1.375;
+          break;
+        case 'Moderately Active':
+          multiplier = 1.55;
+          break;
+        case 'Very Active':
+          multiplier = 1.725;
+          break;
+        case 'Extra Active':
+          multiplier = 1.9;
+          break;
+      }
+      bmr *= multiplier;
+    }
+    
+    return bmr;
+  }
+  
+  // Calculate BMI
+  static double calculateBMI({
+    required double weightKg,
+    required double heightCm,
+  }) {
+    double heightM = heightCm / 100;
+    return weightKg / (heightM * heightM);
+  }
+  
+  // Get BMI category
+  static String getBMICategory(double bmi) {
+    if (bmi < 18.5) return 'Underweight';
+    if (bmi < 25) return 'Normal';
+    if (bmi < 30) return 'Overweight';
+    return 'Obese';
+  }
+}
 
-/// Top-level HomeDashboard widget (contains tabs and Home content)
+// --- Main Dashboard Implementation ---
 class HomeDashboard extends StatefulWidget {
   const HomeDashboard({super.key});
 
@@ -35,10 +104,8 @@ class HomeDashboard extends StatefulWidget {
 }
 
 class _HomeDashboardState extends State<HomeDashboard> {
-  // Major Part: Logout functionality
   Future<void> _logout(BuildContext context) async {
     try {
-      // NOTE: FirebaseAuth and FirebaseFirestore require proper setup in main.dart
       await FirebaseAuth.instance.signOut();
       if (context.mounted) {
         Navigator.of(context).pushAndRemoveUntil(
@@ -69,7 +136,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
   @override
   Widget build(BuildContext context) {
     final screens = <Widget>[
-      const HomeContent(), // the updated Home content (below)
+      const HomeContent(),
       const SimplePlaceholder(title: 'Exercise Tracker'),
       const SimplePlaceholder(title: 'Calorie Log'),
       const SimplePlaceholder(title: 'Daily Streak'),
@@ -79,7 +146,6 @@ class _HomeDashboardState extends State<HomeDashboard> {
     return DefaultTabController(
       length: screens.length,
       child: Scaffold(
-        // Major Part: App Bar with Title and Logout button
         appBar: AppBar(
           title: const Text(
             'FitWise Dashboard',
@@ -95,12 +161,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
             ),
           ],
         ),
-        // Major Part: Tab content area
         body: TabBarView(
           physics: const NeverScrollableScrollPhysics(),
           children: screens,
         ),
-        // Major Part: Bottom navigation bar (Tabs)
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -125,7 +189,6 @@ class _HomeDashboardState extends State<HomeDashboard> {
   }
 }
 
-/// SimplePlaceholder - used for other tabs
 class SimplePlaceholder extends StatelessWidget {
   final String title;
   const SimplePlaceholder({super.key, required this.title});
@@ -141,7 +204,7 @@ class SimplePlaceholder extends StatelessWidget {
   }
 }
 
-/// HomeContent - actual Home tab content
+// --- Home Content with Firebase Integration ---
 class HomeContent extends StatefulWidget {
   const HomeContent({super.key});
 
@@ -150,29 +213,39 @@ class HomeContent extends StatefulWidget {
 }
 
 class _HomeContentState extends State<HomeContent> {
-  // Firestore & Auth
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // user data
+  // User data
   String _username = 'User';
   bool _loadingUser = true;
-
-  // placeholder weights and goal (can be overridden from Firestore if present)
+  
+  // Onboarding data from Firebase
   double _currentWeight = 70.0;
   double _goalWeight = 65.0;
-  String _goalType = 'lose'; // 'lose' or 'gain'
   double _startWeight = 80.0;
-
-  // BMR + weekly placeholder
-  double _bmr = 1650;
-  Map<String, double> _weekly = {'Mon': 300, 'Tue': 420, 'Wed': 380, 'Thu': 450, 'Fri': 310, 'Sat': 500, 'Sun': 290};
-
-  // Food carousel (placeholder entries)
-  late List<Map<String, dynamic>> _allFoods; // full list
-  late List<Map<String, dynamic>> _timeFoods; // filtered by time
-
-  // Controllers - moved here to be accessible by _WeightActionButton
+  double _heightCm = 170.0;
+  int _age = 25;
+  String _sex = 'Male';
+  String _goalType = 'lose';
+  String? _activityLevel;
+  String? _reproductiveStatus;
+  String? _targetDate;
+  String? _targetDuration;
+  
+  // Calculated values
+  double _bmr = 0;
+  double _bmi = 0;
+  String _bmiCategory = '';
+  
+  // Historical data for graph (simulated)
+  List<Map<String, dynamic>> _progressData = [];
+  
+  // Food carousel
+  late List<Map<String, dynamic>> _allFoods;
+  late List<Map<String, dynamic>> _timeFoods;
+  
+  // Controllers
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
 
@@ -180,7 +253,7 @@ class _HomeContentState extends State<HomeContent> {
   void initState() {
     super.initState();
     _prepareFoods();
-    _fetchUser();
+    _fetchUserData();
   }
 
   void _prepareFoods() {
@@ -202,8 +275,8 @@ class _HomeContentState extends State<HomeContent> {
     _timeFoods = _allFoods.where((f) => f['type'] == type || f['type'] == 'any').toList();
   }
 
-  // Major Part: Fetch user data from Firebase/Firestore
-  Future<void> _fetchUser() async {
+  // Fetch user data from Firebase
+  Future<void> _fetchUserData() async {
     setState(() => _loadingUser = true);
     try {
       final user = _auth.currentUser;
@@ -214,35 +287,231 @@ class _HomeContentState extends State<HomeContent> {
         });
         return;
       }
-      final doc = await _firestore.collection('users').doc(user.uid).get();
-      if (doc.exists) {
-        final data = doc.data();
+      
+      // Fetch from users collection
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (userDoc.exists) {
+        final userData = userDoc.data();
+        if (userData != null && userData.containsKey('username')) {
+          _username = userData['username'] ?? 'User';
+        }
+      }
+      
+      // Fetch from user_info collection (onboarding data)
+      final infoDoc = await _firestore.collection('user_info').doc(user.uid).get();
+      if (infoDoc.exists) {
+        final data = infoDoc.data();
         if (data != null) {
-          if (data.containsKey('username')) _username = (data['username'] ?? 'User').toString();
-          if (data.containsKey('currentWeight')) {
-            final v = data['currentWeight'];
-            if (v is num) _currentWeight = v.toDouble();
+          // Parse weight
+          if (data.containsKey('weight')) {
+            _currentWeight = _parseWeight(data['weight']);
+            _startWeight = _currentWeight; // Set start weight as current if not set
           }
-          if (data.containsKey('goalWeight')) {
-            final v = data['goalWeight'];
-            if (v is num) _goalWeight = v.toDouble();
+          
+          // Parse height
+          if (data.containsKey('height')) {
+            _heightCm = _parseHeight(data['height']);
           }
-          if (data.containsKey('goalType')) {
-            final v = data['goalType'];
-            if (v is String) _goalType = v;
+          
+          // Parse age
+          if (data.containsKey('age')) {
+            _age = int.tryParse(data['age'].toString()) ?? 25;
           }
-          if (data.containsKey('startWeight')) {
-            final v = data['startWeight'];
-            if (v is num) _startWeight = v.toDouble();
+          
+          // Get sex
+          if (data.containsKey('sex')) {
+            _sex = data['sex'].toString();
           }
+          
+          // Get activity level
+          if (data.containsKey('activityLevel')) {
+            _activityLevel = data['activityLevel'].toString();
+          }
+          
+          // Get reproductive status
+          if (data.containsKey('reproductiveStatus')) {
+            _reproductiveStatus = data['reproductiveStatus'].toString();
+          }
+          
+          // Get target goal and determine goal type
+          if (data.containsKey('targetGoal')) {
+            String goal = data['targetGoal'].toString();
+            if (goal == 'Weight Loss') {
+              _goalType = 'lose';
+              if (data.containsKey('targetWeightLoss')) {
+                 double targetLoss = double.tryParse(data['targetWeightLoss'].toString()) ?? 5.0;
+                // Make sure targetLoss is positive
+                targetLoss = targetLoss.abs();
+                _goalWeight = _currentWeight - targetLoss;
+              }
+            } else if (goal == 'Weight Gain') {
+              _goalType = 'gain';
+              if (data.containsKey('targetWeightGain')) {
+                double targetGain = double.tryParse(data['targetWeightGain'].toString()) ?? 5.0;
+                // Make sure targetGain is positive
+                targetGain = targetGain.abs();
+                _goalWeight = _currentWeight + targetGain;
+               }
+            }
+          } 
+          
+          // Get target date and duration
+          if (data.containsKey('targetDate')) {
+            _targetDate = data['targetDate'].toString();
+          }
+          if (data.containsKey('targetDuration')) {
+            _targetDuration = data['targetDuration'].toString();
+          }
+          
+          // Calculate BMR and BMI
+          _calculateHealthMetrics();
+          
+          // Generate simulated progress data
+          await _fetchProgressData();
         }
       }
     } catch (e) {
-      // ignore, keep placeholders
+      debugPrint('Error fetching user data: $e');
     } finally {
       if (mounted) setState(() => _loadingUser = false);
     }
   }
+  
+  // Parse weight from string (handles kg and lbs)
+  double _parseWeight(dynamic weightStr) {
+    String str = weightStr.toString().toLowerCase();
+    double value = double.tryParse(str.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 70.0;
+    
+    // Convert lbs to kg if needed
+    if (str.contains('lb')) {
+      value = value * 0.453592; // lbs to kg
+    }
+    return value;
+  }
+  
+  // Parse height from string (handles cm and m)
+  double _parseHeight(dynamic heightStr) {
+    String str = heightStr.toString().toLowerCase();
+    double value = double.tryParse(str.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 170.0;
+    
+    // Convert m to cm if needed
+    if (str.contains('m') && !str.contains('cm') && value < 3) {
+      value = value * 100; // m to cm
+    }
+    return value;
+  }
+  
+  // Calculate BMR and BMI
+  void _calculateHealthMetrics() {
+    _bmr = HealthCalculator.calculateBMR(
+      weightKg: _currentWeight,
+      heightCm: _heightCm,
+      age: _age,
+      sex: _sex,
+      activityLevel: _activityLevel,
+      reproductiveStatus: _reproductiveStatus,
+    );
+    
+    _bmi = HealthCalculator.calculateBMI(
+      weightKg: _currentWeight,
+      heightCm: _heightCm,
+    );
+    
+    _bmiCategory = HealthCalculator.getBMICategory(_bmi);
+  }
+  
+  // Generate simulated weekly progress data
+  // Fetch progress data from Firebase
+// Fetch progress data from Firebase
+Future<void> _fetchProgressData() async {
+  try {
+    final user = _auth.currentUser;
+    if (user == null) {
+      debugPrint('No user logged in for progress data');
+      return;
+    }
+    
+    _progressData.clear();
+    
+    // Fetch weight history from Firestore
+    final querySnapshot = await _firestore
+        .collection('user_info')
+        .doc(user.uid)
+        .collection('weight_history')
+        .orderBy('timestamp', descending: false)
+        .limit(30)
+        .get();
+    
+    debugPrint('Fetched ${querySnapshot.docs.length} history entries');
+    
+    // Process each history entry
+    for (var doc in querySnapshot.docs) {
+      final data = doc.data();
+      final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
+      
+      if (timestamp == null) {
+        debugPrint('Skipping entry with no timestamp: ${doc.id}');
+        continue;
+      }
+      
+      final weight = double.tryParse(data['weight']?.toString() ?? '') ?? _currentWeight;
+      final height = double.tryParse(data['height']?.toString() ?? '') ?? _heightCm;
+      
+      // Use stored BMR/BMI if available, otherwise calculate
+      final bmr = data['bmr'] != null 
+          ? (data['bmr'] is double ? data['bmr'] : double.tryParse(data['bmr'].toString()) ?? _bmr)
+          : HealthCalculator.calculateBMR(
+              weightKg: weight,
+              heightCm: height,
+              age: _age,
+              sex: _sex,
+              activityLevel: _activityLevel,
+              reproductiveStatus: _reproductiveStatus,
+            );
+      
+      final bmi = data['bmi'] != null
+          ? (data['bmi'] is double ? data['bmi'] : double.tryParse(data['bmi'].toString()) ?? _bmi)
+          : HealthCalculator.calculateBMI(
+              weightKg: weight,
+              heightCm: height,
+            );
+      
+      _progressData.add({
+        'date': timestamp,
+        'weight': weight,
+        'height': height,
+        'bmr': bmr,
+        'bmi': bmi,
+      });
+      
+      debugPrint('Added history point: ${timestamp.toString().split(' ')[0]} - Weight: $weight, BMI: ${bmi.toStringAsFixed(1)}, BMR: ${bmr.round()}');
+    }
+    
+    // If no history exists, create initial entry
+    if (_progressData.isEmpty) {
+      debugPrint('No history found, creating initial entry');
+      _progressData.add({
+        'date': DateTime.now(),
+        'weight': _currentWeight,
+        'height': _heightCm,
+        'bmr': _bmr,
+        'bmi': _bmi,
+      });
+    }
+    
+    debugPrint('Total progress data points: ${_progressData.length}');
+  } catch (e) {
+    debugPrint('Error fetching progress data: $e');
+    // Fallback to current data
+    _progressData = [{
+      'date': DateTime.now(),
+      'weight': _currentWeight,
+      'height': _heightCm,
+      'bmr': _bmr,
+      'bmi': _bmi,
+    }];
+  }
+}
 
   @override
   void dispose() {
@@ -251,7 +520,6 @@ class _HomeContentState extends State<HomeContent> {
     super.dispose();
   }
 
-  // Greeting text helper
   String _greeting() {
     final h = DateTime.now().hour;
     if (h >= 5 && h < 12) return 'Good Morning';
@@ -259,20 +527,19 @@ class _HomeContentState extends State<HomeContent> {
     return 'Good Evening';
   }
 
-  // Battery percent logic helper
   double _batteryPercent() {
     double pct = 0.0;
     final isGain = _goalType == 'gain';
 
     if (_startWeight == _goalWeight) {
-      return 0.0; // Avoid division by zero
+      return 0.0;
     }
 
     if (isGain) {
       if (_currentWeight >= _goalWeight) return 1.0;
       if (_currentWeight <= _startWeight) return 0.0;
       pct = (_currentWeight - _startWeight) / (_goalWeight - _startWeight);
-    } else { // lose
+    } else {
       if (_currentWeight <= _goalWeight) return 1.0;
       if (_currentWeight >= _startWeight) return 0.0;
       pct = (_startWeight - _currentWeight) / (_startWeight - _goalWeight);
@@ -282,7 +549,6 @@ class _HomeContentState extends State<HomeContent> {
     return pct.clamp(0.0, 1.0);
   }
 
-  // Major Part: Top greeting and calorie summary
   Widget _buildTopGreeting() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -309,87 +575,165 @@ class _HomeContentState extends State<HomeContent> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(color: AppColors.lightBlue, borderRadius: BorderRadius.circular(12)),
-            child: Row(children: const [Icon(Icons.local_fire_department, color: AppColors.blue), SizedBox(width: 6), Text('420 kcal', style: TextStyle(fontWeight: FontWeight.bold))]),
+            child: Row(children: [Icon(Icons.local_fire_department, color: AppColors.blue), SizedBox(width: 6), Text('${_bmr.round()} kcal', style: TextStyle(fontWeight: FontWeight.bold))]),
           ),
         ],
       ),
     );
   }
 
-  // BMR + weekly graph placeholder
-  Widget _buildBmrWeeklyCard() {
-    final maxVal = _weekly.values.fold<double>(0, (p, n) => n > p ? n : p);
+  Widget _buildBmrBmiCard() {
     return _cardWrapper(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           _smallIconBox(Icons.insights),
           const SizedBox(width: 12),
-          const Expanded(child: Text('BMR & Weekly Progress', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
-          const Text('Overview', style: TextStyle(color: AppColors.darkGray)),
-        ]),
-        const SizedBox(height: 12),
-        Row(children: [
-          // BMR summary left
-          Expanded(
-            flex: 3,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('BMR', style: TextStyle(color: AppColors.darkGray)),
-              const SizedBox(height: 6),
-              Text('${_bmr.round()} kcal', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              Container(height: 8, decoration: BoxDecoration(color: AppColors.lightGray, borderRadius: BorderRadius.circular(8)), child: FractionallySizedBox(widthFactor: 0.6, child: Container(decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8))))),
-            ]),
+          const Expanded(child: Text('Health Metrics', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: _getBMIColor().withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(_bmiCategory, style: TextStyle(color: _getBMIColor(), fontSize: 12, fontWeight: FontWeight.bold)),
           ),
-          const SizedBox(width: 12),
-          // Weekly mini bars right
-          Expanded(
-            flex: 5,
-            child: SizedBox(
-              height: 90,
-              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: _weekly.entries.map((e) {
-                final factor = (e.value / (maxVal == 0 ? 1 : maxVal)).clamp(0.12, 1.0);
-                return Column(mainAxisAlignment: MainAxisAlignment.end, children: [
-                  Container(width: 18, height: factor * 60, decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.95), borderRadius: BorderRadius.circular(6))),
-                  const SizedBox(height: 6),
-                  Text(e.key, style: const TextStyle(fontSize: 11)),
-                ]);
-              }).toList()),
+        ]),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMetricBox(
+                label: 'BMR',
+                value: '${_bmr.round()}',
+                unit: 'kcal/day',
+                icon: Icons.local_fire_department,
+                color: AppColors.blue,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildMetricBox(
+                label: 'BMI',
+                value: _bmi.toStringAsFixed(1),
+                unit: 'kg/m²',
+                icon: Icons.monitor_weight,
+                color: _getBMIColor(),
+              ),
+            ),
+          ],
+        ),
+        if (_targetDate != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.lightBlue.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.calendar_today, size: 18, color: AppColors.blue),
+                const SizedBox(width: 8),
+                Text('Target Date: $_targetDate', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              ],
             ),
           ),
-        ]),
+        ],
       ]),
     );
   }
+  
+  Color _getBMIColor() {
+    if (_bmi < 18.5) return Colors.orange;
+    if (_bmi < 25) return Colors.green;
+    if (_bmi < 30) return Colors.orange;
+    return Colors.red;
+  }
+  
+  Widget _buildMetricBox({
+    required String label,
+    required String value,
+    required String unit,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 6),
+              Text(label, style: TextStyle(fontSize: 12, color: AppColors.darkGray, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+          Text(unit, style: TextStyle(fontSize: 11, color: AppColors.mediumGray)),
+        ],
+      ),
+    );
+  }
 
-  // Major Part: Weight battery and goal info card
   Widget _buildWeightBatteryCard() {
     final pct = _batteryPercent();
     final pctRounded = (pct * 100).round();
     final isGain = _goalType == 'gain';
 
-    // Helper function to handle the update logic
-    void handleSave() {
-      final wt = double.tryParse(_weightController.text);
-      
-      // Only require weight to update the progress card
-      if (wt == null) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a valid weight to save.')));
-        return;
-      }
-      // Update state for visual refresh
-      setState(() {
-        _currentWeight = wt;
-      });
-      // Height is optional, clear after use
-      _weightController.clear();
-      _heightController.clear();
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Weight saved: ${wt.toStringAsFixed(1)} kg')));
-      // Optionally: write to Firestore here
-    }
-
+void handleSave() async {
+  final wt = double.tryParse(_weightController.text);
+  if (wt == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please enter a valid weight')),
+    );
+    return;
+  }
+  
+  final ht = double.tryParse(_heightController.text);
+  if (ht != null && ht > 0) {
+    _heightCm = ht;
+  }
+  
+  // Update local state FIRST
+  setState(() {
+    _currentWeight = wt;
+    _calculateHealthMetrics();
+  });
+  
+  // Save to Firebase
+  await _saveWeightUpdate(wt, ht);
+  
+  // Wait a moment for Firestore to process
+  await Future.delayed(const Duration(milliseconds: 300));
+  
+  // Fetch updated history
+  await _fetchProgressData();
+  
+  // Rebuild UI
+  setState(() {});
+  
+  _weightController.clear();
+  _heightController.clear();
+  
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Weight updated: ${wt.toStringAsFixed(1)} kg'),
+        backgroundColor: AppColors.primary,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+}
     return _cardWrapper(
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Battery on the left
         Column(children: [
           Text(isGain ? 'Gain Goal' : 'Lose Goal', style: const TextStyle(fontSize: 12, color: AppColors.darkGray)),
           const SizedBox(height: 8),
@@ -406,7 +750,6 @@ class _HomeContentState extends State<HomeContent> {
           Text('$pctRounded%', style: const TextStyle(fontWeight: FontWeight.bold)),
         ]),
         const SizedBox(width: 14),
-        // Central Info and Vertical Action Button
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Weight Progress', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -417,7 +760,6 @@ class _HomeContentState extends State<HomeContent> {
             const SizedBox(height: 10),
             ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: pct, minHeight: 10, backgroundColor: AppColors.lightGray, color: AppColors.primary)),
             const SizedBox(height: 10),
-            // NEW: Vertical action area, now flexible
             _WeightActionButton(
               weightController: _weightController,
               heightController: _heightController,
@@ -434,8 +776,60 @@ class _HomeContentState extends State<HomeContent> {
       ]),
     );
   }
+  
+Future<void> _saveWeightUpdate(double weight, double? height) async {
+  try {
+    final user = _auth.currentUser;
+    if (user == null) {
+      debugPrint('No user logged in');
+      return;
+    }
+    
+    final timestamp = DateTime.now();
+    
+    // Update main user_info document
+    Map<String, dynamic> updateData = {
+      'weight': weight.toString(),
+      'lastWeightUpdate': Timestamp.fromDate(timestamp),
+    };
+    
+    if (height != null) {
+      updateData['height'] = height.toString();
+    }
+    
+    await _firestore.collection('user_info').doc(user.uid).update(updateData);
+    debugPrint('Main document updated successfully');
+    
+    // Add to weight_history subcollection - THIS IS THE CRITICAL PART
+    final historyRef = _firestore
+        .collection('user_info')
+        .doc(user.uid)
+        .collection('weight_history');
+    
+    final historyData = {
+      'weight': weight.toString(),
+      'height': height?.toString() ?? _heightCm.toString(),
+      'timestamp': Timestamp.fromDate(timestamp),
+      'bmr': _bmr,
+      'bmi': _bmi,
+    };
+    
+    await historyRef.add(historyData);
+    debugPrint('Added to weight_history: $historyData');
+    
+  } catch (e) {
+    debugPrint('Error saving weight update: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+}
 
-  // Major Part: Graph placeholder card (now full width, below battery)
   Widget _buildGraphCard() {
     return _cardWrapper(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -443,32 +837,43 @@ class _HomeContentState extends State<HomeContent> {
           _smallIconBox(Icons.show_chart),
           const SizedBox(width: 12),
           const Expanded(child: Text('Progress Graph', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
-          const Text('Week', style: TextStyle(color: AppColors.darkGray)),
+          Text('${_progressData.length} entries', style: TextStyle(color: AppColors.darkGray, fontSize: 12)),
         ]),
-        const SizedBox(height: 12),
-        // Constrain the graph to a fixed safe height
+        const SizedBox(height: 16),
         SizedBox(
-          height: 150,
-          child: Center(
-            child: Container(
-              width: double.infinity,
-              height: 130,
-              decoration: BoxDecoration(color: AppColors.lightBlue.withOpacity(0.18), borderRadius: BorderRadius.circular(10)),
-              child: Center(
-                child: Column(mainAxisSize: MainAxisSize.min, children: const [
-                  Icon(Icons.show_chart, size: 36, color: AppColors.blue),
-                  SizedBox(height: 8),
-                  Text('Graph placeholder', style: TextStyle(fontSize: 14)),
-                ]),
-              ),
-            ),
-          ),
+          height: 180,
+          child: _ProgressGraph(data: _progressData),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildLegendItem('BMR', AppColors.blue),
+            const SizedBox(width: 24),
+            _buildLegendItem('BMI', Colors.green),
+          ],
         ),
       ]),
     );
   }
+  
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 16,
+          height: 3,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(label, style: TextStyle(fontSize: 12, color: AppColors.darkGray)),
+      ],
+    );
+  }
 
-  // Major Part: Food carousel (aesthetic ListView)
   Widget _buildFoodCarousel() {
     final foods = _timeFoods;
     const itemWidth = 120.0;
@@ -506,7 +911,6 @@ class _HomeContentState extends State<HomeContent> {
     );
   }
 
-  // Major Part: Exercise Now Button (Aesthetic CTA)
   Widget _buildExerciseButton() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 40),
@@ -525,9 +929,8 @@ class _HomeContentState extends State<HomeContent> {
               borderRadius: BorderRadius.circular(14),
             ),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              // Aesthetic Icon with Shimmer effect
               ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(colors: [Colors.white, Color(0xFFFFFFB3)]).createShader(bounds), // Using a lighter color for shimmer
+                shaderCallback: (bounds) => const LinearGradient(colors: [Colors.white, Color(0xFFFFFFB3)]).createShader(bounds),
                 child: const Icon(Icons.fitness_center, color: Colors.white, size: 28),
               ),
               const SizedBox(width: 12),
@@ -539,7 +942,6 @@ class _HomeContentState extends State<HomeContent> {
     );
   }
 
-  // ----------------- UI helpers -----------------
   Widget _smallIconBox(IconData icon) {
     return Container(
       decoration: BoxDecoration(color: AppColors.lightBlue, borderRadius: BorderRadius.circular(10)),
@@ -573,10 +975,8 @@ class _HomeContentState extends State<HomeContent> {
     );
   }
 
-  // Major Part: Main build method for the Home screen
   @override
   Widget build(BuildContext context) {
-    // refresh time-filtered foods in case time changed
     _filterFoodsByTime();
 
     return SafeArea(
@@ -589,10 +989,9 @@ class _HomeContentState extends State<HomeContent> {
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  _buildBmrWeeklyCard(),
-                  // Now stacked vertically (full width)
+                  _buildBmrBmiCard(),
                   _buildWeightBatteryCard(),
-                  _buildGraphCard(), // Graph card is here
+                  _buildGraphCard(),
                   _buildFoodCarousel(),
                   _buildExerciseButton(),
                 ]),
@@ -605,9 +1004,229 @@ class _HomeContentState extends State<HomeContent> {
   }
 }
 
-// --- Dynamic Action Button Widget (Flexible and Overflow-Safe) ---
+// --- Custom Progress Graph Widget ---
+class _ProgressGraph extends StatelessWidget {
+  final List<Map<String, dynamic>> data;
 
-/// NEW WIDGET: Vertical action area for weight/height update and goal toggle
+  const _ProgressGraph({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    if (data.isEmpty) {
+      return Center(
+        child: Text('No data available', style: TextStyle(color: AppColors.mediumGray)),
+      );
+    }
+
+    return CustomPaint(
+      painter: _GraphPainter(data: data),
+      child: Container(),
+    );
+  }
+}
+
+class _GraphPainter extends CustomPainter {
+  final List<Map<String, dynamic>> data;
+
+  _GraphPainter({required this.data});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (data.isEmpty) return;
+
+    final padding = 50.0;
+    final graphWidth = size.width - padding * 2;
+    final graphHeight = size.height - padding * 2;
+
+    // Find min/max for BMR (left axis)
+    double minBMR = data.map((e) => e['bmr'] as double).reduce((a, b) => a < b ? a : b);
+    double maxBMR = data.map((e) => e['bmr'] as double).reduce((a, b) => a > b ? a : b);
+    double bmrRange = maxBMR - minBMR;
+    if (bmrRange == 0) bmrRange = 100;
+    minBMR -= bmrRange * 0.1;
+    maxBMR += bmrRange * 0.1;
+
+    // Find min/max for BMI (right axis)
+    double minBMI = data.map((e) => e['bmi'] as double).reduce((a, b) => a < b ? a : b);
+    double maxBMI = data.map((e) => e['bmi'] as double).reduce((a, b) => a > b ? a : b);
+    double bmiRange = maxBMI - minBMI;
+    if (bmiRange == 0) bmiRange = 2;
+    minBMI -= bmiRange * 0.15;
+    maxBMI += bmiRange * 0.15;
+
+    // Draw background grid
+    final gridPaint = Paint()
+      ..color = AppColors.lightGray.withOpacity(0.2)
+      ..strokeWidth = 1;
+
+    for (int i = 0; i <= 4; i++) {
+      double y = padding + (graphHeight * i / 4);
+      canvas.drawLine(
+        Offset(padding, y),
+        Offset(size.width - padding, y),
+        gridPaint,
+      );
+    }
+
+    // Draw axes labels
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+    
+    // Left axis (BMR) labels
+    for (int i = 0; i <= 4; i++) {
+      double y = padding + (graphHeight * i / 4);
+      double bmrValue = maxBMR - ((maxBMR - minBMR) * i / 4);
+      textPainter.text = TextSpan(
+        text: bmrValue.round().toString(),
+        style: TextStyle(color: AppColors.blue, fontSize: 10, fontWeight: FontWeight.w600),
+      );
+      textPainter.layout();
+      textPainter.paint(canvas, Offset(5, y - textPainter.height / 2));
+    }
+
+    // Right axis (BMI) labels
+    for (int i = 0; i <= 4; i++) {
+      double y = padding + (graphHeight * i / 4);
+      double bmiValue = maxBMI - ((maxBMI - minBMI) * i / 4);
+      textPainter.text = TextSpan(
+        text: bmiValue.toStringAsFixed(1),
+        style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.w600),
+      );
+      textPainter.layout();
+      textPainter.paint(canvas, Offset(size.width - padding + 5, y - textPainter.height / 2));
+    }
+
+    // Draw BMR line with area fill
+    final bmrPath = Path();
+    final bmrAreaPath = Path();
+    
+    for (int i = 0; i < data.length; i++) {
+      double x = padding + (graphWidth * i / (data.length > 1 ? data.length - 1 : 1));
+      double normalizedBMR = (data[i]['bmr'] - minBMR) / (maxBMR - minBMR);
+      double y = padding + graphHeight - (normalizedBMR * graphHeight);
+
+      if (i == 0) {
+        bmrPath.moveTo(x, y);
+        bmrAreaPath.moveTo(x, padding + graphHeight);
+        bmrAreaPath.lineTo(x, y);
+      } else {
+        bmrPath.lineTo(x, y);
+        bmrAreaPath.lineTo(x, y);
+      }
+      
+      if (i == data.length - 1) {
+        bmrAreaPath.lineTo(x, padding + graphHeight);
+        bmrAreaPath.close();
+      }
+    }
+
+    // Fill area under BMR line
+    final bmrAreaPaint = Paint()
+      ..color = AppColors.blue.withOpacity(0.1)
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(bmrAreaPath, bmrAreaPaint);
+
+    // Draw BMR line
+    final bmrPaint = Paint()
+      ..color = AppColors.blue
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+    canvas.drawPath(bmrPath, bmrPaint);
+
+    // Draw BMR points
+    final bmrPointPaint = Paint()
+      ..color = AppColors.blue
+      ..style = PaintingStyle.fill;
+    final bmrPointBorderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    for (int i = 0; i < data.length; i++) {
+      double x = padding + (graphWidth * i / (data.length > 1 ? data.length - 1 : 1));
+      double normalizedBMR = (data[i]['bmr'] - minBMR) / (maxBMR - minBMR);
+      double y = padding + graphHeight - (normalizedBMR * graphHeight);
+      canvas.drawCircle(Offset(x, y), 5, bmrPointBorderPaint);
+      canvas.drawCircle(Offset(x, y), 4, bmrPointPaint);
+    }
+
+    // Draw BMI line with area fill
+    final bmiPath = Path();
+    final bmiAreaPath = Path();
+    
+    for (int i = 0; i < data.length; i++) {
+      double x = padding + (graphWidth * i / (data.length > 1 ? data.length - 1 : 1));
+      double normalizedBMI = (data[i]['bmi'] - minBMI) / (maxBMI - minBMI);
+      double y = padding + graphHeight - (normalizedBMI * graphHeight);
+
+      if (i == 0) {
+        bmiPath.moveTo(x, y);
+        bmiAreaPath.moveTo(x, padding + graphHeight);
+        bmiAreaPath.lineTo(x, y);
+      } else {
+        bmiPath.lineTo(x, y);
+        bmiAreaPath.lineTo(x, y);
+      }
+      
+      if (i == data.length - 1) {
+        bmiAreaPath.lineTo(x, padding + graphHeight);
+        bmiAreaPath.close();
+      }
+    }
+
+    // Fill area under BMI line
+    final bmiAreaPaint = Paint()
+      ..color = Colors.green.withOpacity(0.1)
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(bmiAreaPath, bmiAreaPaint);
+
+    // Draw BMI line
+    final bmiPaint = Paint()
+      ..color = Colors.green
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+    canvas.drawPath(bmiPath, bmiPaint);
+
+    // Draw BMI points
+    final bmiPointPaint = Paint()
+      ..color = Colors.green
+      ..style = PaintingStyle.fill;
+    final bmiPointBorderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    for (int i = 0; i < data.length; i++) {
+      double x = padding + (graphWidth * i / (data.length > 1 ? data.length - 1 : 1));
+      double normalizedBMI = (data[i]['bmi'] - minBMI) / (maxBMI - minBMI);
+      double y = padding + graphHeight - (normalizedBMI * graphHeight);
+      canvas.drawCircle(Offset(x, y), 5, bmiPointBorderPaint);
+      canvas.drawCircle(Offset(x, y), 4, bmiPointPaint);
+    }
+
+    // Draw date labels at bottom
+    final maxLabels = data.length > 7 ? 7 : data.length;
+    for (int i = 0; i < data.length; i++) {
+      // Only show labels for evenly spaced points
+      if (data.length <= 7 || i % (data.length ~/ maxLabels) == 0 || i == data.length - 1) {
+        double x = padding + (graphWidth * i / (data.length > 1 ? data.length - 1 : 1));
+        final date = data[i]['date'] as DateTime;
+        textPainter.text = TextSpan(
+          text: '${date.month}/${date.day}',
+          style: TextStyle(color: AppColors.darkGray, fontSize: 9),
+        );
+        textPainter.layout();
+        textPainter.paint(canvas, Offset(x - textPainter.width / 2, size.height - padding + 12));
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+// --- Weight Action Button Widget ---
 class _WeightActionButton extends StatefulWidget {
   final TextEditingController weightController;
   final TextEditingController heightController;
@@ -631,22 +1250,18 @@ class _WeightActionButton extends StatefulWidget {
 }
 
 class _WeightActionButtonState extends State<_WeightActionButton> {
-  // Local state to manage the view: true for inputs, false for main button/actions
   bool _isEditing = false;
 
   @override
   void initState() {
     super.initState();
-    // Pre-fill weight on initialization/rebuild of the parent widget
     widget.weightController.text = widget.currentWeight.toStringAsFixed(1);
   }
 
-  // Helper to access parent state methods like _inputField
   _HomeContentState get _parentState => context.findAncestorStateOfType<_HomeContentState>()!;
 
   @override
   Widget build(BuildContext context) {
-    // Use AnimatedSize to allow the container to grow/shrink based on its content (flexible)
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
@@ -665,7 +1280,6 @@ class _WeightActionButtonState extends State<_WeightActionButton> {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          // Use AnimatedSwitcher for content transition
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             transitionBuilder: (Widget child, Animation<double> animation) {
@@ -678,18 +1292,15 @@ class _WeightActionButtonState extends State<_WeightActionButton> {
     );
   }
 
-  // The state when the user is not actively inputting data (main action buttons view)
   Widget _buildIdleState() {
     return Padding(
-      key: const ValueKey<bool>(false), // Key for AnimatedSwitcher
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0), // Padding is now part of the content, defining size
+      key: const ValueKey<bool>(false),
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
       child: Column(
-        mainAxisSize: MainAxisSize.min, // Essential for AnimatedSize
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Main button to trigger the edit state
           InkWell(
             onTap: () {
-              // Pre-fill current weight and clear height on tap to edit
               widget.weightController.text = widget.currentWeight.toStringAsFixed(1);
               widget.heightController.clear();
               setState(() => _isEditing = true);
@@ -710,9 +1321,8 @@ class _WeightActionButtonState extends State<_WeightActionButton> {
               ),
             ),
           ),
-          // Simple toggle button below the main update action
           Container(
-            height: 30, // Fixed height for a consistent button area
+            height: 30,
             margin: const EdgeInsets.only(top: 8),
             child: TextButton.icon(
               onPressed: widget.onToggleGoal,
@@ -726,31 +1336,26 @@ class _WeightActionButtonState extends State<_WeightActionButton> {
     );
   }
   
-  // The state when the user is inputting data (expanded view)
   Widget _buildEditState() {
     return Padding(
-      key: const ValueKey<bool>(true), // Key for AnimatedSwitcher
+      key: const ValueKey<bool>(true),
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
       child: Column(
-        mainAxisSize: MainAxisSize.min, // Essential for AnimatedSize
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Weight and Height Input Row (using parent's _inputField helper)
           Row(
             children: [
-              // Using small input field for compact design
               Expanded(child: _parentState._inputField(controller: widget.weightController, hint: 'Weight (kg)', icon: Icons.scale, small: true)),
               const SizedBox(width: 8),
               Expanded(child: _parentState._inputField(controller: widget.heightController, hint: 'Height (cm)', icon: Icons.height, small: true)),
             ],
           ),
           const SizedBox(height: 8),
-          // Save and Cancel Buttons Row
           Row(
             children: [
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    // Call parent's save logic, then switch back to idle state
                     widget.onSave();
                     setState(() => _isEditing = false);
                   },
@@ -767,7 +1372,7 @@ class _WeightActionButtonState extends State<_WeightActionButton> {
               const SizedBox(width: 8),
               Expanded(
                 child: TextButton.icon(
-                  onPressed: () => setState(() => _isEditing = false), // Switch back to idle state
+                  onPressed: () => setState(() => _isEditing = false),
                   icon: const Icon(Icons.close, size: 18, color: AppColors.charcoal),
                   label: const Text('Cancel', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.charcoal)),
                 ),
@@ -780,11 +1385,9 @@ class _WeightActionButtonState extends State<_WeightActionButton> {
   }
 }
 
-// --- Supporting Widgets (Kept for completeness) ---
-
-/// VerticalBattery - vertical battery widget used in the weight card
+// --- Supporting Widgets ---
 class VerticalBattery extends StatelessWidget {
-  final double percent; // 0..1
+  final double percent;
   final double width;
   final double height;
   final Color fillColor;
@@ -810,7 +1413,6 @@ class VerticalBattery extends StatelessWidget {
     final fillHeight = (clamped * innerHeight).clamp(0.0, innerHeight);
     return Column(
       children: [
-        // cap
         Container(width: width * 0.6, height: height * 0.06, decoration: BoxDecoration(color: borderColor.withOpacity(0.6), borderRadius: BorderRadius.circular(3))),
         const SizedBox(height: 6),
         Stack(alignment: Alignment.bottomCenter, children: [
@@ -839,7 +1441,6 @@ class VerticalBattery extends StatelessWidget {
   }
 }
 
-/// FoodItemCard - Aesthetic card for horizontal food list
 class FoodItemCard extends StatelessWidget {
   final Map<String, dynamic> food;
   final double width;
@@ -868,7 +1469,6 @@ class FoodItemCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              // Using a subtle secondary gradient overlay for flavor
               gradient: LinearGradient(
                 colors: [AppColors.accent1.withOpacity(0.8), AppColors.primary.withOpacity(0.9)],
                 begin: Alignment.topCenter,

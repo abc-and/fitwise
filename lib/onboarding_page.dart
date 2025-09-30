@@ -308,7 +308,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return null; // All validations passed
   }
 
-  // Final step: Saves data to Firebase and navigates to Dashboard
+ // Final step: Saves data to Firebase and navigates to Dashboard
   Future<void> _finishOnboarding() async {
     // Validate all fields first
     final validationError = _validateAllFields();
@@ -352,12 +352,99 @@ class _OnboardingPageState extends State<OnboardingPage> {
     dataToSave["email"] = user.email!;
     dataToSave["onboardingCompleted"] = true; // Add completion flag
     dataToSave["onboardingCompletedAt"] = FieldValue.serverTimestamp();
+    
 
     try {
+      // Save main user_info document
       await FirebaseFirestore.instance
           .collection("user_info")
           .doc(user.uid)
           .set(dataToSave, SetOptions(merge: true));
+
+      // CREATE INITIAL WEIGHT HISTORY ENTRY
+      // Parse weight and height for initial BMR/BMI calculation
+      final weightStr = _userData["weight"] ?? "70";
+      final heightStr = _userData["height"] ?? "170";
+      final ageStr = _userData["age"] ?? "25";
+      final sex = _userData["sex"] ?? "Male";
+      final activityLevel = _userData["activityLevel"];
+      final reproductiveStatus = _userData["reproductiveStatus"];
+      
+      // Parse values
+      double weight = double.tryParse(weightStr.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 70.0;
+      if (weightStr.toLowerCase().contains('lb')) {
+        weight = weight * 0.453592; // Convert lbs to kg
+      }
+      
+      double height = double.tryParse(heightStr.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 170.0;
+      if (heightStr.toLowerCase().contains('m') && !heightStr.toLowerCase().contains('cm') && height < 3) {
+        height = height * 100; // Convert m to cm
+      }
+      
+      int age = int.tryParse(ageStr) ?? 25;
+      
+      // Calculate BMR using the same formula as dashboard
+      double bmr;
+      if (sex.toLowerCase() == 'male') {
+        bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+      } else {
+        bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
+        
+        // Adjust for reproductive status
+        if (reproductiveStatus != null) {
+          switch (reproductiveStatus) {
+            case 'Pregnant':
+              bmr += 300;
+              break;
+            case 'Breastfeeding':
+              bmr += 500;
+              break;
+            case 'On Period':
+              bmr += 50;
+              break;
+          }
+        }
+      }
+      
+      // Apply activity multiplier
+      if (activityLevel != null) {
+        double multiplier = 1.2; // Default: Sedentary
+        switch (activityLevel) {
+          case 'Lightly Active':
+            multiplier = 1.375;
+            break;
+          case 'Moderately Active':
+            multiplier = 1.55;
+            break;
+          case 'Very Active':
+            multiplier = 1.725;
+            break;
+          case 'Extra Active':
+            multiplier = 1.9;
+            break;
+        }
+        bmr *= multiplier;
+      }
+      
+      // Calculate BMI
+      double heightM = height / 100;
+      double bmi = weight / (heightM * heightM);
+      
+      // Create initial weight history entry
+      await FirebaseFirestore.instance
+          .collection("user_info")
+          .doc(user.uid)
+          .collection("weight_history")
+          .add({
+        'weight': weight.toString(),
+        'height': height.toString(),
+        'timestamp': FieldValue.serverTimestamp(),
+        'bmr': bmr,
+        'bmi': bmi,
+        'isInitialEntry': true,
+      });
+
+      debugPrint("Initial weight history created: Weight=$weight, Height=$height, BMR=$bmr, BMI=$bmi");
 
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -368,6 +455,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         createRouteRight(const HomeDashboard()),
       );
     } catch (e) {
+      debugPrint("Error in _finishOnboarding: $e");
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
