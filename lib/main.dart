@@ -146,7 +146,7 @@ class AuthWrapper extends StatelessWidget {
             }
 
             // Onboarding is complete, show dashboard
-            return const DashboardScreen();
+            return const HomeDashboard();
           },
         );
       },

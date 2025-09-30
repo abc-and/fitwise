@@ -365,7 +365,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       // Navigate to the Dashboard screen
       Navigator.pushReplacement(
         context,
-        createRouteRight(const DashboardScreen()),
+        createRouteRight(const HomeDashboard()),
       );
     } catch (e) {
       if (mounted) {

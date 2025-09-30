@@ -77,7 +77,7 @@ class _LoginPageState extends State<LoginPage> {
             // Existing user (has profile doc) → go to dashboard
             Navigator.pushReplacement(
               context,
-              createRouteRight(const DashboardScreen()),
+              createRouteRight(const HomeDashboard()),
             );
           }
         }
@@ -151,7 +151,7 @@ class _LoginPageState extends State<LoginPage> {
           // Document found -> Dashboard
           Navigator.pushReplacement(
             context,
-            createRouteRight(const DashboardScreen()),
+            createRouteRight(const HomeDashboard()),
           );
         }
       }
