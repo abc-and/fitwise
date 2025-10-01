@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_page.dart';
-import 'route_helper.dart';
 import 'constants/app_colors.dart';
+import 'package:fitwise/providers/fitness_provider.dart';
 
 Route createRouteLeft(Widget page) {
   return PageRouteBuilder(
@@ -1005,30 +1005,173 @@ Future<void> _saveWeightUpdate(double weight, double? height) async {
 }
 
 // --- Custom Progress Graph Widget ---
-class _ProgressGraph extends StatelessWidget {
+// --- Interactive Progress Graph Widget ---
+// --- Interactive Progress Graph Widget ---
+class _ProgressGraph extends StatefulWidget {
   final List<Map<String, dynamic>> data;
 
   const _ProgressGraph({required this.data});
 
   @override
+  State<_ProgressGraph> createState() => _ProgressGraphState();
+}
+
+class _ProgressGraphState extends State<_ProgressGraph> {
+  int? _hoveredIndex;
+  Offset _hoverPosition = Offset.zero;
+
+  @override
   Widget build(BuildContext context) {
-    if (data.isEmpty) {
+    if (widget.data.isEmpty) {
       return Center(
         child: Text('No data available', style: TextStyle(color: AppColors.mediumGray)),
       );
     }
 
-    return CustomPaint(
-      painter: _GraphPainter(data: data),
-      child: Container(),
+    return MouseRegion(
+      onHover: (event) {
+        final box = context.findRenderObject() as RenderBox?;
+        if (box != null) {
+          final localPosition = box.globalToLocal(event.position);
+          _updateHoveredPoint(localPosition, box.size);
+        }
+      },
+      onExit: (event) {
+        setState(() {
+          _hoveredIndex = null;
+        });
+      },
+      child: Stack(
+        children: [
+          CustomPaint(
+            painter: _GraphPainter(
+              data: widget.data,
+              hoveredIndex: _hoveredIndex,
+            ),
+            child: Container(),
+          ),
+          if (_hoveredIndex != null && _hoveredIndex! < widget.data.length)
+            _buildHoverTooltip(),
+        ],
+      ),
     );
+  }
+
+  void _updateHoveredPoint(Offset localPosition, Size size) {
+    final padding = 50.0;
+    final graphWidth = size.width - padding * 2;
+    
+    double closestDistance = double.infinity;
+    int? newHoveredIndex;
+
+    for (int i = 0; i < widget.data.length; i++) {
+      final x = padding + (graphWidth * i / (widget.data.length > 1 ? widget.data.length - 1 : 1));
+      final pointDistance = (localPosition.dx - x).abs();
+      
+      if (pointDistance < 20 && pointDistance < closestDistance) {
+        closestDistance = pointDistance;
+        newHoveredIndex = i;
+      }
+    }
+
+    if (newHoveredIndex != _hoveredIndex) {
+      setState(() {
+        _hoveredIndex = newHoveredIndex;
+        _hoverPosition = localPosition;
+      });
+    }
+  }
+
+  Widget _buildHoverTooltip() {
+    if (_hoveredIndex == null || _hoveredIndex! >= widget.data.length) {
+      return const SizedBox();
+    }
+
+    final pointData = widget.data[_hoveredIndex!];
+    final bmr = pointData['bmr'] as double;
+    final bmi = pointData['bmi'] as double;
+
+    return Positioned(
+      left: _hoverPosition.dx - 80,
+      top: _hoverPosition.dy - 80,
+      child: Container(
+        width: 140,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(color: AppColors.mediumGray.withOpacity(0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildTooltipRow('BMR', '${bmr.round()} kcal', Icons.local_fire_department, color: AppColors.blue),
+            const SizedBox(height: 6),
+            _buildTooltipRow('BMI', bmi.toStringAsFixed(1), Icons.monitor_weight, color: _getBMIColor(bmi)),
+            const SizedBox(height: 4),
+            Text(
+              'Category: ${HealthCalculator.getBMICategory(bmi)}',
+              style: TextStyle(
+                fontSize: 10,
+                color: _getBMIColor(bmi),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTooltipRow(String label, String value, IconData icon, {Color color = AppColors.darkGray}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 6),
+          Text(
+            '$label: ',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.darkGray,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getBMIColor(double bmi) {
+    if (bmi < 18.5) return Colors.orange;
+    if (bmi < 25) return Colors.green;
+    if (bmi < 30) return Colors.orange;
+    return Colors.red;
   }
 }
 
+// --- Updated Graph Painter ---
 class _GraphPainter extends CustomPainter {
   final List<Map<String, dynamic>> data;
+  final int? hoveredIndex;
 
-  _GraphPainter({required this.data});
+  _GraphPainter({required this.data, this.hoveredIndex});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1066,33 +1209,6 @@ class _GraphPainter extends CustomPainter {
         Offset(size.width - padding, y),
         gridPaint,
       );
-    }
-
-    // Draw axes labels
-    final textPainter = TextPainter(textDirection: TextDirection.ltr);
-    
-    // Left axis (BMR) labels
-    for (int i = 0; i <= 4; i++) {
-      double y = padding + (graphHeight * i / 4);
-      double bmrValue = maxBMR - ((maxBMR - minBMR) * i / 4);
-      textPainter.text = TextSpan(
-        text: bmrValue.round().toString(),
-        style: TextStyle(color: AppColors.blue, fontSize: 10, fontWeight: FontWeight.w600),
-      );
-      textPainter.layout();
-      textPainter.paint(canvas, Offset(5, y - textPainter.height / 2));
-    }
-
-    // Right axis (BMI) labels
-    for (int i = 0; i <= 4; i++) {
-      double y = padding + (graphHeight * i / 4);
-      double bmiValue = maxBMI - ((maxBMI - minBMI) * i / 4);
-      textPainter.text = TextSpan(
-        text: bmiValue.toStringAsFixed(1),
-        style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.w600),
-      );
-      textPainter.layout();
-      textPainter.paint(canvas, Offset(size.width - padding + 5, y - textPainter.height / 2));
     }
 
     // Draw BMR line with area fill
@@ -1133,23 +1249,6 @@ class _GraphPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
     canvas.drawPath(bmrPath, bmrPaint);
 
-    // Draw BMR points
-    final bmrPointPaint = Paint()
-      ..color = AppColors.blue
-      ..style = PaintingStyle.fill;
-    final bmrPointBorderPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-
-    for (int i = 0; i < data.length; i++) {
-      double x = padding + (graphWidth * i / (data.length > 1 ? data.length - 1 : 1));
-      double normalizedBMR = (data[i]['bmr'] - minBMR) / (maxBMR - minBMR);
-      double y = padding + graphHeight - (normalizedBMR * graphHeight);
-      canvas.drawCircle(Offset(x, y), 5, bmrPointBorderPaint);
-      canvas.drawCircle(Offset(x, y), 4, bmrPointPaint);
-    }
-
     // Draw BMI line with area fill
     final bmiPath = Path();
     final bmiAreaPath = Path();
@@ -1188,42 +1287,109 @@ class _GraphPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
     canvas.drawPath(bmiPath, bmiPaint);
 
-    // Draw BMI points
-    final bmiPointPaint = Paint()
-      ..color = Colors.green
-      ..style = PaintingStyle.fill;
-    final bmiPointBorderPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-
+    // Draw points and highlight hovered point
     for (int i = 0; i < data.length; i++) {
       double x = padding + (graphWidth * i / (data.length > 1 ? data.length - 1 : 1));
+      
+      // BMR point
+      double normalizedBMR = (data[i]['bmr'] - minBMR) / (maxBMR - minBMR);
+      double bmrY = padding + graphHeight - (normalizedBMR * graphHeight);
+      
+      // BMI point  
       double normalizedBMI = (data[i]['bmi'] - minBMI) / (maxBMI - minBMI);
-      double y = padding + graphHeight - (normalizedBMI * graphHeight);
-      canvas.drawCircle(Offset(x, y), 5, bmiPointBorderPaint);
-      canvas.drawCircle(Offset(x, y), 4, bmiPointPaint);
+      double bmiY = padding + graphHeight - (normalizedBMI * graphHeight);
+
+      // Highlight hovered point
+      if (i == hoveredIndex) {
+        final highlightPaint = Paint()
+          ..color = AppColors.primary.withOpacity(0.3)
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(Offset(x, bmrY), 12, highlightPaint);
+        canvas.drawCircle(Offset(x, bmiY), 12, highlightPaint);
+      }
+
+      // BMR point with border
+      final bmrPointBorderPaint = Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = i == hoveredIndex ? 3 : 2;
+      final bmrPointPaint = Paint()
+        ..color = i == hoveredIndex ? AppColors.blue : AppColors.blue.withOpacity(0.8)
+        ..style = PaintingStyle.fill;
+
+      canvas.drawCircle(Offset(x, bmrY), i == hoveredIndex ? 8 : 5, bmrPointBorderPaint);
+      canvas.drawCircle(Offset(x, bmrY), i == hoveredIndex ? 7 : 4, bmrPointPaint);
+
+      // BMI point with border
+      final bmiPointBorderPaint = Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = i == hoveredIndex ? 3 : 2;
+      final bmiPointPaint = Paint()
+        ..color = i == hoveredIndex ? Colors.green : Colors.green.withOpacity(0.8)
+        ..style = PaintingStyle.fill;
+
+      canvas.drawCircle(Offset(x, bmiY), i == hoveredIndex ? 8 : 5, bmiPointBorderPaint);
+      canvas.drawCircle(Offset(x, bmiY), i == hoveredIndex ? 7 : 4, bmiPointPaint);
+    }
+
+    // Draw axes labels with simple text rendering
+    final textStyle = TextStyle(
+      color: AppColors.darkGray,
+      fontSize: 10,
+      fontWeight: FontWeight.w600,
+    );
+
+    // Left axis (BMR) labels
+    for (int i = 0; i <= 4; i++) {
+      double y = padding + (graphHeight * i / 4);
+      double bmrValue = maxBMR - ((maxBMR - minBMR) * i / 4);
+      _drawText(canvas, bmrValue.round().toString(), Offset(5, y - 6), textStyle.copyWith(color: AppColors.blue));
+    }
+
+    // Right axis (BMI) labels
+    for (int i = 0; i <= 4; i++) {
+      double y = padding + (graphHeight * i / 4);
+      double bmiValue = maxBMI - ((maxBMI - minBMI) * i / 4);
+      _drawText(canvas, bmiValue.toStringAsFixed(1), Offset(size.width - padding + 5, y - 6), textStyle.copyWith(color: Colors.green));
     }
 
     // Draw date labels at bottom
     final maxLabels = data.length > 7 ? 7 : data.length;
     for (int i = 0; i < data.length; i++) {
-      // Only show labels for evenly spaced points
       if (data.length <= 7 || i % (data.length ~/ maxLabels) == 0 || i == data.length - 1) {
         double x = padding + (graphWidth * i / (data.length > 1 ? data.length - 1 : 1));
         final date = data[i]['date'] as DateTime;
-        textPainter.text = TextSpan(
-          text: '${date.month}/${date.day}',
-          style: TextStyle(color: AppColors.darkGray, fontSize: 9),
+        _drawText(
+          canvas, 
+          '${date.month}/${date.day}', 
+          Offset(x - 10, size.height - padding + 12), 
+          textStyle.copyWith(
+            color: i == hoveredIndex ? AppColors.primary : AppColors.darkGray,
+            fontSize: i == hoveredIndex ? 11 : 9,
+            fontWeight: i == hoveredIndex ? FontWeight.bold : FontWeight.normal,
+          )
         );
-        textPainter.layout();
-        textPainter.paint(canvas, Offset(x - textPainter.width / 2, size.height - padding + 12));
       }
     }
   }
 
+  // Helper method to draw text without using TextPainter
+ // Helper method to draw text without using TextPainter
+void _drawText(Canvas canvas, String text, Offset position, TextStyle style) {
+  final textPainter = TextPainter(
+    text: TextSpan(text: text, style: style),
+    textDirection: TextDirection.ltr,
+  );
+  
+  textPainter.layout();
+  textPainter.paint(canvas, position);
+}
+
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _GraphPainter oldDelegate) {
+    return data != oldDelegate.data || hoveredIndex != oldDelegate.hoveredIndex;
+  }
 }
 
 // --- Weight Action Button Widget ---
@@ -1236,7 +1402,6 @@ class _WeightActionButton extends StatefulWidget {
   final VoidCallback onToggleGoal;
 
   const _WeightActionButton({
-    super.key,
     required this.weightController,
     required this.heightController,
     required this.isGain,
