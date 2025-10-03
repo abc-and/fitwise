@@ -1,7 +1,7 @@
 class Exercise {
   String name;
   String type;
-  int duration;
+  int duration; // in minutes
   int sets;
   int reps;
   String? videoUrl;
