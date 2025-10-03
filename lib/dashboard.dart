@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_page.dart';
+import 'exercise_page.dart';
 import 'constants/app_colors.dart';
+import '../models/food_recommendation.dart';
+import '../providers/food_recommendation_service.dart';
 import 'package:fitwise/providers/fitness_provider.dart';
 
 Route createRouteLeft(Widget page) {
@@ -137,7 +140,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
   Widget build(BuildContext context) {
     final screens = <Widget>[
       const HomeContent(),
-      const SimplePlaceholder(title: 'Exercise Tracker'),
+      const ExercisePage(), 
       const SimplePlaceholder(title: 'Calorie Log'),
       const SimplePlaceholder(title: 'Daily Streak'),
       const SimplePlaceholder(title: 'User Profile'),
@@ -213,6 +216,9 @@ class HomeContent extends StatefulWidget {
 }
 
 class _HomeContentState extends State<HomeContent> {
+  // Persistent controllers and state for new goal input
+  final TextEditingController _newGoalController = TextEditingController();
+  String _selectedNewGoalType = 'lose';
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -238,42 +244,122 @@ class _HomeContentState extends State<HomeContent> {
   double _bmi = 0;
   String _bmiCategory = '';
   
+  //battery
+// NEW state variable: mark if goal was completed (persisted in firestore)
+bool _goalCompleted = false;
+
+// Helper to determine if user reached the goal by value (independent of firestore flag)
+bool _hasReachedGoal() {
+  final isGain = _goalType == 'gain';
+  return isGain ? (_currentWeight >= _goalWeight) : (_currentWeight <= _goalWeight);
+}
+
+// Call this when you want to mark completion (and show dialog once).
+  Future<void> _markGoalCompleted({bool showCongratsDialog = true}) async {
+    if (_goalCompleted) return;
+    if (!_hasReachedGoal()) return;
+
+    setState(() => _goalCompleted = true);
+
+    final user = _auth.currentUser;
+    if (user != null) {
+      try {
+        await _firestore.collection('user_info').doc(user.uid).update({
+          'goalCompleted': true,
+          'goalCompletedAt': DateTime.now(),
+        });
+      } catch (e) {
+        debugPrint('Failed to mark goalCompleted in firestore: $e');
+      }
+    }
+
+    if (showCongratsDialog && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('🎉 Congratulations!'),
+            content: Text('You reached your goal of ${_goalWeight.toStringAsFixed(1)} kg!'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      });
+    }
+    // After congratulatory message, allow user to set a new goal
+    // UI already supports this in _buildGoalSection
+  }
+
+// Call this to set a brand-new goal (user inputs weight + optional type)
+Future<void> _updateGoalWeightAndType(double newGoalWeight, String newType) async {
+  final user = _auth.currentUser;
+    setState(() {
+      _goalWeight = newGoalWeight;
+      _goalType = newType;
+      _startWeight = _currentWeight; // Always reset start weight to current
+      _goalCompleted = false;
+    });
+
+  if (user != null) {
+    try {
+      await _firestore.collection('user_info').doc(user.uid).update({
+        'goalWeight': newGoalWeight,
+        'goalType': newType,
+        'goalCompleted': false,
+      });
+    } catch (e) {
+      debugPrint('Error saving new goal to firestore: $e');
+    }
+  }
+}
+
+
   // Historical data for graph (simulated)
   List<Map<String, dynamic>> _progressData = [];
   
-  // Food carousel
-  late List<Map<String, dynamic>> _allFoods;
-  late List<Map<String, dynamic>> _timeFoods;
+// Food carousel
+late List<Map<String, dynamic>> _timeFoods = []; // Initialized
+
+// NEW: User Info Data Model
+UserInfoData? _userInfo; // To store all user info for recommendations
+
+// Services
+final FoodRecommendationService _recommendationService = FoodRecommendationService(); // <--- NEW SERVICE INSTANCE
+
+// Controllers
+final TextEditingController _weightController = TextEditingController();
+final TextEditingController _heightController = TextEditingController();
+
+@override
+void initState() {
+  super.initState();
+  // We remove _prepareFoods and call _fetchUserData first
+  _fetchUserData(); 
+}
+
+
+void _filterFoodsByTime() {
+  if (_userInfo == null) return; // Wait for user data
+
+  final h = DateTime.now().hour;
+  String type = (h >= 5 && h < 12) ? 'morning' : (h >= 12 && h < 18) ? 'afternoon' : 'evening';
+
+  // New Declaration (Add this to your state class, e.g., in Part 1)
+final FoodRecommendationService _recommendationService = FoodRecommendationService();
+  _timeFoods = _recommendationService.getRecommendations(
+    userInfo: _userInfo!,
+    timeOfDay: type,
+  );
   
-  // Controllers
-  final TextEditingController _weightController = TextEditingController();
-  final TextEditingController _heightController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _prepareFoods();
-    _fetchUserData();
+  // Trigger UI update
+  if (mounted) {
+      setState(() {});
   }
-
-  void _prepareFoods() {
-    _allFoods = [
-      {'name': 'Oatmeal', 'kcal': 280, 'desc': 'Filling breakfast', 'icon': Icons.egg, 'type': 'morning'},
-      {'name': 'Greek Yogurt', 'kcal': 150, 'desc': 'Protein rich', 'icon': Icons.local_cafe, 'type': 'morning'},
-      {'name': 'Grilled Chicken Wrap', 'kcal': 420, 'desc': 'Lean protein lunch', 'icon': Icons.lunch_dining, 'type': 'afternoon'},
-      {'name': 'Quinoa Salad', 'kcal': 350, 'desc': 'High fiber', 'icon': Icons.grass, 'type': 'afternoon'},
-      {'name': 'Steamed Fish', 'kcal': 360, 'desc': 'Light dinner', 'icon': Icons.set_meal, 'type': 'evening'},
-      {'name': 'Veg Stir Fry', 'kcal': 300, 'desc': 'Low-cal veg meal', 'icon': Icons.soup_kitchen, 'type': 'evening'},
-      {'name': 'Fruit Smoothie', 'kcal': 180, 'desc': 'Quick Refuel', 'icon': Icons.blender, 'type': 'any'},
-    ];
-    _filterFoodsByTime();
-  }
-
-  void _filterFoodsByTime() {
-    final h = DateTime.now().hour;
-    String type = (h >= 5 && h < 12) ? 'morning' : (h >= 12 && h < 18) ? 'afternoon' : 'evening';
-    _timeFoods = _allFoods.where((f) => f['type'] == type || f['type'] == 'any').toList();
-  }
+}
 
   // Fetch user data from Firebase
   Future<void> _fetchUserData() async {
@@ -297,63 +383,69 @@ class _HomeContentState extends State<HomeContent> {
         }
       }
       
-      // Fetch from user_info collection (onboarding data)
-      final infoDoc = await _firestore.collection('user_info').doc(user.uid).get();
-      if (infoDoc.exists) {
-        final data = infoDoc.data();
-        if (data != null) {
-          // Parse weight
-          if (data.containsKey('weight')) {
-            _currentWeight = _parseWeight(data['weight']);
-            _startWeight = _currentWeight; // Set start weight as current if not set
-          }
-          
-          // Parse height
-          if (data.containsKey('height')) {
-            _heightCm = _parseHeight(data['height']);
-          }
-          
-          // Parse age
-          if (data.containsKey('age')) {
-            _age = int.tryParse(data['age'].toString()) ?? 25;
-          }
-          
-          // Get sex
-          if (data.containsKey('sex')) {
-            _sex = data['sex'].toString();
-          }
-          
-          // Get activity level
-          if (data.containsKey('activityLevel')) {
-            _activityLevel = data['activityLevel'].toString();
-          }
-          
-          // Get reproductive status
-          if (data.containsKey('reproductiveStatus')) {
-            _reproductiveStatus = data['reproductiveStatus'].toString();
-          }
-          
+final infoDoc = await _firestore.collection('user_info').doc(user.uid).get();
+if (infoDoc.exists) {
+  final data = infoDoc.data();
+  if (data != null) {
+    // Collect all data points
+    final currentWeight = _parseWeight(data['weight']);
+    final heightCm = _parseHeight(data['height']);
+    final age = int.tryParse(data['age'].toString()) ?? 25;
+    final sex = data['sex']?.toString() ?? 'Other';
+    final activityLevel = data['activityLevel']?.toString() ?? 'Sedentary';
+    final reproductiveStatus = data['reproductiveStatus']?.toString() ?? 'Not Applicable';
+    final targetGoal = data['targetGoal']?.toString() ?? 'Maintenance';
+    final dietType = data['dietType']?.toString() ?? 'Balanced';
+    final dietaryRestrictions = data['dietaryRestrictions']?.toString() ?? 'None';
+    final allergies = data['allergies']?.toString() ?? 'Others';
+    final otherConditions = data['otherConditions']?.toString() ?? 'Others';
+
+    _userInfo = UserInfoData(
+      currentWeight: currentWeight,
+      heightCm: heightCm,
+      age: age,
+      sex: sex,
+      activityLevel: activityLevel,
+      reproductiveStatus: reproductiveStatus,
+      targetGoal: targetGoal,
+      dietType: dietType,
+      dietaryRestrictions: dietaryRestrictions,
+      allergies: allergies, 
+      otherConditions: otherConditions, 
+    );
+
+    // Update state variables and call food filtering/recommendation
+    _currentWeight = currentWeight;
+    if (_startWeight == 0.0) {
+      _startWeight = _currentWeight;
+      _markGoalCompleted();
+    }
+ // Set start weight as current if not set
+    _heightCm = heightCm;
+    _age = age;
+    _sex = sex;
+    _activityLevel = activityLevel;
+    _reproductiveStatus = reproductiveStatus;
+    
           // Get target goal and determine goal type
-          if (data.containsKey('targetGoal')) {
-            String goal = data['targetGoal'].toString();
-            if (goal == 'Weight Loss') {
-              _goalType = 'lose';
-              if (data.containsKey('targetWeightLoss')) {
-                 double targetLoss = double.tryParse(data['targetWeightLoss'].toString()) ?? 5.0;
-                // Make sure targetLoss is positive
-                targetLoss = targetLoss.abs();
-                _goalWeight = _currentWeight - targetLoss;
-              }
-            } else if (goal == 'Weight Gain') {
-              _goalType = 'gain';
-              if (data.containsKey('targetWeightGain')) {
-                double targetGain = double.tryParse(data['targetWeightGain'].toString()) ?? 5.0;
-                // Make sure targetGain is positive
-                targetGain = targetGain.abs();
-                _goalWeight = _currentWeight + targetGain;
-               }
-            }
-          } 
+// Prefer an absolute stored goalWeight if present
+    if (data.containsKey('goalWeight')) {
+      _goalWeight = double.tryParse(data['goalWeight'].toString()) ?? _goalWeight;
+    }
+
+    // Load stored goal type if present (make lowercase)
+    if (data.containsKey('goalType')) {
+      _goalType = data['goalType']?.toString().toLowerCase() ?? _goalType;
+    } else if (data.containsKey('targetGoal')) {
+      // fallback to older field (if you used targetGoal strings)
+      final goalText = data['targetGoal']?.toString() ?? '';
+      if (goalText.toLowerCase().contains('loss')) _goalType = 'lose';
+      if (goalText.toLowerCase().contains('gain')) _goalType = 'gain';
+    }
+
+    // Load persisted completed flag (default false)
+    _goalCompleted = data['goalCompleted'] == true;
+
           
           // Get target date and duration
           if (data.containsKey('targetDate')) {
@@ -528,25 +620,17 @@ Future<void> _fetchProgressData() async {
   }
 
   double _batteryPercent() {
-    double pct = 0.0;
     final isGain = _goalType == 'gain';
-
-    if (_startWeight == _goalWeight) {
-      return 0.0;
-    }
-
+    if (_startWeight == _goalWeight) return 0.0;
+    double progress;
     if (isGain) {
-      if (_currentWeight >= _goalWeight) return 1.0;
-      if (_currentWeight <= _startWeight) return 0.0;
-      pct = (_currentWeight - _startWeight) / (_goalWeight - _startWeight);
+      progress = (_currentWeight - _startWeight) / (_goalWeight - _startWeight);
     } else {
-      if (_currentWeight <= _goalWeight) return 1.0;
-      if (_currentWeight >= _startWeight) return 0.0;
-      pct = (_startWeight - _currentWeight) / (_startWeight - _goalWeight);
+      progress = (_startWeight - _currentWeight) / (_startWeight - _goalWeight);
     }
-
-    if (pct.isNaN) pct = 0.0;
-    return pct.clamp(0.0, 1.0);
+    // Clamp between 0 and 1 for UI, but allow proportional progress
+    if (progress.isNaN || progress.isInfinite) return 0.0;
+    return progress.clamp(0.0, 1.0);
   }
 
   Widget _buildTopGreeting() {
@@ -682,101 +766,202 @@ Future<void> _fetchProgressData() async {
     );
   }
 
-  Widget _buildWeightBatteryCard() {
-    final pct = _batteryPercent();
-    final pctRounded = (pct * 100).round();
-    final isGain = _goalType == 'gain';
+//BATTERY PART 1
 
-void handleSave() async {
-  final wt = double.tryParse(_weightController.text);
-  if (wt == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please enter a valid weight')),
-    );
-    return;
+Widget _buildWeightBatteryCard() {
+  final pct = _batteryPercent();
+  final pctRounded = (pct * 100).round();
+  final isGain = _goalType == 'gain';
+  final isGoalReached = _hasReachedGoal();
+
+  // handleSave will update weight + height, then check for goal completion
+  void handleSave() async {
+    final wt = double.tryParse(_weightController.text);
+    if (wt == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid weight')),
+      );
+      return;
+    }
+
+    final ht = double.tryParse(_heightController.text);
+    if (ht != null && ht > 0) _heightCm = ht;
+
+    setState(() {
+      _currentWeight = wt;
+      _calculateHealthMetrics();
+    });
+
+    await _saveWeightUpdate(wt, ht);
+
+    // refresh progress data
+    await Future.delayed(const Duration(milliseconds: 300));
+    await _fetchProgressData();
+
+    _weightController.clear();
+    _heightController.clear();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Weight updated: ${wt.toStringAsFixed(1)} kg'),
+          backgroundColor: AppColors.primary,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+
+    // Auto-check completion — will mark firestore and show dialog once
+    _markGoalCompleted();
   }
-  
-  final ht = double.tryParse(_heightController.text);
-  if (ht != null && ht > 0) {
-    _heightCm = ht;
-  }
-  
-  // Update local state FIRST
-  setState(() {
-    _currentWeight = wt;
-    _calculateHealthMetrics();
-  });
-  
-  // Save to Firebase
-  await _saveWeightUpdate(wt, ht);
-  
-  // Wait a moment for Firestore to process
-  await Future.delayed(const Duration(milliseconds: 300));
-  
-  // Fetch updated history
-  await _fetchProgressData();
-  
-  // Rebuild UI
-  setState(() {});
-  
-  _weightController.clear();
-  _heightController.clear();
-  
-  if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Weight updated: ${wt.toStringAsFixed(1)} kg'),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-}
-    return _cardWrapper(
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Column(children: [
-          Text(isGain ? 'Gain Goal' : 'Lose Goal', style: const TextStyle(fontSize: 12, color: AppColors.darkGray)),
-          const SizedBox(height: 8),
-          VerticalBattery(
-            percent: pct,
-            width: 48,
-            height: 160,
-            fillColor: AppColors.primary,
-            backgroundColor: AppColors.lightGray.withOpacity(0.15),
-            borderColor: AppColors.charcoal.withOpacity(0.18),
-            showPercentage: false,
+
+
+  // Build the goal display / editor area
+  Widget _buildGoalSection() {
+    // Only show the new goal input if the goal is completed (not just reached, but marked completed)
+    if (_goalCompleted) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Set a New Goal', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              DropdownButton<String>(
+                value: _selectedNewGoalType,
+                items: const [
+                  DropdownMenuItem(value: 'lose', child: Text('Lose')),
+                  DropdownMenuItem(value: 'gain', child: Text('Gain')),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _selectedNewGoalType = val;
+                    });
+                  }
+                },
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 110,
+                child: TextField(
+                  controller: _newGoalController,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    hintText: "kg",
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () {
+                  final parsed = double.tryParse(_newGoalController.text);
+                  if (parsed == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter a valid number for the goal weight')),
+                    );
+                    return;
+                  }
+                  _updateGoalWeightAndType(parsed, _selectedNewGoalType);
+                  _newGoalController.clear();
+                  FocusScope.of(context).unfocus();
+                },
+                child: const Text('Save'),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
-          Text('$pctRounded%', style: const TextStyle(fontWeight: FontWeight.bold)),
-        ]),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Weight Progress', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 6),
-            Text('Current: ${_currentWeight.toStringAsFixed(1)} kg', style: const TextStyle(fontSize: 14)),
-            const SizedBox(height: 4),
-            Text('Goal: ${_goalWeight.toStringAsFixed(1)} kg (${_goalType.toUpperCase()})', style: const TextStyle(color: AppColors.darkGray)),
-            const SizedBox(height: 10),
-            ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: pct, minHeight: 10, backgroundColor: AppColors.lightGray, color: AppColors.primary)),
-            const SizedBox(height: 10),
-            _WeightActionButton(
-              weightController: _weightController,
-              heightController: _heightController,
-              isGain: isGain,
-              currentWeight: _currentWeight,
-              onSave: handleSave,
-              onToggleGoal: () {
-                setState(() => _goalType = isGain ? 'lose' : 'gain');
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Goal set to ${_goalType.toUpperCase()}')));
-              },
-            ),
-          ]),
-        ),
-      ]),
+          Text('Current goal: ${_goalWeight.toStringAsFixed(1)} kg (${_goalType.toUpperCase()})', style: const TextStyle(color: AppColors.darkGray)),
+        ],
+      );
+    }
+
+    // Normal display: show the current goal text
+    return Text(
+      'Goal: ${_goalWeight.toStringAsFixed(1)} kg (${_goalType.toUpperCase()})',
+      style: const TextStyle(color: AppColors.darkGray),
     );
   }
-  
+
+  return _cardWrapper(
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            Text(
+              isGain ? 'Gain Goal' : 'Lose Goal',
+              style: const TextStyle(fontSize: 12, color: AppColors.darkGray),
+            ),
+            const SizedBox(height: 8),
+            VerticalBattery(
+              percent: pct,
+              width: 48,
+              height: 160,
+              fillColor: AppColors.primary,
+              backgroundColor: AppColors.lightGray.withOpacity(0.15),
+              borderColor: AppColors.charcoal.withOpacity(0.18),
+              showPercentage: false,
+            ),
+            const SizedBox(height: 8),
+            Text('$pctRounded%', style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Weight Progress', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Text('Current: ${_currentWeight.toStringAsFixed(1)} kg', style: const TextStyle(fontSize: 14)),
+              const SizedBox(height: 4),
+
+              // Goal section (display or editable after completion)
+              _buildGoalSection(),
+
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(value: pct, minHeight: 10, backgroundColor: AppColors.lightGray, color: AppColors.primary),
+              ),
+              const SizedBox(height: 10),
+
+              // Show the weight/height update UI and toggle only if goal is not yet completed.
+              if (!_goalCompleted)
+                _WeightActionButton(
+                  weightController: _weightController,
+                  heightController: _heightController,
+                  isGain: isGain,
+                  currentWeight: _currentWeight,
+                  onSave: handleSave,
+                  onToggleGoal: () {
+                    // toggle UI & persist toggle type
+                    final newType = isGain ? 'lose' : 'gain';
+                    setState(() => _goalType = newType);
+                    final user = _auth.currentUser;
+                    if (user != null) {
+                      _firestore.collection('user_info').doc(user.uid).update({'goalType': newType}).catchError((e) {
+                        debugPrint('Failed to persist goalType toggle: $e');
+                      });
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Goal set to ${_goalType.toUpperCase()}')),
+                    );
+                  },
+                  isGoalReached: isGoalReached,
+                ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+
 Future<void> _saveWeightUpdate(double weight, double? height) async {
   try {
     final user = _auth.currentUser;
@@ -784,28 +969,23 @@ Future<void> _saveWeightUpdate(double weight, double? height) async {
       debugPrint('No user logged in');
       return;
     }
-    
+
     final timestamp = DateTime.now();
-    
-    // Update main user_info document
+
     Map<String, dynamic> updateData = {
       'weight': weight.toString(),
       'lastWeightUpdate': Timestamp.fromDate(timestamp),
     };
-    
+
     if (height != null) {
       updateData['height'] = height.toString();
     }
-    
+
     await _firestore.collection('user_info').doc(user.uid).update(updateData);
     debugPrint('Main document updated successfully');
-    
-    // Add to weight_history subcollection - THIS IS THE CRITICAL PART
-    final historyRef = _firestore
-        .collection('user_info')
-        .doc(user.uid)
-        .collection('weight_history');
-    
+
+    final historyRef = _firestore.collection('user_info').doc(user.uid).collection('weight_history');
+
     final historyData = {
       'weight': weight.toString(),
       'height': height?.toString() ?? _heightCm.toString(),
@@ -813,10 +993,9 @@ Future<void> _saveWeightUpdate(double weight, double? height) async {
       'bmr': _bmr,
       'bmi': _bmi,
     };
-    
+
     await historyRef.add(historyData);
     debugPrint('Added to weight_history: $historyData');
-    
   } catch (e) {
     debugPrint('Error saving weight update: $e');
     if (mounted) {
@@ -856,7 +1035,8 @@ Future<void> _saveWeightUpdate(double weight, double? height) async {
       ]),
     );
   }
-  
+
+
   Widget _buildLegendItem(String label, Color color) {
     return Row(
       children: [
@@ -879,37 +1059,42 @@ Future<void> _saveWeightUpdate(double weight, double? height) async {
     const itemWidth = 120.0;
     const itemHeight = 160.0;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
-          child: Row(children: [
-            _smallIconBox(Icons.restaurant),
-            const SizedBox(width: 12),
-            Expanded(child: Text('Recommended for ${_greeting().split(' ').last}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
-            const Icon(Icons.chevron_right, color: AppColors.darkGray),
-          ]),
-        ),
-        SizedBox(
-          height: itemHeight,
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: foods.length,
-            itemBuilder: (context, index) {
-              return FoodItemCard(
-                food: foods[index],
-                width: itemWidth,
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${foods[index]['name']} selected'))),
-              );
-            },
-          ),
-        ),
-      ]),
-    );
-  }
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(
+        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+        child: Row(children: [
+          _smallIconBox(Icons.restaurant),
+          const SizedBox(width: 12),
+          Expanded(child: Text('Recommended for ${_greeting().split(' ').last}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+          // You might want to navigate to a full recommendations screen here
+          const Icon(Icons.chevron_right, color: AppColors.darkGray), 
+        ]),
+      ),
+      SizedBox(
+        height: itemHeight,
+        child: _userInfo == null && foods.isEmpty // Show loading only if user info hasn't loaded and foods is empty
+            ? const Center(child: CircularProgressIndicator())
+            : foods.isEmpty // Show message if data is loaded but foods list is empty
+                ? const Center(child: Text('No custom recommendations yet. Try updating your profile!'))
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: foods.length,
+                    itemBuilder: (context, index) {
+                      return FoodItemCard(
+                        food: foods[index],
+                        width: itemWidth,
+                        onTap: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${foods[index]['name']} selected'))),
+                      );
+                    },
+                  ),
+      ),
+    ]),
+  );
+}
 
   Widget _buildExerciseButton() {
     return Padding(
@@ -1004,8 +1189,6 @@ Future<void> _saveWeightUpdate(double weight, double? height) async {
   }
 }
 
-// --- Custom Progress Graph Widget ---
-// --- Interactive Progress Graph Widget ---
 // --- Interactive Progress Graph Widget ---
 class _ProgressGraph extends StatefulWidget {
   final List<Map<String, dynamic>> data;
@@ -1374,7 +1557,6 @@ class _GraphPainter extends CustomPainter {
     }
   }
 
-  // Helper method to draw text without using TextPainter
  // Helper method to draw text without using TextPainter
 void _drawText(Canvas canvas, String text, Offset position, TextStyle style) {
   final textPainter = TextPainter(
@@ -1392,7 +1574,8 @@ void _drawText(Canvas canvas, String text, Offset position, TextStyle style) {
   }
 }
 
-// --- Weight Action Button Widget ---
+// PART 2: WEIGHT BATTERY
+
 class _WeightActionButton extends StatefulWidget {
   final TextEditingController weightController;
   final TextEditingController heightController;
@@ -1400,6 +1583,7 @@ class _WeightActionButton extends StatefulWidget {
   final double currentWeight;
   final VoidCallback onSave;
   final VoidCallback onToggleGoal;
+  final bool isGoalReached;
 
   const _WeightActionButton({
     required this.weightController,
@@ -1408,6 +1592,7 @@ class _WeightActionButton extends StatefulWidget {
     required this.currentWeight,
     required this.onSave,
     required this.onToggleGoal,
+    required this.isGoalReached,
   });
 
   @override
@@ -1420,7 +1605,7 @@ class _WeightActionButtonState extends State<_WeightActionButton> {
   @override
   void initState() {
     super.initState();
-    widget.weightController.text = widget.currentWeight.toStringAsFixed(1);
+    // Do not autofill weightController text here to keep it empty on edit start
   }
 
   _HomeContentState get _parentState => context.findAncestorStateOfType<_HomeContentState>()!;
@@ -1466,15 +1651,15 @@ class _WeightActionButtonState extends State<_WeightActionButton> {
         children: [
           InkWell(
             onTap: () {
-              widget.weightController.text = widget.currentWeight.toStringAsFixed(1);
+              widget.weightController.clear();
               widget.heightController.clear();
               setState(() => _isEditing = true);
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: [AppColors.accent1, AppColors.primary]),
-                  borderRadius: BorderRadius.circular(12)
+                gradient: LinearGradient(colors: [AppColors.accent1, AppColors.primary]),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1495,12 +1680,12 @@ class _WeightActionButtonState extends State<_WeightActionButton> {
               label: Text('Toggle Goal (${widget.isGain ? 'Gain' : 'Lose'})', style: const TextStyle(fontSize: 12, color: AppColors.charcoal, fontWeight: FontWeight.w600)),
               style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
             ),
-          )
+          ),
         ],
       ),
     );
   }
-  
+
   Widget _buildEditState() {
     return Padding(
       key: const ValueKey<bool>(true),
