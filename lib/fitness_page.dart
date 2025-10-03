@@ -4,8 +4,8 @@ import '../providers/fitness_provider.dart';
 import 'constants/app_colors.dart';
 import '../models/exercise.dart';
 
-class ExercisePage extends StatelessWidget {
-  const ExercisePage ({Key? key}) : super(key: key);
+class ExercisesScreen extends StatelessWidget {
+  const ExercisesScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

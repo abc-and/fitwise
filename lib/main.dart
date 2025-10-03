@@ -2,156 +2,32 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart'; // ✅ Provider package
 import 'firebase_options.dart';
+
+// Screens
 import 'login_page.dart';
 import 'dashboard.dart';
-import 'onboarding_page.dart'; // Import the onboarding page
+import 'onboarding_page.dart';
+
+// Providers
+import 'providers/fitness_provider.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); 
-  
+  WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(const FitWiseApp());
-}
-
-// AuthWrapper now handles both authentication AND onboarding status
-class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({super.key});
-
-  /// Check if the current user has completed onboarding
-  Future<bool> _isOnboardingComplete() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      
-      if (user == null) {
-        return false;
-      }
-
-      final doc = await FirebaseFirestore.instance
-          .collection("user_info")
-          .doc(user.uid)
-          .get();
-
-      if (!doc.exists) {
-        return false;
-      }
-
-      final data = doc.data();
-      if (data == null) {
-        return false;
-      }
-
-      // Check if onboardingCompleted flag exists and is true
-      if (data.containsKey("onboardingCompleted") && 
-          data["onboardingCompleted"] == true) {
-        return true;
-      }
-
-      // Alternative: Check if all required fields are present
-      final requiredFields = [
-        "height",
-        "weight",
-        "age",
-        "sex",
-        "allergies",
-        "otherConditions",
-        "dietType",
-        "dietaryRestrictions",
-        "activityLevel",
-        "targetGoal",
-        "targetDuration",
-      ];
-
-      for (final field in requiredFields) {
-        if (!data.containsKey(field) || 
-            data[field] == null || 
-            data[field].toString().isEmpty) {
-          return false;
-        }
-      }
-
-      // Check weight-specific fields based on goal
-      if (data["targetGoal"] == "Weight Loss") {
-        if (!data.containsKey("targetWeightLoss") ||
-            data["targetWeightLoss"] == null ||
-            data["targetWeightLoss"].toString().isEmpty) {
-          return false;
-        }
-      } else if (data["targetGoal"] == "Weight Gain") {
-        if (!data.containsKey("targetWeightGain") ||
-            data["targetWeightGain"] == null ||
-            data["targetWeightGain"].toString().isEmpty) {
-          return false;
-        }
-      }
-
-      // Check reproductive status for females
-      if (data["sex"] == "Female") {
-        if (!data.containsKey("reproductiveStatus") ||
-            data["reproductiveStatus"] == null ||
-            data["reproductiveStatus"].toString().isEmpty) {
-          return false;
-        }
-      }
-
-      return true;
-    } catch (e) {
-      debugPrint("Error checking onboarding status: $e");
-      return false;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        // Show loading indicator while checking auth status
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF65A30D)),
-              ),
-            ),
-          );
-        }
-
-        // If user is not logged in, show login page
-        if (!snapshot.hasData || snapshot.data == null) {
-          return const LoginPage();
-        }
-
-        // User is logged in, check onboarding status
-        return FutureBuilder<bool>(
-          future: _isOnboardingComplete(),
-          builder: (context, onboardingSnapshot) {
-            // Show loading while checking onboarding status
-            if (onboardingSnapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF65A30D)),
-                  ),
-                ),
-              );
-            }
-
-            // If onboarding is not complete, show onboarding page
-            if (onboardingSnapshot.data == false) {
-              return const OnboardingPage();
-            }
-
-            // Onboarding is complete, show dashboard
-            return const HomeDashboard();
-          },
-        );
-      },
-    );
-  }
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => FitnessProvider()),
+      ],
+      child: const FitWiseApp(),
+    ),
+  );
 }
 
 class FitWiseApp extends StatelessWidget {
@@ -188,6 +64,128 @@ class FitWiseApp extends StatelessWidget {
         ).copyWith(secondary: const Color(0xFF65A30D)),
       ),
       home: const AuthWrapper(),
+    );
+  }
+}
+
+/// AuthWrapper handles login, onboarding, and dashboard navigation
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  /// Check if onboarding is complete for the logged-in user
+  Future<bool> _isOnboardingComplete() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) return false;
+
+      final doc = await FirebaseFirestore.instance
+          .collection("user_info")
+          .doc(user.uid)
+          .get();
+
+      if (!doc.exists || doc.data() == null) return false;
+
+      final data = doc.data()!;
+
+      // Explicit onboardingCompleted flag
+      if (data["onboardingCompleted"] == true) return true;
+
+      // Required fields check
+      final requiredFields = [
+        "height",
+        "weight",
+        "age",
+        "sex",
+        "allergies",
+        "otherConditions",
+        "dietType",
+        "dietaryRestrictions",
+        "activityLevel",
+        "targetGoal",
+        "targetDuration",
+      ];
+
+      for (final field in requiredFields) {
+        if (!data.containsKey(field) || data[field].toString().isEmpty) {
+          return false;
+        }
+      }
+
+      // Weight goal specifics
+      if (data["targetGoal"] == "Weight Loss" &&
+          (data["targetWeightLoss"] == null ||
+              data["targetWeightLoss"].toString().isEmpty)) {
+        return false;
+      }
+
+      if (data["targetGoal"] == "Weight Gain" &&
+          (data["targetWeightGain"] == null ||
+              data["targetWeightGain"].toString().isEmpty)) {
+        return false;
+      }
+
+      // Female reproductive status
+      if (data["sex"] == "Female" &&
+          (data["reproductiveStatus"] == null ||
+              data["reproductiveStatus"].toString().isEmpty)) {
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      debugPrint("Error checking onboarding status: $e");
+      return false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        // 🔄 Checking auth state
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const _LoadingScreen();
+        }
+
+        // 🚪 Not logged in → LoginPage
+        if (!snapshot.hasData) {
+          return const LoginPage();
+        }
+
+        // ✅ Logged in → check onboarding
+        return FutureBuilder<bool>(
+          future: _isOnboardingComplete(),
+          builder: (context, onboardingSnapshot) {
+            if (onboardingSnapshot.connectionState == ConnectionState.waiting) {
+              return const _LoadingScreen();
+            }
+
+            if (onboardingSnapshot.data == false) {
+              return const OnboardingPage();
+            }
+
+            return const HomeDashboard();
+          },
+        );
+      },
+    );
+  }
+}
+
+/// Simple loading screen widget
+class _LoadingScreen extends StatelessWidget {
+  const _LoadingScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF65A30D)),
+        ),
+      ),
     );
   }
 }
