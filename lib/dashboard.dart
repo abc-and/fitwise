@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_page.dart';
 import 'exercise_page.dart';
+import 'profile_page.dart';
 import 'constants/app_colors.dart';
 import '../models/food_recommendation.dart';
 import '../providers/food_recommendation_service.dart';
@@ -136,60 +137,55 @@ class _HomeDashboardState extends State<HomeDashboard> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final screens = <Widget>[
-      const HomeContent(),
-      const ExercisePage(), 
-      const SimplePlaceholder(title: 'Calorie Log'),
-      const SimplePlaceholder(title: 'Daily Streak'),
-      const SimplePlaceholder(title: 'User Profile'),
-    ];
+ @override
+Widget build(BuildContext context) {
+  final screens = <Widget>[
+    const HomeContent(),
+    const ExercisePage(), 
+    const SimplePlaceholder(title: 'Calorie Log'),
+    const SimplePlaceholder(title: 'Daily Streak'),
+    ProfilePage(onLogout: () => _logout(context)),
+  ];
 
-    return DefaultTabController(
-      length: screens.length,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            'FitWise Dashboard',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+  return DefaultTabController(
+    length: screens.length,
+    child: Scaffold(
+      body: Stack(
+        children: [
+          TabBarView(
+            physics: const NeverScrollableScrollPhysics(),
+            children: screens,
           ),
-          backgroundColor: AppColors.primary,
-          elevation: 4,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout, color: Colors.white),
-              tooltip: 'Logout',
-              onPressed: () => _logout(context),
+        ],
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
             ),
           ],
         ),
-        body: TabBarView(
-          physics: const NeverScrollableScrollPhysics(),
-          children: screens,
-        ),
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, -2))],
-          ),
-          child: TabBar(
-            indicatorColor: AppColors.primary,
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.mediumGray,
-            indicatorSize: TabBarIndicatorSize.label,
-            tabs: const [
-              Tab(icon: Icon(Icons.home), text: 'Home'),
-              Tab(icon: Icon(Icons.fitness_center), text: 'Exercise'),
-              Tab(icon: Icon(Icons.restaurant), text: 'Calories'),
-              Tab(icon: Icon(Icons.local_fire_department), text: 'Streak'),
-              Tab(icon: Icon(Icons.person), text: 'Profile'),
-            ],
-          ),
+        child: TabBar(
+          indicatorColor: AppColors.primary,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.mediumGray,
+          indicatorSize: TabBarIndicatorSize.label,
+          tabs: const [
+            Tab(icon: Icon(Icons.home), text: 'Home'),
+            Tab(icon: Icon(Icons.fitness_center), text: 'Exercise'),
+            Tab(icon: Icon(Icons.restaurant), text: 'Calories'),
+            Tab(icon: Icon(Icons.local_fire_department), text: 'Streak'),
+            Tab(icon: Icon(Icons.person), text: 'Profile'),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class SimplePlaceholder extends StatelessWidget {
