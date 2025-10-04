@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_page.dart';
 import 'exercise_page.dart';
+import 'workout_streak_page.dart';
 import 'constants/app_colors.dart';
 import '../models/food_recommendation.dart';
 import '../providers/food_recommendation_service.dart';
@@ -143,50 +144,50 @@ class _HomeDashboardState extends State<HomeDashboard> {
   Widget build(BuildContext context) {
     final screens = <Widget>[
       const HomeContent(),
-      const ExercisePage(), 
+      const ExercisePage(),
       const SimplePlaceholder(title: 'Calorie Log'),
-      const SimplePlaceholder(title: 'Daily Streak'),
+      const WorkoutStreakPage(),
       ProfilePage(onLogout: () => _logout(context)),
     ];
 
- return DefaultTabController(
-    length: screens.length,
-    child: Scaffold(
-      body: Stack(
-        children: [
-          TabBarView(
-            physics: const NeverScrollableScrollPhysics(),
-            children: screens,
-          ),
-        ],
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
+    return DefaultTabController(
+      length: screens.length,
+      child: Scaffold(
+        body: Stack(
+          children: [
+            TabBarView(
+              physics: const NeverScrollableScrollPhysics(),
+              children: screens,
             ),
           ],
         ),
-        child: TabBar(
-          indicatorColor: AppColors.primary,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.mediumGray,
-          indicatorSize: TabBarIndicatorSize.label,
-          tabs: const [
-            Tab(icon: Icon(Icons.home), text: 'Home'),
-            Tab(icon: Icon(Icons.fitness_center), text: 'Exercise'),
-            Tab(icon: Icon(Icons.restaurant), text: 'Calories'),
-            Tab(icon: Icon(Icons.local_fire_department), text: 'Streak'),
-            Tab(icon: Icon(Icons.person), text: 'Profile'),
-          ],
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 8,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: TabBar(
+            indicatorColor: AppColors.primary,
+            labelColor: AppColors.primary,
+            unselectedLabelColor: AppColors.mediumGray,
+            indicatorSize: TabBarIndicatorSize.label,
+            tabs: const [
+              Tab(icon: Icon(Icons.home), text: 'Home'),
+              Tab(icon: Icon(Icons.fitness_center), text: 'Exercise'),
+              Tab(icon: Icon(Icons.restaurant), text: 'Calories'),
+              Tab(icon: Icon(Icons.local_fire_department), text: 'Streak'),
+              Tab(icon: Icon(Icons.person), text: 'Profile'),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
 }
 
