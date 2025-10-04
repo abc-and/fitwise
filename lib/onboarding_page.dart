@@ -38,12 +38,21 @@ class _OnboardingPageState extends State<OnboardingPage> {
     "targetDuration": null,
   };
 
+
   // Text Controllers for input fields
   final TextEditingController _heightController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _targetWeightLossController = TextEditingController();
   final TextEditingController _targetWeightGainController = TextEditingController();
+
+  // Unit selection for height and weight
+  String _heightUnit = "cm";
+  String _weightUnit = "kg";
+  String _targetWeightUnit = "kg";
+
+  final List<String> _heightUnitOptions = ["cm", "m"];
+  final List<String> _weightUnitOptions = ["kg", "lbs"];
 
   // State Variables for Dropdown Selections
   String? _sex;
@@ -83,7 +92,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
   
   final List<String> _reproductiveOptions = const [
     "Not Applicable",
-    "On Period",
     "Pregnant",
     "Breastfeeding",
     "Menopausal",
@@ -139,12 +147,24 @@ class _OnboardingPageState extends State<OnboardingPage> {
         final data = doc.data();
         if (data != null) {
           setState(() {
+
             // Load text fields
             _heightController.text = data["height"] ?? "";
             _weightController.text = data["weight"] ?? "";
             _ageController.text = data["age"] ?? "";
             _targetWeightLossController.text = data["targetWeightLoss"] ?? "";
             _targetWeightGainController.text = data["targetWeightGain"] ?? "";
+
+            // Load units if present
+            if (data["heightUnit"] != null && _heightUnitOptions.contains(data["heightUnit"])) {
+              _heightUnit = data["heightUnit"];
+            }
+            if (data["weightUnit"] != null && _weightUnitOptions.contains(data["weightUnit"])) {
+              _weightUnit = data["weightUnit"];
+            }
+            if (data["targetWeightUnit"] != null && _weightUnitOptions.contains(data["targetWeightUnit"])) {
+              _targetWeightUnit = data["targetWeightUnit"];
+            }
 
             // Load dropdowns
             _sex = data["sex"];
@@ -233,11 +253,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   // Syncs all TextEditingController values into the _userData map
   void _syncTextControllersToUserData() {
-    _userData["height"] = _heightController.text.trim();
-    _userData["weight"] = _weightController.text.trim();
-    _userData["age"] = _ageController.text.trim();
-    _userData["targetWeightLoss"] = _targetWeightLossController.text.trim();
-    _userData["targetWeightGain"] = _targetWeightGainController.text.trim();
+  _userData["height"] = _heightController.text.trim();
+  _userData["heightUnit"] = _heightUnit;
+  _userData["weight"] = _weightController.text.trim();
+  _userData["weightUnit"] = _weightUnit;
+  _userData["age"] = _ageController.text.trim();
+  _userData["targetWeightLoss"] = _targetWeightLossController.text.trim();
+  _userData["targetWeightGain"] = _targetWeightGainController.text.trim();
+  _userData["targetWeightUnit"] = _targetWeightUnit;
+  // Never set goalWeight in onboarding
+  _userData.remove("goalWeight");
   }
 
   // Validate all required fields
@@ -352,8 +377,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
     dataToSave["email"] = user.email!;
     dataToSave["onboardingCompleted"] = true; // Add completion flag
     dataToSave["onboardingCompletedAt"] = FieldValue.serverTimestamp();
-    
-
+    // Remove goalWeight if present
+    dataToSave.remove("goalWeight");
     try {
       // Save main user_info document
       await FirebaseFirestore.instance
@@ -375,7 +400,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
       if (weightStr.toLowerCase().contains('lb')) {
         weight = weight * 0.453592; // Convert lbs to kg
       }
-      
       double height = double.tryParse(heightStr.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 170.0;
       if (heightStr.toLowerCase().contains('m') && !heightStr.toLowerCase().contains('cm') && height < 3) {
         height = height * 100; // Convert m to cm
@@ -657,20 +681,130 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 Icons.person_outline,
               ),
               const SizedBox(height: 28),
-              _buildTextField(
-                controller: _heightController,
-                label: "Height (cm or m)",
-                hint: "e.g., 170 cm or 1.70 m",
-                onChanged: (val) => _userData["height"] = val.trim(),
-                keyboardType: TextInputType.number,
+
+              // Height field
+
+              // Height field and unit dropdown in a Row
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTextField(
+                      controller: _heightController,
+                      label: "Height",
+                      hint: _heightUnit == "cm" ? "e.g., 170" : "e.g., 1.70",
+                      onChanged: (val) => _userData["height"] = val.trim(),
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    width: 90,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.lightGray.withOpacity(0.5)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.08),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: DropdownButtonFormField<String>(
+                      value: _heightUnit,
+                      items: _heightUnitOptions
+                          .map((item) => DropdownMenuItem(
+                                value: item,
+                                child: Text(
+                                  item,
+                                  style: TextStyle(
+                                    color: AppColors.dark1,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ))
+                          .toList(),
+                      onChanged: (val) {
+                        setState(() {
+                          _heightUnit = val ?? "cm";
+                        });
+                        _userData["heightUnit"] = _heightUnit;
+                      },
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 18),
+                      ),
+                      icon: Icon(Icons.arrow_drop_down, color: AppColors.tertiary, size: 28),
+                      dropdownColor: Colors.white,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 18),
-              _buildTextField(
-                controller: _weightController,
-                label: "Weight (kg or lbs)",
-                hint: "e.g., 65 kg or 143 lbs",
-                onChanged: (val) => _userData["weight"] = val.trim(),
-                keyboardType: TextInputType.number,
+
+              // Weight field
+
+              // Weight field and unit dropdown in a Row
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTextField(
+                      controller: _weightController,
+                      label: "Weight",
+                      hint: _weightUnit == "kg" ? "e.g., 65" : "e.g., 143",
+                      onChanged: (val) => _userData["weight"] = val.trim(),
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    width: 90,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.lightGray.withOpacity(0.5)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.08),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: DropdownButtonFormField<String>(
+                      value: _weightUnit,
+                      items: _weightUnitOptions
+                          .map((item) => DropdownMenuItem(
+                                value: item,
+                                child: Text(
+                                  item,
+                                  style: TextStyle(
+                                    color: AppColors.dark1,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ))
+                          .toList(),
+                      onChanged: (val) {
+                        setState(() {
+                          _weightUnit = val ?? "kg";
+                        });
+                        _userData["weightUnit"] = _weightUnit;
+                      },
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 18),
+                      ),
+                      icon: Icon(Icons.arrow_drop_down, color: AppColors.tertiary, size: 28),
+                      dropdownColor: Colors.white,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 18),
               _buildTextField(
@@ -954,26 +1088,102 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               const SizedBox(height: 18),
 
-              // Conditional: Show weight loss field only if goal is Weight Loss
+
+              // Conditional: Show target weight loss/gain with unit dropdown
               if (_targetGoal == "Weight Loss") ...[
-                _buildTextField(
-                  controller: _targetWeightLossController,
-                  label: "Target Weight Loss (kg or lbs)",
-                  hint: "e.g., 5 kg or 10 lbs",
-                  onChanged: (val) => _userData["targetWeightLoss"] = val.trim(),
-                  keyboardType: TextInputType.number,
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildTextField(
+                        controller: _targetWeightLossController,
+                        label: "Target Weight Loss",
+                        hint: _targetWeightUnit == "kg" ? "e.g., 5" : "e.g., 10",
+                        onChanged: (val) => _userData["targetWeightLoss"] = val.trim(),
+                        keyboardType: TextInputType.numberWithOptions(decimal: true),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      width: 90,
+                      child: DropdownButtonFormField<String>(
+                        value: _targetWeightUnit,
+                        items: _weightUnitOptions
+                            .map((item) => DropdownMenuItem(
+                                  value: item,
+                                  child: Text(
+                                    item,
+                                    style: TextStyle(
+                                      color: AppColors.dark1,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ))
+                            .toList(),
+                        onChanged: (val) {
+                          setState(() {
+                            _targetWeightUnit = val ?? "kg";
+                          });
+                          _userData["targetWeightUnit"] = _targetWeightUnit;
+                        },
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 18),
+                        ),
+                        icon: Icon(Icons.arrow_drop_down, color: AppColors.tertiary, size: 28),
+                        dropdownColor: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 18),
               ],
 
-              // Conditional: Show weight gain field only if goal is Weight Gain
               if (_targetGoal == "Weight Gain") ...[
-                _buildTextField(
-                  controller: _targetWeightGainController,
-                  label: "Target Weight Gain (kg or lbs)",
-                  hint: "e.g., 3 kg or 6 lbs",
-                  onChanged: (val) => _userData["targetWeightGain"] = val.trim(),
-                  keyboardType: TextInputType.number,
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildTextField(
+                        controller: _targetWeightGainController,
+                        label: "Target Weight Gain",
+                        hint: _targetWeightUnit == "kg" ? "e.g., 3" : "e.g., 6",
+                        onChanged: (val) => _userData["targetWeightGain"] = val.trim(),
+                        keyboardType: TextInputType.numberWithOptions(decimal: true),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      width: 90,
+                      child: DropdownButtonFormField<String>(
+                        value: _targetWeightUnit,
+                        items: _weightUnitOptions
+                            .map((item) => DropdownMenuItem(
+                                  value: item,
+                                  child: Text(
+                                    item,
+                                    style: TextStyle(
+                                      color: AppColors.dark1,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ))
+                            .toList(),
+                        onChanged: (val) {
+                          setState(() {
+                            _targetWeightUnit = val ?? "kg";
+                          });
+                          _userData["targetWeightUnit"] = _targetWeightUnit;
+                        },
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 18),
+                        ),
+                        icon: Icon(Icons.arrow_drop_down, color: AppColors.tertiary, size: 28),
+                        dropdownColor: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 18),
               ],
