@@ -255,45 +255,156 @@ bool _hasReachedGoal() {
 }
 
 // Call this when you want to mark completion (and show dialog once).
-  Future<void> _markGoalCompleted({bool showCongratsDialog = true}) async {
-    if (_goalCompleted) return;
-    if (!_hasReachedGoal()) return;
+Future<void> _markGoalCompleted({bool showCongratsDialog = true}) async {
+  if (_goalCompleted) return;
+  if (!_hasReachedGoal()) return;
 
-    setState(() => _goalCompleted = true);
+  setState(() => _goalCompleted = true);
 
-    final user = _auth.currentUser;
-    if (user != null) {
-      try {
-        await _firestore.collection('user_info').doc(user.uid).update({
-          'goalCompleted': true,
-          'goalCompletedAt': DateTime.now(),
-        });
-      } catch (e) {
-        debugPrint('Failed to mark goalCompleted in firestore: $e');
-      }
-    }
-
-    if (showCongratsDialog && mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('🎉 Congratulations!'),
-            content: Text('You reached your goal of ${_goalWeight.toStringAsFixed(1)} kg!'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
+  final user = _auth.currentUser;
+  if (user != null) {
+    try {
+      await _firestore.collection('user_info').doc(user.uid).update({
+        'goalCompleted': true,
+        'goalCompletedAt': DateTime.now(),
       });
+    } catch (e) {
+      debugPrint('Failed to mark goalCompleted in firestore: $e');
     }
-    // After congratulatory message, allow user to set a new goal
-    // UI already supports this in _buildGoalSection
   }
 
+  if (showCongratsDialog && mounted) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => TweenAnimationBuilder<double>(
+          duration: const Duration(milliseconds: 600),
+          tween: Tween(begin: 0.0, end: 1.0),
+          curve: Curves.elasticOut,
+          builder: (context, scale, child) {
+            return Transform.scale(
+              scale: scale,
+              child: AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                contentPadding: const EdgeInsets.all(32),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Animated Trophy Icon
+                    TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 1000),
+                      tween: Tween(begin: 0.8, end: 1.0),
+                      curve: Curves.easeInOut,
+                      builder: (context, iconScale, child) {
+                        return Transform.scale(
+                          scale: iconScale,
+                          child: Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.amber.shade400,
+                                  Colors.orange.shade600,
+                                ],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.amber.withOpacity(0.5),
+                                  blurRadius: 20,
+                                  spreadRadius: 5,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.emoji_events,
+                              size: 48,
+                              color: Colors.white,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    // Title
+                    ShaderMask(
+                      shaderCallback: (bounds) => LinearGradient(
+                        colors: [
+                          Colors.purple.shade600,
+                          Colors.blue.shade600,
+                        ],
+                      ).createShader(bounds),
+                      child: const Text(
+                        'Congratulations! 🎉',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Message
+                    Text(
+                      'You\'ve reached your goal of\n${_goalWeight.toStringAsFixed(1)} kg!',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey.shade700,
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Amazing dedication! 💪',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    // Button
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purple.shade600,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 48,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        elevation: 5,
+                      ),
+                      child: const Text(
+                        'Awesome!',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    });
+  }
+  // After congratulatory message, allow user to set a new goal
+  // UI already supports this in _buildGoalSection
+}
 // Call this to set a brand-new goal (user inputs weight + optional type)
 Future<void> _updateGoalWeightAndType(double newGoalWeight, String newType) async {
   final user = _auth.currentUser;
