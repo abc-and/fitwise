@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'models/workout_streak.dart';
 import 'constants/app_colors.dart';
 import 'dart:math' as math;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class WorkoutStreakPage extends StatefulWidget {
   const WorkoutStreakPage({super.key});
@@ -22,17 +24,53 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
   late Animation<double> _scaleAnimation;
   late Animation<double> _badgeScaleAnimation;
   bool _showDebugPanel = false;
+  bool _isLoading = true;
+  bool _isLogging = false;
 
   @override
   void initState() {
     super.initState();
-    _streak = WorkoutStreak(
-      currentStreak: 0,
-      bestStreak: 0,
-      lastWorkout: DateTime.now().subtract(const Duration(days: 2)),
-      workoutDates: [],
-    );
+    _streak = WorkoutStreak.empty();
+    _initializeAnimations();
+    _initializeStreak();
+  }
 
+  Future<void> _initializeStreak() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      
+      if (user == null) {
+        print("No user logged in");
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final doc = await FirebaseFirestore.instance
+          .collection('streaks')
+          .doc(user.uid)
+          .get();
+
+      if (doc.exists && doc.data() != null) {
+        setState(() {
+          _streak = WorkoutStreak.fromMap(doc.data()!);
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading streak: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _initializeAnimations() {
     _flameController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -74,45 +112,96 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
     _badgeController.forward();
   }
 
-  @override
-  void dispose() {
-    _flameController.dispose();
-    _pulseController.dispose();
-    _badgeController.dispose();
-    _weekFireController.dispose();
-    _particleController.dispose();
-    _backgroundController.dispose();
-    super.dispose();
+  bool _isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
   }
 
-  void _logWorkout() {
-    DateTime today = DateTime.now();
-    DateTime lastWorkout = _streak.lastWorkout;
+  bool _isConsecutiveDay(DateTime today, DateTime lastWorkout) {
+    final yesterday = today.subtract(const Duration(days: 1));
+    return _isSameDay(lastWorkout, yesterday);
+  }
 
-    if (today.difference(lastWorkout).inDays == 1) {
-      _streak.currentStreak++;
+  void _logWorkout() async {
+    if (_isLogging) return;
+
+    setState(() {
+      _isLogging = true;
+    });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception("Please make sure you're logged in");
+      }
+
+      final today = DateTime.now();
+      final userDoc = FirebaseFirestore.instance.collection('streaks').doc(user.uid);
+      
+      // Get current data
+      final doc = await userDoc.get();
+      
+      if (doc.exists) {
+        final data = doc.data()!;
+        final lastWorkout = DateTime.parse(data['lastWorkout']);
+        final currentStreak = data['currentStreak'] ?? 0;
+        final bestStreak = data['bestStreak'] ?? 0;
+        final workoutDates = List<String>.from(data['workoutDates'] ?? []);
+        
+        // Check if already logged today
+        if (_isSameDay(today, lastWorkout)) {
+          throw Exception("You already logged today's workout!");
+        }
+        
+        // Calculate new streak
+        int newStreak = _isConsecutiveDay(today, lastWorkout) ? currentStreak + 1 : 1;
+        int newBestStreak = newStreak > bestStreak ? newStreak : bestStreak;
+        
+        // Update dates
+        workoutDates.add(today.toIso8601String());
+        
+        // Update Firestore
+        await userDoc.update({
+          'currentStreak': newStreak,
+          'bestStreak': newBestStreak,
+          'lastWorkout': today.toIso8601String(),
+          'workoutDates': workoutDates,
+        });
+      } else {
+        // Create new streak
+        await userDoc.set({
+          'currentStreak': 1,
+          'bestStreak': 1,
+          'lastWorkout': today.toIso8601String(),
+          'workoutDates': [today.toIso8601String()],
+        });
+      }
+      
+      // Reload data
+      await _initializeStreak();
       _showSuccessAnimation();
-    } else if (today.difference(lastWorkout).inDays == 0) {
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text("You already logged today's workout!"),
-          backgroundColor: AppColors.orange,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          content: Text("✅ Workout logged successfully!"),
+          backgroundColor: Colors.green,
         ),
       );
-      return;
-    } else {
-      _streak.currentStreak = 1;
+      
+    } catch (e) {
+      print("Log workout error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Failed to log workout: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLogging = false;
+      });
     }
-
-    if (_streak.currentStreak > _streak.bestStreak) {
-      _streak.bestStreak = _streak.currentStreak;
-    }
-
-    _streak.lastWorkout = today;
-    _streak.workoutDates.add(today);
-    setState(() {});
   }
 
   void _showSuccessAnimation() {
@@ -122,14 +211,35 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
     _weekFireController.forward();
   }
 
-  void _setDebugStreak(int days) {
-    setState(() {
-      _streak.currentStreak = days;
-      if (days > _streak.bestStreak) {
-        _streak.bestStreak = days;
-      }
+  void _setDebugStreak(int days) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final debugStreak = WorkoutStreak(
+        currentStreak: days,
+        bestStreak: days > _streak.bestStreak ? days : _streak.bestStreak,
+        lastWorkout: DateTime.now(),
+        workoutDates: _streak.workoutDates,
+      );
+
+      await FirebaseFirestore.instance
+          .collection('streaks')
+          .doc(user.uid)
+          .set(debugStreak.toMap());
+      
+      setState(() {
+        _streak = debugStreak;
+      });
       _showSuccessAnimation();
-    });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Failed to set debug streak: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Map<String, dynamic> _getBadgeInfo() {
@@ -210,8 +320,131 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
     return weekStatus;
   }
 
+  String _getStreakTierText() {
+    if (_streak.currentStreak >= 100) {
+      return "✨ LEGENDARY TIER ✨";
+    } else if (_streak.currentStreak >= 50) {
+      return "👑 GOLD TIER 👑";
+    } else if (_streak.currentStreak >= 20) {
+      return "🔥 FIRE TIER 🔥";
+    } else {
+      return "🌱 GROWING STRONG 🌱";
+    }
+  }
+
+  Widget _buildStatCard(String emoji, String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: _streak.currentStreak >= 100
+            ? Border.all(color: _getStreakColor().withOpacity(0.2), width: 2)
+            : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            emoji,
+            style: const TextStyle(fontSize: 32),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.mediumGray,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDebugButton(String label, int days) {
+    final isActive = _streak.currentStreak == days;
+    return Material(
+      color: isActive ? AppColors.secondary : Colors.white.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: () => _setDebugStreak(days),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isActive ? AppColors.secondary : Colors.white.withOpacity(0.3),
+              width: isActive ? 2 : 1,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isActive ? Colors.white : Colors.white70,
+              fontSize: 13,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _flameController.dispose();
+    _pulseController.dispose();
+    _badgeController.dispose();
+    _weekFireController.dispose();
+    _particleController.dispose();
+    _backgroundController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                color: AppColors.primary,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                "Loading your streak...",
+                style: TextStyle(
+                  color: AppColors.darkGray,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final badgeInfo = _getBadgeInfo();
     final weeklyWorkouts = _getWeeklyWorkouts();
     final streakColor = _getStreakColor();
@@ -393,6 +626,65 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                         ),
                                       ),
                                     ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.blue),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "Firebase Debug",
+                                          style: TextStyle(
+                                            color: Colors.blue,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        ElevatedButton(
+                                          onPressed: () async {
+                                            try {
+                                              final user = FirebaseAuth.instance.currentUser;
+                                              print("👤 Current user: ${user?.uid}");
+                                              
+                                              final doc = await FirebaseFirestore.instance
+                                                  .collection('streaks')
+                                                  .doc(user?.uid)
+                                                  .get();
+                                              print("📊 Streak exists: ${doc.exists}");
+                                              print("📊 Current streak: ${_streak.currentStreak} days");
+                                              
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text("User: ${user?.uid}\nStreak exists: ${doc.exists}"),
+                                                  duration: Duration(seconds: 5),
+                                                  backgroundColor: Colors.green,
+                                                ),
+                                              );
+                                            } catch (e) {
+                                              print("❌ Test error: $e");
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text("Error: $e"),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                            }
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.blue,
+                                            foregroundColor: Colors.white,
+                                          ),
+                                          child: Text("Test Firebase Connection"),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
@@ -779,34 +1071,37 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                               ],
                             ),
                             child: ElevatedButton(
-                              onPressed: _logWorkout,
+                              onPressed: _isLogging ? null : _logWorkout,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.transparent,
                                 shadowColor: Colors.transparent,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(35),
                                 ),
+                                disabledBackgroundColor: Colors.grey,
                               ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.fitness_center,
-                                    color: Colors.white,
-                                    size: 28,
-                                  ),
-                                  SizedBox(width: 12),
-                                  Text(
-                                    "Log Today's Workout",
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      letterSpacing: 0.5,
+                              child: _isLogging
+                                  ? const CircularProgressIndicator(color: Colors.white)
+                                  : const Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.fitness_center,
+                                          color: Colors.white,
+                                          size: 28,
+                                        ),
+                                        SizedBox(width: 12),
+                                        Text(
+                                          "Log Today's Workout",
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                ],
-                              ),
                             ),
                           ),
 
@@ -820,94 +1115,6 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  String _getStreakTierText() {
-    if (_streak.currentStreak >= 100) {
-      return "✨ LEGENDARY TIER ✨";
-    } else if (_streak.currentStreak >= 50) {
-      return "👑 GOLD TIER 👑";
-    } else if (_streak.currentStreak >= 20) {
-      return "🔥 FIRE TIER 🔥";
-    } else {
-      return "🌱 GROWING STRONG 🌱";
-    }
-  }
-
-  Widget _buildStatCard(String emoji, String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: _streak.currentStreak >= 100
-            ? Border.all(color: _getStreakColor().withOpacity(0.2), width: 2)
-            : null,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(
-            emoji,
-            style: const TextStyle(fontSize: 32),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.mediumGray,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDebugButton(String label, int days) {
-    final isActive = _streak.currentStreak == days;
-    return Material(
-      color: isActive ? AppColors.secondary : Colors.white.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: () => _setDebugStreak(days),
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isActive ? AppColors.secondary : Colors.white.withOpacity(0.3),
-              width: isActive ? 2 : 1,
-            ),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isActive ? Colors.white : Colors.white70,
-              fontSize: 13,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-        ),
       ),
     );
   }
