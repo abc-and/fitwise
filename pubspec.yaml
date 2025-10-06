@@ -17,6 +17,7 @@ dependencies:
   provider: ^6.1.1
   cupertino_icons: ^1.0.8
   audioplayers: ^6.0.0   # 🎵 added for alarm sound
+  intl: ^0.18.0
 
 dev_dependencies:
   flutter_test:

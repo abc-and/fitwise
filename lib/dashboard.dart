@@ -9,6 +9,7 @@ import 'constants/app_colors.dart';
 import '../models/food_recommendation.dart';
 import '../providers/food_recommendation_service.dart';
 import 'profile_page.dart'; 
+import 'calorie_log_page.dart';
 
 // Controls whether the new goal input is shown after clicking 'Update Goal'
 bool _showNewGoalInput = false;
@@ -145,7 +146,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
     final screens = <Widget>[
       const HomeContent(),
       const ExercisePage(),
-      const SimplePlaceholder(title: 'Calorie Log'),
+      const CalorieLogPage(),
       const WorkoutStreakPage(),
       ProfilePage(onLogout: () => _logout(context)),
     ];
@@ -1247,47 +1248,173 @@ Future<void> _saveWeightUpdate(double weight, double? height) async {
     );
   }
 
-  Widget _buildFoodCarousel() {
-    final foods = _timeFoods;
-    const itemWidth = 120.0;
-    const itemHeight = 160.0;
+Widget _buildFoodCarousel() {
+  final foods = _timeFoods;
+  const itemWidth = 160.0;
+  const itemHeight = 220.0;
 
   return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Padding(
-        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
-        child: Row(children: [
-          _smallIconBox(Icons.restaurant),
-          const SizedBox(width: 12),
-          Expanded(child: Text('Recommended for ${_greeting().split(' ').last}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
-          // You might want to navigate to a full recommendations screen here
-          const Icon(Icons.chevron_right, color: AppColors.darkGray), 
-        ]),
-      ),
-      SizedBox(
-        height: itemHeight,
-  child: foods.isEmpty // Show loading only if foods is empty
-            ? const Center(child: CircularProgressIndicator())
-            : foods.isEmpty // Show message if data is loaded but foods list is empty
-                ? const Center(child: Text('No custom recommendations yet. Try updating your profile!'))
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: foods.length,
-                    itemBuilder: (context, index) {
-                      return FoodItemCard(
-                        food: foods[index],
-                        width: itemWidth,
-                        onTap: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${foods[index]['name']} selected'))),
-                      );
-                    },
+    padding: const EdgeInsets.symmetric(vertical: 16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF6B9D), Color(0xFFC06C84)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-      ),
-    ]),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF6B9D).withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.restaurant_menu, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Recommended for You',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: AppColors.dark1,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Personalized meal suggestions',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.mediumGray,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.orange.shade300, Colors.deepOrange.shade400],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.orange.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.recommend, color: Colors.white, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${foods.length}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: itemHeight,
+          child: foods.isEmpty
+              ? Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.lightGray.withOpacity(0.5),
+                          AppColors.lightGray.withOpacity(0.2),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.mediumGray.withOpacity(0.3)),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.restaurant, color: AppColors.mediumGray, size: 40),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No recommendations yet',
+                          style: TextStyle(
+                            color: AppColors.darkGray,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Update your profile for personalized suggestions',
+                          style: TextStyle(
+                            color: AppColors.mediumGray,
+                            fontSize: 12,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: foods.length,
+                  itemBuilder: (context, index) {
+                    return TweenAnimationBuilder<double>(
+                      duration: Duration(milliseconds: 400 + (index * 100)),
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      curve: Curves.easeOutBack,
+                      builder: (context, value, child) {
+                        return Transform.scale(
+                          scale: value,
+                          child: Opacity(
+                            opacity: value.clamp(0.0, 1.0),
+                            child: FoodItemCard(
+                              food: foods[index],
+                              width: itemWidth,
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+        ),
+      ],
+    ),
   );
 }
+
 
   Widget _buildExerciseButton() {
     return Padding(
@@ -1298,7 +1425,14 @@ Future<void> _saveWeightUpdate(double weight, double? height) async {
         elevation: 8,
         shadowColor: AppColors.primary.withOpacity(0.4),
         child: InkWell(
-          onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Start Exercise - placeholder'))),
+         onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ExercisePage(), 
+            ),
+          );
+        },
           borderRadius: BorderRadius.circular(14),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 18),
@@ -1961,74 +2095,302 @@ class VerticalBattery extends StatelessWidget {
   }
 }
 
-class FoodItemCard extends StatelessWidget {
+class FoodItemCard extends StatefulWidget {
   final Map<String, dynamic> food;
   final double width;
-  final VoidCallback onTap;
 
   const FoodItemCard({
     super.key,
     required this.food,
     required this.width,
-    required this.onTap,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      margin: const EdgeInsets.only(right: 12),
-      child: Material(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(14),
-        elevation: 6,
-        shadowColor: AppColors.primary.withOpacity(0.2),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.accent1.withOpacity(0.8), AppColors.primary.withOpacity(0.9)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+  State<FoodItemCard> createState() => _FoodItemCardState();
+}
+
+class _FoodItemCardState extends State<FoodItemCard> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _showFoodDetails() {
+    // NOTE: This dialog implementation remains the same.
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.accent1, AppColors.primary],
+                ),
+                borderRadius: BorderRadius.circular(12),
               ),
-              borderRadius: BorderRadius.circular(14),
+              child: Icon(widget.food['icon'] as IconData, color: Colors.white, size: 28),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Align(
-                  alignment: Alignment.center,
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(10),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                widget.food['name'] as String,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.lightBlue,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.local_fire_department, color: AppColors.blue),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${widget.food['kcal']} calories',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.blue,
                     ),
-                    child: Icon(food['icon'] as IconData, color: Colors.white, size: 24),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              widget.food['desc'] as String,
+              style: const TextStyle(fontSize: 14, height: 1.5),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close', style: TextStyle(fontSize: 16)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) {
+        setState(() => _isPressed = true);
+        _animationController.forward();
+      },
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        _animationController.reverse();
+        _showFoodDetails();
+      },
+      onTapCancel: () {
+        setState(() => _isPressed = false);
+        _animationController.reverse();
+      },
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          width: widget.width,
+          // Removed the explicit 'height' to rely on the parent widget's constraint.
+          // This is generally the source of the overflow constraint.
+          margin: const EdgeInsets.only(right: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: _isPressed 
+                    ? AppColors.primary.withOpacity(0.3)
+                    : AppColors.primary.withOpacity(0.15),
+                blurRadius: _isPressed ? 12 : 16,
+                offset: Offset(0, _isPressed ? 4 : 8),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Stack(
+              children: [
+                // Gradient background (remains the same)
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.accent1.withOpacity(0.9),
+                        AppColors.primary,
+                        AppColors.secondary,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  food['name'] as String,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                
+                // Animated pattern overlay (remains the same)
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _PatternPainter(color: Colors.white.withOpacity(0.05)),
+                  ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '${food['kcal']} kcal',
-                  style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 10),
-                ),
-                const Spacer(),
-                Text(
-                  food['desc'] as String,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 10),
+                
+                // Content
+                Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Icon with glow effect (remains the same)
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.white.withOpacity(0.3),
+                              blurRadius: 12,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Icon(
+                            widget.food['icon'] as IconData,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      // Food name (remains the same)
+                      Text(
+                        widget.food['name'] as String,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          height: 1.2,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black26,
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      
+                      // Calorie badge (remains the same)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.local_fire_department, 
+                              color: Colors.white, 
+                              size: 14,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${widget.food['kcal']} kcal',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // 🚀 THE FIX: Use Spacer() to push the button down, and Flexible to constrain the text.
+                      const Spacer(), 
+                      
+                      // Description
+                      Flexible( // Use Flexible with FlexFit.loose to prevent overflow
+                        fit: FlexFit.loose,
+                        child: Text(
+                          widget.food['desc'] as String,
+                          maxLines: 2, // Text will not exceed 2 lines
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.95),
+                            fontSize: 11,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 8),
+                      
+                      // View details button (remains the same)
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'View Details',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              color: Colors.white,
+                              size: 12,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -2037,4 +2399,33 @@ class FoodItemCard extends StatelessWidget {
       ),
     );
   }
+}
+
+// Custom painter remains the same
+class _PatternPainter extends CustomPainter {
+  final Color color;
+
+  _PatternPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    const spacing = 20.0;
+    
+    // Draw diagonal lines
+    for (double i = -size.height; i < size.width + size.height; i += spacing) {
+      canvas.drawLine(
+        Offset(i, 0),
+        Offset(i + size.height, size.height),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
