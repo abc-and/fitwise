@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // Import your existing files
 import 'models/food_recommendation.dart';
@@ -19,6 +21,29 @@ class FoodLogEntry {
     required this.icon,
     this.isRecommended = false,
   });
+
+  // Convert to Map for Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'kcal': kcal,
+      'timestamp': Timestamp.fromDate(timestamp), // Convert to Firestore Timestamp
+      'iconCodePoint': icon.codePoint,
+      'isRecommended': isRecommended,
+    };
+  }
+
+  // Create from Map (for array storage)
+  factory FoodLogEntry.fromMap(Map<String, dynamic> data) {
+    return FoodLogEntry(
+      name: data['name'] ?? 'Unknown Food',
+      kcal: (data['kcal'] as num?)?.toInt() ?? 0,
+      timestamp: (data['timestamp'] as Timestamp).toDate(),
+      icon: IconData(data['iconCodePoint'] ?? Icons.restaurant.codePoint,
+          fontFamily: 'MaterialIcons'),
+      isRecommended: data['isRecommended'] ?? false,
+    );
+  }
 }
 
 class CirclePatternPainter extends CustomPainter {
@@ -49,7 +74,7 @@ class CirclePatternPainter extends CustomPainter {
 }
 
 class CalorieLogPage extends StatefulWidget {
-  const CalorieLogPage({Key? key}) : super(key: key);
+  const CalorieLogPage({super.key});
 
   @override
   State<CalorieLogPage> createState() => _CalorieLogPageState();
@@ -58,9 +83,15 @@ class CalorieLogPage extends StatefulWidget {
 class _CalorieLogPageState extends State<CalorieLogPage>
     with TickerProviderStateMixin {
   final List<FoodLogEntry> _loggedFoods = [];
-  DateTime _selectedDate = DateTime.now();
+  final DateTime _selectedDate = DateTime.now();
   late AnimationController _fabController;
   late AnimationController _headerController;
+
+  // Firebase references
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final User? _user = FirebaseAuth.instance.currentUser;
+  DocumentReference get _calorieDoc =>
+      _firestore.collection('calorieLogs').doc(_user?.uid);
 
   int get totalCalories =>
       _loggedFoods.fold(0, (sum, entry) => sum + entry.kcal);
@@ -79,6 +110,105 @@ class _CalorieLogPageState extends State<CalorieLogPage>
       duration: const Duration(milliseconds: 800),
     );
     _headerController.forward();
+    
+    // Load existing data from Firestore
+    _loadCalorieData();
+  }
+
+  // Load calorie data from Firestore
+  void _loadCalorieData() {
+    _calorieDoc.snapshots().listen((snapshot) {
+      if (mounted && snapshot.exists) {
+        final data = snapshot.data() as Map<String, dynamic>? ?? {};
+        final foods = data['foods'] as List<dynamic>? ?? [];
+        
+        setState(() {
+          _loggedFoods.clear();
+          _loggedFoods.addAll(
+            foods.map((foodData) {
+              try {
+                return FoodLogEntry.fromMap(foodData as Map<String, dynamic>);
+              } catch (e) {
+                print('Error parsing food data: $e');
+                // Return a default entry if parsing fails
+                return FoodLogEntry(
+                  name: 'Unknown Food',
+                  kcal: 0,
+                  timestamp: DateTime.now(),
+                  icon: Icons.error,
+                  isRecommended: false,
+                );
+              }
+            }),
+          );
+        });
+      } else if (mounted) {
+        // If document doesn't exist, clear the list
+        setState(() {
+          _loggedFoods.clear();
+        });
+      }
+    });
+  }
+
+  // Save food to Firestore
+  Future<void> _saveFoodToFirestore(FoodLogEntry entry) async {
+    try {
+      final doc = await _calorieDoc.get();
+      Map<String, dynamic> currentData = {};
+      
+      if (doc.exists) {
+        final docData = doc.data();
+        if (docData != null) {
+          currentData = Map<String, dynamic>.from(docData as Map);
+        }
+      }
+      
+      final currentFoods = List<dynamic>.from(currentData['foods'] ?? []);
+      
+      await _calorieDoc.set({
+        ...currentData,
+        'foods': [...currentFoods, entry.toMap()],
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print('Error saving food: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save food: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Remove food from Firestore
+  Future<void> _removeFoodFromFirestore(int index) async {
+    try {
+      final doc = await _calorieDoc.get();
+      if (doc.exists) {
+        final docData = doc.data();
+        if (docData != null) {
+          final data = Map<String, dynamic>.from(docData as Map);
+          final foods = List<dynamic>.from(data['foods'] ?? []);
+          
+          if (index < foods.length) {
+            final newFoods = List<dynamic>.from(foods);
+            newFoods.removeAt(index);
+            await _calorieDoc.set({
+              'foods': newFoods,
+            }, SetOptions(merge: true));
+          }
+        }
+      }
+    } catch (e) {
+      print('Error removing food: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to remove food: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -88,36 +218,34 @@ class _CalorieLogPageState extends State<CalorieLogPage>
     super.dispose();
   }
 
-  void _addFoodFromRecommendation(FoodRecommendation food) {
-    setState(() {
-      _loggedFoods.add(FoodLogEntry(
-        name: food.name,
-        kcal: food.kcal,
-        timestamp: DateTime.now(),
-        icon: food.icon,
-        isRecommended: true,
-      ));
-    });
+  void _addFoodFromRecommendation(FoodRecommendation food) async {
+    final entry = FoodLogEntry(
+      name: food.name,
+      kcal: food.kcal,
+      timestamp: DateTime.now(),
+      icon: food.icon,
+      isRecommended: true,
+    );
+    
+    await _saveFoodToFirestore(entry);
     Navigator.pop(context);
   }
 
-  void _addCustomFood(String name, int kcal) {
-    setState(() {
-      _loggedFoods.add(FoodLogEntry(
-        name: name,
-        kcal: kcal,
-        timestamp: DateTime.now(),
-        icon: Icons.restaurant,
-        isRecommended: false,
-      ));
-    });
+  void _addCustomFood(String name, int kcal) async {
+    final entry = FoodLogEntry(
+      name: name,
+      kcal: kcal,
+      timestamp: DateTime.now(),
+      icon: Icons.restaurant,
+      isRecommended: false,
+    );
+    
+    await _saveFoodToFirestore(entry);
     Navigator.pop(context);
   }
 
-  void _removeFood(int index) {
-    setState(() {
-      _loggedFoods.removeAt(index);
-    });
+  void _removeFood(int index) async {
+    await _removeFoodFromFirestore(index);
   }
 
   void _showAddFoodDialog() {
@@ -345,7 +473,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                           duration: const Duration(milliseconds: 1200),
                           curve: Curves.easeOutCubic,
                           builder: (context, value, child) {
-                            return Container(
+                            return SizedBox(
                               width: 90,
                               height: 90,
                               child: Stack(
@@ -584,7 +712,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
         );
       },
       child: Dismissible(
-        key: ValueKey(entry.timestamp),
+        key: Key(entry.timestamp.millisecondsSinceEpoch.toString()),
         direction: DismissDirection.endToStart,
         onDismissed: (direction) => _removeFood(index),
         background: Container(
