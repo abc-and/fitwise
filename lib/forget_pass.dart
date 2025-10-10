@@ -64,7 +64,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.lightBlue,
+      backgroundColor: AppColors.accentBlue,
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 80),
         child: Column(

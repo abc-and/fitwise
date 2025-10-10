@@ -139,7 +139,6 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
       final today = DateTime.now();
       final userDoc = FirebaseFirestore.instance.collection('streaks').doc(user.uid);
       
-      // Get current data
       final doc = await userDoc.get();
       
       if (doc.exists) {
@@ -149,19 +148,15 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
         final bestStreak = data['bestStreak'] ?? 0;
         final workoutDates = List<String>.from(data['workoutDates'] ?? []);
         
-        // Check if already logged today
         if (_isSameDay(today, lastWorkout)) {
           throw Exception("You already logged today's workout!");
         }
         
-        // Calculate new streak
         int newStreak = _isConsecutiveDay(today, lastWorkout) ? currentStreak + 1 : 1;
         int newBestStreak = newStreak > bestStreak ? newStreak : bestStreak;
         
-        // Update dates
         workoutDates.add(today.toIso8601String());
         
-        // Update Firestore
         await userDoc.update({
           'currentStreak': newStreak,
           'bestStreak': newBestStreak,
@@ -169,7 +164,6 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
           'workoutDates': workoutDates,
         });
       } else {
-        // Create new streak
         await userDoc.set({
           'currentStreak': 1,
           'bestStreak': 1,
@@ -178,14 +172,15 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
         });
       }
       
-      // Reload data
       await _initializeStreak();
       _showSuccessAnimation();
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("✅ Workout logged successfully!"),
-          backgroundColor: AppColors.primary,
+          content: const Text("✅ Workout logged successfully!"),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
       
@@ -194,7 +189,9 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Failed to log workout: $e"),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     } finally {
@@ -236,7 +233,8 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Failed to set debug streak: $e"),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -244,56 +242,53 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
 
   Map<String, dynamic> _getBadgeInfo() {
     if (_streak.currentStreak >= 15) {
-      return {"emoji": "🏆", "text": "Legend", "color": Colors.amber};
+      return {"emoji": "🏆", "text": "Legend", "color": AppColors.warning};
     }
     if (_streak.currentStreak >= 10) {
-      return {"emoji": "💪", "text": "Advanced", "color": AppColors.primary};
+      return {"emoji": "💪", "text": "Advanced", "color": AppColors.accentPurple};
     }
     if (_streak.currentStreak >= 5) {
       return {"emoji": "🔥", "text": "Intermediate", "color": AppColors.orange};
     }
-    return {"emoji": "🌱", "text": "Beginner", "color": AppColors.tertiary};
+    return {"emoji": "🌱", "text": "Beginner", "color": AppColors.green};
   }
 
   Color _getStreakColor() {
     if (_streak.currentStreak >= 100) {
-      return const Color(0xFFFF00FF);
+      return AppColors.accentPurple;
     } else if (_streak.currentStreak >= 50) {
-      return const Color(0xFFFFD700);
+      return AppColors.warning;
     } else if (_streak.currentStreak >= 20) {
       return AppColors.orange;
     } else {
-      return AppColors.primary;
+      return AppColors.accentBlue;
     }
   }
 
   List<Color> _getBackgroundGradient() {
     if (_streak.currentStreak >= 100) {
       return [
-        const Color(0xFFFF00FF).withOpacity(0.15),
-        const Color(0xFF9C27B0).withOpacity(0.1),
-        const Color(0xFF673AB7).withOpacity(0.05),
-        Colors.white,
+        AppColors.accentPurple.withOpacity(0.15),
+        AppColors.primary,
+        AppColors.primary,
       ];
     } else if (_streak.currentStreak >= 50) {
       return [
-        const Color(0xFFFFD700).withOpacity(0.15),
-        const Color(0xFFFFA726).withOpacity(0.1),
-        Colors.amber.withOpacity(0.05),
-        Colors.white,
+        AppColors.warning.withOpacity(0.15),
+        AppColors.primary,
+        AppColors.primary,
       ];
     } else if (_streak.currentStreak >= 20) {
       return [
-        AppColors.orange.withOpacity(0.15),
-        Colors.deepOrange.withOpacity(0.1),
-        Colors.orange.withOpacity(0.05),
-        Colors.white,
+        AppColors.orange.withOpacity(0.12),
+        AppColors.primary,
+        AppColors.secondary,
       ];
     } else {
       return [
-        AppColors.primary.withOpacity(0.1),
-        AppColors.secondary.withOpacity(0.05),
-        Colors.white,
+        AppColors.accentBlue.withOpacity(0.08),
+        AppColors.primary,
+        AppColors.secondary,
       ];
     }
   }
@@ -336,16 +331,14 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: _streak.currentStreak >= 100
-            ? Border.all(color: _getStreakColor().withOpacity(0.2), width: 2)
-            : null,
+        border: Border.all(color: color.withOpacity(0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
+            color: color.withOpacity(0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -369,7 +362,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
             label,
             style: const TextStyle(
               fontSize: 12,
-              color: AppColors.mediumGray,
+              color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -381,7 +374,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
   Widget _buildDebugButton(String label, int days) {
     final isActive = _streak.currentStreak == days;
     return Material(
-      color: isActive ? AppColors.secondary : Colors.white.withOpacity(0.1),
+      color: isActive ? AppColors.accentBlue : AppColors.surface,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: () => _setDebugStreak(days),
@@ -391,14 +384,14 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isActive ? AppColors.secondary : Colors.white.withOpacity(0.3),
+              color: isActive ? AppColors.accentCyan : AppColors.textTertiary,
               width: isActive ? 2 : 1,
             ),
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: isActive ? Colors.white : Colors.white70,
+              color: isActive ? AppColors.textPrimary : AppColors.textSecondary,
               fontSize: 13,
               fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
             ),
@@ -423,19 +416,20 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.primary,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               CircularProgressIndicator(
-                color: AppColors.primary,
+                color: AppColors.accentBlue,
+                strokeWidth: 3,
               ),
               const SizedBox(height: 20),
               Text(
                 "Loading your streak...",
                 style: TextStyle(
-                  color: AppColors.darkGray,
+                  color: AppColors.textSecondary,
                   fontSize: 16,
                 ),
               ),
@@ -451,9 +445,10 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
     final particleCount = _getParticleCount();
 
     return Scaffold(
+      backgroundColor: AppColors.primary,
       body: Stack(
         children: [
-          // Animated Background
+          // Animated Background Gradient
           AnimatedBuilder(
             animation: _backgroundController,
             builder: (context, child) {
@@ -469,7 +464,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
             },
           ),
 
-          // Floating Particles (for high tiers)
+          // Floating Particles
           if (particleCount > 0)
             ...List.generate(particleCount, (index) {
               return AnimatedBuilder(
@@ -483,7 +478,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                     left: x,
                     top: y,
                     child: Opacity(
-                      opacity: 0.3 * (1 - offset),
+                      opacity: 0.25 * (1 - offset),
                       child: Icon(
                         Icons.star,
                         color: streakColor,
@@ -507,12 +502,12 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                       IconButton(
                         icon: const Icon(Icons.arrow_back_ios),
                         onPressed: () => Navigator.pop(context),
-                        color: AppColors.charcoal,
+                        color: AppColors.textPrimary,
                       ),
                       const Text(
                         "Workout Streak",
                         style: TextStyle(
-                          color: AppColors.charcoal,
+                          color: AppColors.textPrimary,
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
@@ -521,7 +516,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                       IconButton(
                         icon: Icon(
                           _showDebugPanel ? Icons.bug_report : Icons.bug_report_outlined,
-                          color: _showDebugPanel ? AppColors.secondary : AppColors.mediumGray,
+                          color: _showDebugPanel ? AppColors.accentCyan : AppColors.textSecondary,
                         ),
                         onPressed: () {
                           setState(() {
@@ -546,11 +541,15 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                               margin: const EdgeInsets.only(top: 20, bottom: 10),
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
-                                color: Colors.black87,
+                                color: AppColors.surface,
                                 borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: AppColors.accentCyan.withOpacity(0.3),
+                                  width: 1,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
+                                    color: AppColors.accentCyan.withOpacity(0.1),
                                     blurRadius: 15,
                                     offset: const Offset(0, 5),
                                   ),
@@ -561,12 +560,12 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                 children: [
                                   Row(
                                     children: [
-                                      const Icon(Icons.bug_report, color: Colors.amber, size: 20),
+                                      Icon(Icons.bug_report, color: AppColors.accentCyan, size: 20),
                                       const SizedBox(width: 8),
                                       const Text(
                                         "DEBUG MODE",
                                         style: TextStyle(
-                                          color: Colors.amber,
+                                          color: AppColors.accentCyan,
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
                                           letterSpacing: 1,
@@ -578,7 +577,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                   const Text(
                                     "Test Different Streak Values:",
                                     style: TextStyle(
-                                      color: Colors.white70,
+                                      color: AppColors.textSecondary,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -606,7 +605,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                         child: Text(
                                           "Current: ${_streak.currentStreak} days",
                                           style: const TextStyle(
-                                            color: Colors.white,
+                                            color: AppColors.textPrimary,
                                             fontSize: 12,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -619,72 +618,13 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                             _streak.bestStreak = 0;
                                           });
                                         },
-                                        icon: const Icon(Icons.refresh, size: 16, color: Colors.redAccent),
-                                        label: const Text(
+                                        icon: Icon(Icons.refresh, size: 16, color: AppColors.error),
+                                        label: Text(
                                           "Reset",
-                                          style: TextStyle(color: Colors.redAccent, fontSize: 12),
+                                          style: TextStyle(color: AppColors.error, fontSize: 12),
                                         ),
                                       ),
                                     ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: Colors.blue),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          "Firebase Debug",
-                                          style: TextStyle(
-                                            color: Colors.blue,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        ElevatedButton(
-                                          onPressed: () async {
-                                            try {
-                                              final user = FirebaseAuth.instance.currentUser;
-                                              print("👤 Current user: ${user?.uid}");
-                                              
-                                              final doc = await FirebaseFirestore.instance
-                                                  .collection('streaks')
-                                                  .doc(user?.uid)
-                                                  .get();
-                                              print("📊 Streak exists: ${doc.exists}");
-                                              print("📊 Current streak: ${_streak.currentStreak} days");
-                                              
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: Text("User: ${user?.uid}\nStreak exists: ${doc.exists}"),
-                                                  duration: Duration(seconds: 5),
-                                                  backgroundColor: Colors.green,
-                                                ),
-                                              );
-                                            } catch (e) {
-                                              print("❌ Test error: $e");
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: Text("Error: $e"),
-                                                  backgroundColor: Colors.red,
-                                                ),
-                                              );
-                                            }
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.blue,
-                                            foregroundColor: Colors.white,
-                                          ),
-                                          child: Text("Test Firebase Connection"),
-                                        ),
-                                      ],
-                                    ),
                                   ),
                                 ],
                               ),
@@ -692,7 +632,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
 
                           const SizedBox(height: 20),
 
-                          // Animated Flame Icon with Enhanced Effects
+                          // Animated Flame Icon
                           AnimatedBuilder(
                             animation: _flameController,
                             builder: (context, child) {
@@ -704,7 +644,6 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                   child: Stack(
                                     alignment: Alignment.center,
                                     children: [
-                                      // Outer glow ring for high tiers
                                       if (_streak.currentStreak >= 50)
                                         Container(
                                           width: 160,
@@ -717,7 +656,6 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                             ),
                                           ),
                                         ),
-                                      // Inner glow
                                       Container(
                                         padding: const EdgeInsets.all(20),
                                         decoration: BoxDecoration(
@@ -744,7 +682,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
 
                           const SizedBox(height: 40),
 
-                          // Main Streak Card with Enhanced Effects
+                          // Main Streak Card
                           AnimatedBuilder(
                             animation: _scaleAnimation,
                             builder: (context, child) {
@@ -767,23 +705,17 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                         blurRadius: _streak.currentStreak >= 50 ? 30 : 20,
                                         offset: const Offset(0, 10),
                                       ),
-                                      if (_streak.currentStreak >= 100)
-                                        BoxShadow(
-                                          color: streakColor.withOpacity(0.2),
-                                          blurRadius: 50,
-                                          offset: const Offset(0, 20),
-                                        ),
                                     ],
                                   ),
                                   child: Padding(
                                     padding: const EdgeInsets.all(30),
                                     child: Column(
                                       children: [
-                                        const Text(
+                                        Text(
                                           "Current Streak",
                                           style: TextStyle(
                                             fontSize: 18,
-                                            color: Colors.white70,
+                                            color: Colors.white.withOpacity(0.9),
                                             fontWeight: FontWeight.w500,
                                             letterSpacing: 1,
                                           ),
@@ -793,29 +725,13 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                           mainAxisAlignment: MainAxisAlignment.center,
                                           crossAxisAlignment: CrossAxisAlignment.end,
                                           children: [
-                                            ShaderMask(
-                                              shaderCallback: (bounds) {
-                                                if (_streak.currentStreak >= 100) {
-                                                  return LinearGradient(
-                                                    colors: [
-                                                      Colors.white,
-                                                      Colors.white70,
-                                                      Colors.white,
-                                                    ],
-                                                  ).createShader(bounds);
-                                                }
-                                                return LinearGradient(
-                                                  colors: [Colors.white, Colors.white],
-                                                ).createShader(bounds);
-                                              },
-                                              child: Text(
-                                                "${_streak.currentStreak}",
-                                                style: const TextStyle(
-                                                  fontSize: 72,
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
-                                                  height: 1,
-                                                ),
+                                            Text(
+                                              "${_streak.currentStreak}",
+                                              style: const TextStyle(
+                                                fontSize: 72,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                height: 1,
                                               ),
                                             ),
                                             const SizedBox(width: 8),
@@ -860,18 +776,19 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
 
                           const SizedBox(height: 30),
 
-                          // Weekly Streak Visualization
+                          // Weekly Progress Card
                           Container(
                             padding: const EdgeInsets.all(25),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: AppColors.surface,
                               borderRadius: BorderRadius.circular(20),
-                              border: _streak.currentStreak >= 50
-                                  ? Border.all(color: streakColor.withOpacity(0.3), width: 2)
-                                  : null,
+                              border: Border.all(
+                                color: streakColor.withOpacity(0.2),
+                                width: 1,
+                              ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
+                                  color: streakColor.withOpacity(0.1),
                                   blurRadius: 15,
                                   offset: const Offset(0, 5),
                                 ),
@@ -884,7 +801,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.charcoal,
+                                    color: AppColors.textPrimary,
                                   ),
                                 ),
                                 const SizedBox(height: 20),
@@ -912,12 +829,12 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                                   shape: BoxShape.circle,
                                                   color: isLit
                                                       ? streakColor.withOpacity(0.2)
-                                                      : AppColors.lightGray.withOpacity(0.3),
+                                                      : AppColors.primary,
                                                   border: Border.all(
-                                                    color: isLit ? streakColor : AppColors.lightGray,
+                                                    color: isLit ? streakColor : AppColors.textTertiary,
                                                     width: 2,
                                                   ),
-                                                  boxShadow: isLit && _streak.currentStreak >= 20
+                                                  boxShadow: isLit
                                                       ? [
                                                           BoxShadow(
                                                             color: streakColor.withOpacity(0.3),
@@ -929,7 +846,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                                 ),
                                                 child: Icon(
                                                   Icons.local_fire_department,
-                                                  color: isLit ? streakColor : AppColors.lightGray,
+                                                  color: isLit ? streakColor : AppColors.textTertiary,
                                                   size: 28,
                                                 ),
                                               ),
@@ -939,7 +856,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                                 style: TextStyle(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w600,
-                                                  color: isLit ? AppColors.charcoal : AppColors.mediumGray,
+                                                  color: isLit ? AppColors.textPrimary : AppColors.textTertiary,
                                                 ),
                                               ),
                                             ],
@@ -955,7 +872,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
 
                           const SizedBox(height: 30),
 
-                          // Stats Row with Enhanced Design
+                          // Stats Row
                           Row(
                             children: [
                               Expanded(
@@ -963,7 +880,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                   "🏅",
                                   "Best Streak",
                                   "${_streak.bestStreak}",
-                                  Colors.amber,
+                                  AppColors.warning,
                                 ),
                               ),
                               const SizedBox(width: 15),
@@ -972,7 +889,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                   "💪",
                                   "Workouts",
                                   "${_streak.workoutDates.length}",
-                                  AppColors.lightBlue,
+                                  AppColors.accentBlue,
                                 ),
                               ),
                             ],
@@ -980,17 +897,17 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
 
                           const SizedBox(height: 30),
 
-                          // Badge Card with Tier Effects
+                          // Badge Card
                           ScaleTransition(
                             scale: _badgeScaleAnimation,
                             child: Container(
                               padding: const EdgeInsets.all(25),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: AppColors.surface,
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color: badgeInfo["color"],
-                                  width: 3,
+                                  width: 2,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
@@ -998,12 +915,6 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                     blurRadius: 15,
                                     offset: const Offset(0, 5),
                                   ),
-                                  if (_streak.currentStreak >= 50)
-                                    BoxShadow(
-                                      color: badgeInfo["color"].withOpacity(0.2),
-                                      blurRadius: 30,
-                                      offset: const Offset(0, 10),
-                                    ),
                                 ],
                               ),
                               child: Column(
@@ -1040,7 +951,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                     "Achievement Badge",
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: AppColors.darkGray,
+                                      color: AppColors.textSecondary,
                                     ),
                                   ),
                                 ],
@@ -1050,7 +961,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
 
                           const SizedBox(height: 40),
 
-                          // Log Button with Gradient Based on Tier
+                          // Log Workout Button
                           Container(
                             width: double.infinity,
                             height: 65,
@@ -1059,11 +970,11 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                               gradient: LinearGradient(
                                 colors: _streak.currentStreak >= 50
                                     ? [streakColor, streakColor.withOpacity(0.7)]
-                                    : [AppColors.secondary, AppColors.primary],
+                                    : [AppColors.accentBlue, AppColors.accentCyan],
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: (_streak.currentStreak >= 50 ? streakColor : AppColors.secondary)
+                                  color: (_streak.currentStreak >= 50 ? streakColor : AppColors.accentBlue)
                                       .withOpacity(0.4),
                                   blurRadius: 15,
                                   offset: const Offset(0, 8),
@@ -1078,10 +989,13 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(35),
                                 ),
-                                disabledBackgroundColor: Colors.grey,
+                                disabledBackgroundColor: AppColors.textDark,
                               ),
                               child: _isLogging
-                                  ? const CircularProgressIndicator(color: Colors.white)
+                                  ? const CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 3,
+                                    )
                                   : const Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [

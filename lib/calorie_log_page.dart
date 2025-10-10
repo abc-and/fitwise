@@ -27,7 +27,7 @@ class FoodLogEntry {
     return {
       'name': name,
       'kcal': kcal,
-      'timestamp': Timestamp.fromDate(timestamp), // Convert to Firestore Timestamp
+      'timestamp': Timestamp.fromDate(timestamp),
       'iconCodePoint': icon.codePoint,
       'isRecommended': isRecommended,
     };
@@ -46,6 +46,64 @@ class FoodLogEntry {
   }
 }
 
+// BMR Calculator Helper Class
+class HealthCalculator {
+  static double calculateBMR({
+    required double weightKg,
+    required double heightCm,
+    required int age,
+    required String sex,
+    String? activityLevel,
+    String? reproductiveStatus,
+  }) {
+    double bmr;
+    
+    // Base BMR calculation
+    if (sex.toLowerCase() == 'male') {
+      bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age) + 5;
+    } else {
+      bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age) - 161;
+      
+      // Adjust for reproductive status (females only)
+      if (reproductiveStatus != null) {
+        switch (reproductiveStatus) {
+          case 'Pregnant':
+            bmr += 300;
+            break;
+          case 'Breastfeeding':
+            bmr += 500;
+            break;
+          case 'On Period':
+            bmr += 50;
+            break;
+        }
+      }
+    }
+    
+    // Apply activity multiplier
+    if (activityLevel != null) {
+      double multiplier = 1.2; // Default: Sedentary
+      switch (activityLevel) {
+        case 'Lightly Active':
+          multiplier = 1.375;
+          break;
+        case 'Moderately Active':
+          multiplier = 1.55;
+          break;
+        case 'Very Active':
+          multiplier = 1.725;
+          break;
+        case 'Extra Active':
+          multiplier = 1.9;
+          break;
+      }
+      bmr *= multiplier;
+    }
+    
+    return bmr;
+  }
+}
+
 class CirclePatternPainter extends CustomPainter {
   final double progress;
   final bool isOverGoal;
@@ -57,9 +115,8 @@ class CirclePatternPainter extends CustomPainter {
     final paint = Paint()
       ..style = PaintingStyle.fill;
 
-  final color = isOverGoal ? AppColors.orange : AppColors.lightBlue;
+    final color = isOverGoal ? AppColors.orange : AppColors.accentBlue;
 
-    // Draw decorative circles
     paint.color = color.withOpacity(0.05);
     canvas.drawCircle(Offset(size.width * 0.1, size.height * 0.2), 60, paint);
     canvas.drawCircle(Offset(size.width * 0.85, size.height * 0.7), 80, paint);
@@ -90,13 +147,27 @@ class _CalorieLogPageState extends State<CalorieLogPage>
   // Firebase references
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final User? _user = FirebaseAuth.instance.currentUser;
+  
   DocumentReference get _calorieDoc =>
       _firestore.collection('calorieLogs').doc(_user?.uid);
+  
+  DocumentReference get _userInfoDoc =>
+      _firestore.collection('user_info').doc(_user?.uid);
 
   int get totalCalories =>
       _loggedFoods.fold(0, (sum, entry) => sum + entry.kcal);
 
-  final int dailyGoal = 2000;
+  // Daily goal will be fetched from BMR calculation
+  int _dailyGoal = 2000;
+  bool _loadingGoal = true;
+
+  // User data for BMR calculation
+  double _currentWeight = 70.0;
+  double _heightCm = 170.0;
+  int _age = 25;
+  String _sex = 'Male';
+  String? _activityLevel;
+  String? _reproductiveStatus;
 
   @override
   void initState() {
@@ -111,8 +182,79 @@ class _CalorieLogPageState extends State<CalorieLogPage>
     );
     _headerController.forward();
     
-    // Load existing data from Firestore
+    // Load user data and calculate BMR
+    _loadUserDataAndCalculateBMR();
+    // Load existing calorie data from Firestore
     _loadCalorieData();
+  }
+
+  // Load user data and calculate BMR for daily goal
+  Future<void> _loadUserDataAndCalculateBMR() async {
+    setState(() => _loadingGoal = true);
+    
+    try {
+      final userInfoSnapshot = await _userInfoDoc.get();
+      
+      if (userInfoSnapshot.exists) {
+        final data = userInfoSnapshot.data() as Map<String, dynamic>?;
+        
+        if (data != null) {
+          // Parse user data
+          _currentWeight = _parseWeight(data['weight']);
+          _heightCm = _parseHeight(data['height']);
+          _age = int.tryParse(data['age'].toString()) ?? 25;
+          _sex = data['sex']?.toString() ?? 'Male';
+          _activityLevel = data['activityLevel']?.toString() ?? 'Sedentary';
+          _reproductiveStatus = data['reproductiveStatus']?.toString();
+          
+          // Calculate BMR
+          final bmr = HealthCalculator.calculateBMR(
+            weightKg: _currentWeight,
+            heightCm: _heightCm,
+            age: _age,
+            sex: _sex,
+            activityLevel: _activityLevel,
+            reproductiveStatus: _reproductiveStatus,
+          );
+          
+          setState(() {
+            _dailyGoal = bmr.round();
+            _loadingGoal = false;
+          });
+          
+          debugPrint('BMR calculated: $bmr kcal/day');
+        }
+      } else {
+        // Use default if no user info
+        setState(() => _loadingGoal = false);
+        debugPrint('No user info found, using default calorie goal');
+      }
+    } catch (e) {
+      debugPrint('Error loading user data: $e');
+      setState(() => _loadingGoal = false);
+    }
+  }
+
+  // Parse weight from string (handles kg and lbs)
+  double _parseWeight(dynamic weightStr) {
+    String str = weightStr.toString().toLowerCase();
+    double value = double.tryParse(str.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 70.0;
+    
+    if (str.contains('lb')) {
+      value = value * 0.453592; // lbs to kg
+    }
+    return value;
+  }
+  
+  // Parse height from string (handles cm and m)
+  double _parseHeight(dynamic heightStr) {
+    String str = heightStr.toString().toLowerCase();
+    double value = double.tryParse(str.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 170.0;
+    
+    if (str.contains('m') && !str.contains('cm') && value < 3) {
+      value = value * 100; // m to cm
+    }
+    return value;
   }
 
   // Load calorie data from Firestore
@@ -129,8 +271,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
               try {
                 return FoodLogEntry.fromMap(foodData as Map<String, dynamic>);
               } catch (e) {
-                print('Error parsing food data: $e');
-                // Return a default entry if parsing fails
+                debugPrint('Error parsing food data: $e');
                 return FoodLogEntry(
                   name: 'Unknown Food',
                   kcal: 0,
@@ -143,7 +284,6 @@ class _CalorieLogPageState extends State<CalorieLogPage>
           );
         });
       } else if (mounted) {
-        // If document doesn't exist, clear the list
         setState(() {
           _loggedFoods.clear();
         });
@@ -169,15 +309,20 @@ class _CalorieLogPageState extends State<CalorieLogPage>
       await _calorieDoc.set({
         ...currentData,
         'foods': [...currentFoods, entry.toMap()],
+        'lastUpdated': Timestamp.now(),
       }, SetOptions(merge: true));
+      
+      debugPrint('Food saved successfully: ${entry.name}');
     } catch (e) {
-      print('Error saving food: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to save food: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      debugPrint('Error saving food: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save food: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -196,18 +341,23 @@ class _CalorieLogPageState extends State<CalorieLogPage>
             newFoods.removeAt(index);
             await _calorieDoc.set({
               'foods': newFoods,
+              'lastUpdated': Timestamp.now(),
             }, SetOptions(merge: true));
+            
+            debugPrint('Food removed successfully at index: $index');
           }
         }
       }
     } catch (e) {
-      print('Error removing food: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to remove food: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      debugPrint('Error removing food: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to remove food: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -228,7 +378,9 @@ class _CalorieLogPageState extends State<CalorieLogPage>
     );
     
     await _saveFoodToFirestore(entry);
-    Navigator.pop(context);
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 
   void _addCustomFood(String name, int kcal) async {
@@ -241,7 +393,9 @@ class _CalorieLogPageState extends State<CalorieLogPage>
     );
     
     await _saveFoodToFirestore(entry);
-    Navigator.pop(context);
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 
   void _removeFood(int index) async {
@@ -287,14 +441,14 @@ class _CalorieLogPageState extends State<CalorieLogPage>
       expandedHeight: 120,
       floating: false,
       pinned: true,
-  backgroundColor: AppColors.charcoal,
+      backgroundColor: AppColors.primary,
       elevation: 0,
       flexibleSpace: FlexibleSpaceBar(
         title: const Text(
           'Calorie Log',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: AppColors.textPrimary, 
           ),
         ),
         background: Container(
@@ -303,7 +457,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.lightBlue,
+                AppColors.accentBlue,
                 AppColors.secondary,
               ],
             ),
@@ -318,7 +472,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                   height: 150,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.charcoal.withOpacity(0.1),
+                    color: AppColors.textPrimary.withOpacity(0.1),
                   ),
                 ),
               ),
@@ -330,7 +484,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                   height: 100,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.charcoal.withOpacity(0.08),
+                    color: AppColors.textPrimary.withOpacity(0.08),
                   ),
                 ),
               ),
@@ -342,9 +496,9 @@ class _CalorieLogPageState extends State<CalorieLogPage>
   }
 
   Widget _buildCalorieHeader() {
-    final progress = (totalCalories / dailyGoal).clamp(0.0, 1.0);
-    final isOverGoal = totalCalories > dailyGoal;
-    final remaining = dailyGoal - totalCalories;
+    final progress = (totalCalories / _dailyGoal).clamp(0.0, 1.0);
+    final isOverGoal = totalCalories > _dailyGoal;
+    final remaining = _dailyGoal - totalCalories;
 
     return FadeTransition(
       opacity: _headerController,
@@ -359,11 +513,11 @@ class _CalorieLogPageState extends State<CalorieLogPage>
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.cardLight,
             borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                color:  AppColors.charcoal.withOpacity(0.85),
+                color: AppColors.primary.withOpacity(0.85),
                 blurRadius: 30,
                 offset: const Offset(0, 10),
                 spreadRadius: 5,
@@ -372,7 +526,6 @@ class _CalorieLogPageState extends State<CalorieLogPage>
           ),
           child: Stack(
             children: [
-              // Animated background pattern
               Positioned.fill(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(28),
@@ -385,17 +538,14 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                 ),
               ),
               
-              // Content
               Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
-                    // Top stats row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Main calorie display
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -405,7 +555,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                                   Icon(
                                     Icons.calendar_today,
                                     size: 16,
-                                    color:  AppColors.charcoal,
+                                    color: AppColors.textDark, 
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
@@ -430,7 +580,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                                       return Text(
                                         '$value',
                                         style: TextStyle(
-                                          color: isOverGoal ? AppColors.orange :  AppColors.lightBlue,
+                                          color: isOverGoal ? AppColors.orange : AppColors.accentBlue,
                                           fontSize: 56,
                                           fontWeight: FontWeight.w900,
                                           height: 1,
@@ -467,7 +617,6 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                           ),
                         ),
                         
-                        // Circular progress indicator
                         TweenAnimationBuilder<double>(
                           tween: Tween(begin: 0.0, end: progress),
                           duration: const Duration(milliseconds: 1200),
@@ -479,7 +628,6 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                               child: Stack(
                                 alignment: Alignment.center,
                                 children: [
-                                  // Background circle
                                   Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
@@ -492,13 +640,12 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                                                 AppColors.red.withOpacity(0.1),
                                               ]
                                             : [
-                                                 AppColors.charcoal.withOpacity(0.7),
-                                                AppColors.charcoal,
+                                                AppColors.lightGray,
+                                                AppColors.mediumGray.withOpacity(0.7),
                                               ],
                                       ),
                                     ),
                                   ),
-                                  // Progress circle
                                   SizedBox(
                                     width: 90,
                                     height: 90,
@@ -507,12 +654,11 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                                       strokeWidth: 8,
                                       backgroundColor: Colors.transparent,
                                       valueColor: AlwaysStoppedAnimation<Color>(
-                                        isOverGoal ? AppColors.orange :  AppColors.lightBlue,
+                                        isOverGoal ? AppColors.orange : AppColors.accentBlue,
                                       ),
                                       strokeCap: StrokeCap.round,
                                     ),
                                   ),
-                                  // Center content
                                   Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -520,14 +666,14 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                                         isOverGoal
                                             ? Icons.warning_amber_rounded
                                             : Icons.local_fire_department_rounded,
-                                        color: isOverGoal ? AppColors.orange :  AppColors.lightBlue,
+                                        color: isOverGoal ? AppColors.orange : AppColors.accentBlue,
                                         size: 28,
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
                                         '${(value * 100).toInt()}%',
                                         style: TextStyle(
-                                          color: isOverGoal ? AppColors.orange :  AppColors.lightBlue,
+                                          color: isOverGoal ? AppColors.orange : AppColors.accentBlue,
                                           fontSize: 14,
                                           fontWeight: FontWeight.w900,
                                         ),
@@ -544,16 +690,15 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                     
                     const SizedBox(height: 24),
                     
-                    // Stats cards
                     Row(
                       children: [
                         Expanded(
                           child: _buildStatCard(
                             icon: Icons.track_changes,
-                            label: 'Goal',
-                            value: '$dailyGoal',
+                            label: _loadingGoal ? 'Loading...' : 'BMR Goal',
+                            value: _loadingGoal ? '...' : '$_dailyGoal',
                             unit: 'kcal',
-                            color: AppColors.secondary,
+                            color: AppColors.textTertiary,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -563,7 +708,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                             label: isOverGoal ? 'Over' : 'Remaining',
                             value: '${remaining.abs()}',
                             unit: 'kcal',
-                            color: isOverGoal ? AppColors.orange : AppColors.lightBlue,
+                            color: isOverGoal ? AppColors.orange : AppColors.accentBlue,
                           ),
                         ),
                       ],
@@ -609,12 +754,15 @@ class _CalorieLogPageState extends State<CalorieLogPage>
             children: [
               Icon(icon, size: 18, color: color),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: AppColors.mediumGray,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: AppColors.mediumGray,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -718,25 +866,25 @@ class _CalorieLogPageState extends State<CalorieLogPage>
         background: Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: AppColors.red,
+            color: AppColors.error, 
             borderRadius: BorderRadius.circular(16),
           ),
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: 20),
           child: const Icon(
             Icons.delete_outline,
-            color: Colors.white,
+            color: AppColors.textPrimary,
             size: 28,
           ),
         ),
         child: Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.cardLight,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: AppColors.primary.withOpacity(0.2), 
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -758,15 +906,15 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-              colors: entry.isRecommended
-                ? [AppColors.accent1, AppColors.primary]
-                : [AppColors.lightBlue.withOpacity(0.7), AppColors.lightBlue],
+                          colors: entry.isRecommended
+                              ? [AppColors.accentCyan, AppColors.accentBlue]
+                              : [AppColors.accentPurple, AppColors.accentBlue.withOpacity(0.7)],
                         ),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
                         entry.icon,
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         size: 28,
                       ),
                     ),
@@ -783,7 +931,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.charcoal,
+                                    color: AppColors.textDark, 
                                   ),
                                 ),
                               ),
@@ -794,7 +942,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.accent1.withOpacity(0.2),
+                                    color: AppColors.accentCyan.withOpacity(0.2),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: const Text(
@@ -802,7 +950,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w600,
-                                      color: AppColors.secondary,
+                                      color: AppColors.secondary, 
                                     ),
                                   ),
                                 ),
@@ -811,9 +959,9 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                           const SizedBox(height: 4),
                           Text(
                             DateFormat('h:mm a').format(entry.timestamp),
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 12,
-                              color: AppColors.mediumGray,
+                              color: AppColors.mediumGray, 
                             ),
                           ),
                         ],
@@ -828,7 +976,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
+                            color: AppColors.primary, 
                           ),
                         ),
                         const Text(
@@ -961,9 +1109,9 @@ class _AddFoodBottomSheetState extends State<_AddFoodBottomSheet>
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.cardLight,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.lightGray.withOpacity(0.5)),
+            border: Border.all(color: AppColors.mediumGray.withOpacity(0.3)),
           ),
           child: Material(
             color: Colors.transparent,
@@ -979,13 +1127,13 @@ class _AddFoodBottomSheetState extends State<_AddFoodBottomSheet>
                       height: 50,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [AppColors.accent1, AppColors.primary],
+                          colors: [AppColors.accentCyan, AppColors.accentPurple],
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         food.icon,
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         size: 26,
                       ),
                     ),
@@ -999,13 +1147,13 @@ class _AddFoodBottomSheetState extends State<_AddFoodBottomSheet>
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.charcoal,
+                              color: AppColors.textDark,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             food.desc,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 12,
                               color: AppColors.mediumGray,
                             ),
@@ -1018,7 +1166,7 @@ class _AddFoodBottomSheetState extends State<_AddFoodBottomSheet>
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        color: AppColors.accentBlue, 
                       ),
                     ),
                   ],
@@ -1042,7 +1190,7 @@ class _AddFoodBottomSheetState extends State<_AddFoodBottomSheet>
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppColors.charcoal,
+              color: AppColors.textDark, 
             ),
           ),
           const SizedBox(height: 8),
@@ -1051,12 +1199,12 @@ class _AddFoodBottomSheetState extends State<_AddFoodBottomSheet>
             decoration: InputDecoration(
               hintText: 'e.g., Chicken Salad',
               filled: true,
-              fillColor: AppColors.lightGray.withOpacity(0.2),
+              fillColor: AppColors.textTertiary.withOpacity(0.1),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
-              prefixIcon: const Icon(Icons.restaurant, color: AppColors.primary),
+              prefixIcon: const Icon(Icons.restaurant, color: AppColors.accentPurple),
             ),
           ),
           const SizedBox(height: 20),
@@ -1065,7 +1213,7 @@ class _AddFoodBottomSheetState extends State<_AddFoodBottomSheet>
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppColors.charcoal,
+              color: AppColors.textDark, 
             ),
           ),
           const SizedBox(height: 8),
@@ -1075,7 +1223,7 @@ class _AddFoodBottomSheetState extends State<_AddFoodBottomSheet>
             decoration: InputDecoration(
               hintText: 'e.g., 350',
               filled: true,
-              fillColor: AppColors.lightGray.withOpacity(0.2),
+              fillColor: AppColors.textTertiary.withOpacity(0.1),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -1100,8 +1248,8 @@ class _AddFoodBottomSheetState extends State<_AddFoodBottomSheet>
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.accentBlue, 
+                foregroundColor: AppColors.textPrimary,
                 elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),

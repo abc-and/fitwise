@@ -161,8 +161,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
               end: Alignment.bottomRight,
               colors: [
                 AppColors.primary.withOpacity(0.12),
-                AppColors.accent2.withOpacity(0.10),
-                Colors.white.withOpacity(0.95),
+                AppColors.secondary.withOpacity(0.10),
+                AppColors.surface.withOpacity(0.95),
               ],
             ),
           ),
@@ -177,7 +177,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ),
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.cardWhite,
             boxShadow: [
               BoxShadow(
                 color: AppColors.primary.withOpacity(0.10),
@@ -192,18 +192,18 @@ class _HomeDashboardState extends State<HomeDashboard> {
           ),
           child: TabBar(
             indicator: UnderlineTabIndicator(
-              borderSide: BorderSide(width: 4, color: AppColors.accent1),
+              borderSide: BorderSide(width: 4, color: AppColors.accentBlue),
               insets: const EdgeInsets.symmetric(horizontal: 24),
             ),
-            labelColor: AppColors.charcoal,
-            unselectedLabelColor: AppColors.mediumGray,
+            labelColor: AppColors.textDark,
+            unselectedLabelColor: AppColors.textTertiary,
             indicatorSize: TabBarIndicatorSize.label,
             tabs: const [
-              Tab(icon: Icon(Icons.home, color: AppColors.charcoal), text: 'Home'),
-              Tab(icon: Icon(Icons.fitness_center, color: AppColors.charcoal), text: 'Exercise'),
-              Tab(icon: Icon(Icons.restaurant, color: AppColors.charcoal), text: 'Calories'),
-              Tab(icon: Icon(Icons.local_fire_department, color: AppColors.charcoal), text: 'Streak'),
-              Tab(icon: Icon(Icons.person, color: AppColors.charcoal), text: 'Profile'),
+              Tab(icon: Icon(Icons.home, color: AppColors.accentBlue), text: 'Home'),
+              Tab(icon: Icon(Icons.fitness_center, color: AppColors.orange), text: 'Exercise'),
+              Tab(icon: Icon(Icons.restaurant, color: AppColors.green), text: 'Calories'),
+              Tab(icon: Icon(Icons.local_fire_department, color: AppColors.red), text: 'Streak'),
+              Tab(icon: Icon(Icons.person, color: AppColors.accentPurple), text: 'Profile'),
             ],
           ),
         ),
@@ -346,7 +346,7 @@ Future<void> _markGoalCompleted({bool showCongratsDialog = true}) async {
                             child: const Icon(
                               Icons.emoji_events,
                               size: 48,
-                              color: AppColors.charcoal,
+                              color: AppColors.textDark,
                             ),
                           ),
                         );
@@ -366,7 +366,7 @@ Future<void> _markGoalCompleted({bool showCongratsDialog = true}) async {
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.charcoal,
+                          color: AppColors.textDark,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -398,7 +398,7 @@ Future<void> _markGoalCompleted({bool showCongratsDialog = true}) async {
                       onPressed: () => Navigator.of(dialogContext).pop(),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.purple.shade600,
-                        foregroundColor: AppColors.charcoal,
+                        foregroundColor: AppColors.textDark,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 48,
                           vertical: 16,
@@ -427,43 +427,314 @@ Future<void> _markGoalCompleted({bool showCongratsDialog = true}) async {
   }
 }
 
+ // Health warning checker
+  Map<String, dynamic> _checkGoalHealth(double targetWeight) {
+    // Calculate projected BMI
+    double projectedBMI = HealthCalculator.calculateBMI(
+      weightKg: targetWeight,
+      heightCm: _heightCm,
+    );
+    
+    bool isDangerous = false;
+    bool isUnhealthy = false;
+    String warningTitle = '';
+    String warningMessage = '';
+    Color warningColor = AppColors.orange;
+    
+    // Critical danger zones
+    if (projectedBMI < 16.0) {
+      isDangerous = true;
+      warningTitle = '⚠️ Severe Underweight Warning';
+      warningMessage = 'Your target BMI of ${projectedBMI.toStringAsFixed(1)} is severely underweight (< 16.0). This can lead to:\n\n'
+          '• Malnutrition and weakened immune system\n'
+          '• Organ damage\n'
+          '• Severe health complications\n\n'
+          'Please consult a healthcare professional before setting this goal.';
+      warningColor = AppColors.error;
+    } else if (projectedBMI >= 35.0) {
+      isDangerous = true;
+      warningTitle = '⚠️ Severe Obesity Warning';
+      warningMessage = 'Your target BMI of ${projectedBMI.toStringAsFixed(1)} is in the obese range (≥ 35.0). This can lead to:\n\n'
+          '• Increased risk of heart disease\n'
+          '• Type 2 diabetes\n'
+          '• Joint problems\n\n'
+          'Please consult a healthcare professional before setting this goal.';
+      warningColor = AppColors.error;
+    }
+    // Unhealthy zones
+    else if (projectedBMI < 18.5) {
+      isUnhealthy = true;
+      warningTitle = '⚠️ Underweight Target';
+      warningMessage = 'Your target BMI of ${projectedBMI.toStringAsFixed(1)} is underweight (< 18.5). This may cause:\n\n'
+          '• Nutrient deficiencies\n'
+          '• Weakened immunity\n'
+          '• Fatigue and low energy\n\n'
+          'Consider a healthier weight goal or consult a nutritionist.';
+      warningColor = AppColors.orange;
+    } else if (projectedBMI >= 30.0) {
+      isUnhealthy = true;
+      warningTitle = '⚠️ Overweight Target';
+      warningMessage = 'Your target BMI of ${projectedBMI.toStringAsFixed(1)} is in the obese range (≥ 30.0). This may increase risk of:\n\n'
+          '• Cardiovascular issues\n'
+          '• High blood pressure\n'
+          '• Metabolic disorders\n\n'
+          'Consider a healthier weight goal or consult a healthcare provider.';
+      warningColor = AppColors.orange;
+    }
+    
+    // Check for extreme weight changes
+    double weightChange = (targetWeight - _currentWeight).abs();
+    double percentChange = (weightChange / _currentWeight) * 100;
+    
+    if (percentChange > 20 && !isDangerous) {
+      isUnhealthy = true;
+      warningTitle = '⚠️ Extreme Weight Change';
+      warningMessage = 'You\'re targeting a ${percentChange.toStringAsFixed(1)}% change in body weight (${weightChange.toStringAsFixed(1)} kg).\n\n'
+          'Extreme weight changes can be harmful. Recommended safe rate:\n'
+          '• Weight loss: 0.5-1 kg per week\n'
+          '• Weight gain: 0.25-0.5 kg per week\n\n'
+          'Consider setting a more gradual goal.';
+      warningColor = AppColors.orange;
+    }
+    
+    return {
+      'isDangerous': isDangerous,
+      'isUnhealthy': isUnhealthy,
+      'title': warningTitle,
+      'message': warningMessage,
+      'color': warningColor,
+      'projectedBMI': projectedBMI,
+    };
+  }
 
 // Call this to set a brand-new goal (user inputs weight + optional type)
-Future<void> _updateGoalWeightAndType(double targetDelta, String newType) async {
-  final user = _auth.currentUser;
-  double newGoalWeight = _currentWeight;
-  if (newType == 'gain') {
-    newGoalWeight = _currentWeight + targetDelta.abs();
-  } else if (newType == 'lose') {
-    newGoalWeight = _currentWeight - targetDelta.abs();
-  }
-  setState(() {
-    _goalWeight = newGoalWeight;
-    _goalType = newType;
-    _startWeight = _currentWeight; // Always reset start weight to current
-    _goalCompleted = false;
-  });
-
-  if (user != null) {
-    try {
-      final updateData = {
-        'goalWeight': newGoalWeight,
-        'goalType': newType,
-        'goalCompleted': false,
-      };
-      if (newType == 'gain') {
-        updateData['targetWeightGain'] = targetDelta.abs().toStringAsFixed(1);
-        updateData['targetWeightLoss'] = '';
-      } else if (newType == 'lose') {
-        updateData['targetWeightLoss'] = targetDelta.abs().toStringAsFixed(1);
-        updateData['targetWeightGain'] = '';
+// Call this to set a brand-new goal (user inputs weight + optional type)
+  Future<void> _updateGoalWeightAndType(double targetDelta, String newType) async {
+    final user = _auth.currentUser;
+    double newGoalWeight = _currentWeight;
+    if (newType == 'gain') {
+      newGoalWeight = _currentWeight + targetDelta.abs();
+    } else if (newType == 'lose') {
+      newGoalWeight = _currentWeight - targetDelta.abs();
+    }
+    
+    // Check if goal is healthy
+    final healthCheck = _checkGoalHealth(newGoalWeight);
+    
+    // Show warning dialog if unhealthy or dangerous
+    if (healthCheck['isDangerous'] == true || healthCheck['isUnhealthy'] == true) {
+      final shouldProceed = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: healthCheck['color'].withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  healthCheck['isDangerous'] == true 
+                      ? Icons.dangerous 
+                      : Icons.warning_amber,
+                  color: healthCheck['color'],
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  healthCheck['title'],
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: healthCheck['color'],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.lightGray.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Current Weight:',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.surface,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            '${_currentWeight.toStringAsFixed(1)} kg',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Target Weight:',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.surface,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            '${newGoalWeight.toStringAsFixed(1)} kg',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: healthCheck['color'],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Target BMI:',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.surface,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            healthCheck['projectedBMI'].toStringAsFixed(1),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: healthCheck['color'],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  healthCheck['message'],
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: AppColors.textDark,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            if (healthCheck['isDangerous'] == true) ...[
+              // Only cancel button for dangerous goals
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  icon: const Icon(Icons.close, size: 20),
+                  label: const Text('Cancel Goal'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.error,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ] else ...[
+              // Both options for unhealthy (but not dangerous) goals
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(
+                  'Change Goal',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.surface,
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.orange,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Proceed Anyway',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+      
+      // If user cancels or it's dangerous, don't set the goal
+      if (shouldProceed != true) {
+        return;
       }
-      await _firestore.collection('user_info').doc(user.uid).update(updateData);
-    } catch (e) {
-      debugPrint('Error saving new goal to firestore: $e');
+    }
+    
+    // Proceed with setting the goal
+    setState(() {
+      _goalWeight = newGoalWeight;
+      _goalType = newType;
+      _startWeight = _currentWeight;
+      _goalCompleted = false;
+    });
+
+    if (user != null) {
+      try {
+        final updateData = {
+          'goalWeight': newGoalWeight,
+          'goalType': newType,
+          'goalCompleted': false,
+        };
+        if (newType == 'gain') {
+          updateData['targetWeightGain'] = targetDelta.abs().toStringAsFixed(1);
+          updateData['targetWeightLoss'] = '';
+        } else if (newType == 'lose') {
+          updateData['targetWeightLoss'] = targetDelta.abs().toStringAsFixed(1);
+          updateData['targetWeightGain'] = '';
+        }
+        await _firestore.collection('user_info').doc(user.uid).update(updateData);
+      } catch (e) {
+        debugPrint('Error saving new goal to firestore: $e');
+      }
     }
   }
-}
 
 
   // Historical data for graph (simulated)
@@ -798,24 +1069,42 @@ Future<void> _fetchProgressData() async {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [AppColors.accent1, AppColors.primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              gradient: LinearGradient(
+                colors: [AppColors.accentBlue, AppColors.accentCyan],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [BoxShadow(color: AppColors.charcoal.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 6))],
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.accentBlue.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 6),
+                )
+              ],
             ),
-            child: Icon(Icons.self_improvement, color: AppColors.charcoal, size: 28),
+            child: Icon(Icons.self_improvement, color: AppColors.textDark, size: 28),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(_greeting(), style: const TextStyle(fontSize: 14, color: AppColors.darkGray)),
+              Text(_greeting(), style: const TextStyle(fontSize: 14, color: AppColors.surface)),
               const SizedBox(height: 4),
               _loadingUser ? const Text('Loading...', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)) : Text(_username, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             ]),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-            child: Row(children: [Icon(Icons.local_fire_department, color: AppColors.charcoal), SizedBox(width: 6), Text('${_bmr.round()} kcal', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.charcoal))]),
+            decoration: BoxDecoration(
+              color: AppColors.cardWhite,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(children: [
+              Icon(Icons.local_fire_department, color: AppColors.orange),
+              SizedBox(width: 6),
+              Text('${_bmr.round()} kcal', 
+                style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
+            ]),
           ),
         ],
       ),
@@ -847,7 +1136,7 @@ Future<void> _fetchProgressData() async {
                 value: '${_bmr.round()}',
                 unit: 'kcal/day',
                 icon: Icons.local_fire_department,
-                color: AppColors.charcoal,
+                color: AppColors.textDark,
               ),
             ),
             const SizedBox(width: 12),
@@ -867,12 +1156,12 @@ Future<void> _fetchProgressData() async {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.charcoal.withOpacity(0.3),
+              color: AppColors.textDark.withOpacity(0.3),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               children: [
-                Icon(Icons.calendar_today, size: 18, color: AppColors.charcoal),
+                Icon(Icons.calendar_today, size: 18, color: AppColors.textDark),
                 const SizedBox(width: 8),
                 Text('Target Date: $_targetDate', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               ],
@@ -885,7 +1174,7 @@ Future<void> _fetchProgressData() async {
   
   Color _getBMIColor() {
   if (_bmi < 18.5) return AppColors.orange;
-  if (_bmi < 25) return AppColors.accent1;
+  if (_bmi < 25) return AppColors.accentBlue;
   if (_bmi < 30) return AppColors.orange;
   return AppColors.red;
   }
@@ -911,7 +1200,7 @@ Future<void> _fetchProgressData() async {
             children: [
               Icon(icon, color: color, size: 20),
               const SizedBox(width: 6),
-              Text(label, style: TextStyle(fontSize: 12, color: AppColors.darkGray, fontWeight: FontWeight.w600)),
+              Text(label, style: TextStyle(fontSize: 12, color: AppColors.surface, fontWeight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: 8),
@@ -981,139 +1270,433 @@ Widget _buildWeightBatteryCard() {
   }
 
 
-  // Build the goal display / editor area
+ // Build the goal display / editor area
   Widget _buildGoalSection() {
     // Only show the new goal input if the goal is completed (not just reached, but marked completed)
     if (_goalCompleted) {
       if (_goalType == 'maintain') {
         // If already maintaining, just show info and update option
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Maintaining Weight', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text('You are maintaining your weight at ${_goalWeight.toStringAsFixed(1)} kg.', style: const TextStyle(color: AppColors.darkGray)),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _showNewGoalInput = true;
-                  _goalType = 'lose'; // default to lose for new goal UI
-                });
-              },
-              child: const Text('Update Goal'),
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.accentBlue.withOpacity(0.15),
+                AppColors.accentCyan.withOpacity(0.1),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-          ],
-        );
-      }
-      // Not maintaining: show both options
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Goal Achieved!', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text('Would you like to set a new goal or maintain your weight?', style: const TextStyle(color: AppColors.darkGray)),
-          const SizedBox(height: 12),
-          Row(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.accentBlue.withOpacity(0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    _showNewGoalInput = true;
-                    _goalType = 'lose'; // default to lose for new goal UI
-                  });
-                },
-                child: const Text('Update Goal'),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentBlue.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.balance, color: AppColors.accentBlue, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Maintaining Weight',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              OutlinedButton(
-                onPressed: () async {
-                  setState(() {
-                    _goalType = 'maintain';
-                    _showNewGoalInput = false;
-                  });
-                  // Persist maintain state and goal weight
-                  final user = _auth.currentUser;
-                  if (user != null) {
-                    await _firestore.collection('user_info').doc(user.uid).set({
-                      'goalType': 'maintain',
-                      'goalWeight': _goalWeight,
-                      'goalCompleted': false, // reset so maintain UI shows
-                    }, SetOptions(merge: true));
-                  }
-                },
-                child: const Text('Maintain Weight'),
+              const SizedBox(height: 12),
+              Text(
+                'You are maintaining your weight at ${_goalWeight.toStringAsFixed(1)} kg.',
+                style: TextStyle(
+                  color: AppColors.surface,
+                  fontSize: 13,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _showNewGoalInput = true;
+                      _goalType = 'lose';
+                    });
+                  },
+                  icon: const Icon(Icons.edit, size: 18),
+                  label: const Text('Update Goal'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accentBlue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
               ),
             ],
           ),
-          if (_showNewGoalInput) ...[
-            const SizedBox(height: 16),
-            const Text('Set a New Goal', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 6),
+        );
+      }
+      // Not maintaining: show both options
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.green.shade50,
+              Colors.teal.shade50,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.green.withOpacity(0.3)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.green.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Row(
               children: [
-                DropdownButton<String>(
-                  value: _selectedNewGoalType,
-                  items: const [
-                    DropdownMenuItem(value: 'lose', child: Text('Lose')),
-                    DropdownMenuItem(value: 'gain', child: Text('Gain')),
-                  ],
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() {
-                        _selectedNewGoalType = val;
-                      });
-                    }
-                  },
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 110,
-                  child: TextField(
-                    controller: _newGoalController,
-                    keyboardType: TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      hintText: "kg",
-                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                      border: OutlineInputBorder(),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.green.shade400, Colors.teal.shade400],
                     ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.green.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
+                  child: const Icon(Icons.emoji_events, color: Colors.white, size: 22),
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () {
-                    final parsed = double.tryParse(_newGoalController.text);
-                    if (parsed == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please enter a valid number for the goal weight')),
-                      );
-                      return;
-                    }
-                    _updateGoalWeightAndType(parsed, _selectedNewGoalType);
-                    _newGoalController.clear();
-                    FocusScope.of(context).unfocus();
-                    setState(() {
-                      _showNewGoalInput = false;
-                    });
-                  },
-                  child: const Text('Save'),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Goal Achieved! 🎉',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'What\'s next for you?',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.mediumGray,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text('Current goal: ${_goalWeight.toStringAsFixed(1)} kg (${_goalType.toUpperCase()})', style: const TextStyle(color: AppColors.darkGray)),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _showNewGoalInput = true;
+                          _goalType = 'lose';
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [AppColors.accentBlue, AppColors.primary],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.accentBlue.withOpacity(0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(Icons.flag, color: Colors.white, size: 24),
+                            const SizedBox(height: 6),
+                            Text(
+                              'New Goal',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () async {
+                    setState(() {
+                      _goalType = 'maintain';
+                      _goalWeight = _currentWeight; // Set goal to current weight for maintenance
+                      _startWeight = _currentWeight; // Reset start weight
+                      _showNewGoalInput = false;
+                    });
+                    final user = _auth.currentUser;
+                    if (user != null) {
+                      await _firestore.collection('user_info').doc(user.uid).set({
+                        'goalType': 'maintain',
+                        'goalWeight': _currentWeight, // Store current weight as goal
+                        'startWeight': _currentWeight,
+                        'goalCompleted': false,
+                        'targetWeightLoss': '', // Clear previous targets
+                        'targetWeightGain': '',
+                      }, SetOptions(merge: true));
+                    }
+                  },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.accentBlue.withOpacity(0.4),
+                            width: 2,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(Icons.balance, color: AppColors.accentBlue, size: 24),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Maintain',
+                              style: TextStyle(
+                                color: AppColors.accentBlue,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (_showNewGoalInput) ...[
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.mediumGray.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.edit_note, size: 20, color: AppColors.primary),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Set New Goal',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: AppColors.textDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.lightGray.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.mediumGray.withOpacity(0.2)),
+                      ),
+                      child: DropdownButton<String>(
+                        value: _selectedNewGoalType,
+                        isExpanded: true,
+                        underline: const SizedBox(),
+                        icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+                        style: const TextStyle(
+                          color: AppColors.textDark,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'lose',
+                            child: Row(
+                              children: [
+                                Icon(Icons.arrow_downward, size: 16, color: AppColors.red),
+                                SizedBox(width: 8),
+                                Text('Lose Weight'),
+                              ],
+                            ),
+                          ),
+                          DropdownMenuItem(
+                            value: 'gain',
+                            child: Row(
+                              children: [
+                                Icon(Icons.arrow_upward, size: 16, color: AppColors.green),
+                                SizedBox(width: 8),
+                                Text('Gain Weight'),
+                              ],
+                            ),
+                          ),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() {
+                              _selectedNewGoalType = val;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _newGoalController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      decoration: InputDecoration(
+                        hintText: "Enter weight in kg",
+                        hintStyle: TextStyle(color: AppColors.mediumGray.withOpacity(0.6)),
+                        prefixIcon: Icon(Icons.scale, color: AppColors.primary, size: 20),
+                        suffixText: 'kg',
+                        suffixStyle: const TextStyle(
+                          color: AppColors.mediumGray,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        filled: true,
+                        fillColor: AppColors.lightGray.withOpacity(0.2),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: AppColors.mediumGray.withOpacity(0.3)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: AppColors.mediumGray.withOpacity(0.3)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              final parsed = double.tryParse(_newGoalController.text);
+                              if (parsed == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Please enter a valid number'),
+                                    backgroundColor: AppColors.error,
+                                  ),
+                                );
+                                return;
+                              }
+                              _updateGoalWeightAndType(parsed, _selectedNewGoalType);
+                              _newGoalController.clear();
+                              FocusScope.of(context).unfocus();
+                              setState(() {
+                                _showNewGoalInput = false;
+                              });
+                            },
+                            icon: const Icon(Icons.check_circle, size: 18),
+                            label: const Text('Save Goal'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              elevation: 2,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: () {
+                            _newGoalController.clear();
+                            setState(() {
+                              _showNewGoalInput = false;
+                            });
+                          },
+                          icon: const Icon(Icons.close, color: AppColors.error),
+                          style: IconButton.styleFrom(
+                            backgroundColor: AppColors.lightGray.withOpacity(0.3),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       );
     }
 
     // Normal display: show the current goal text
     return Text(
       'Goal: ${_goalWeight.toStringAsFixed(1)} kg (${_goalType.toUpperCase()})',
-      style: const TextStyle(color: AppColors.darkGray),
+      style: const TextStyle(color: AppColors.surface),
     );
   }
-
   return _cardWrapper(
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1122,7 +1705,7 @@ Widget _buildWeightBatteryCard() {
           children: [
             Text(
               isGain ? 'Gain Goal' : 'Lose Goal',
-              style: const TextStyle(fontSize: 12, color: AppColors.darkGray),
+              style: const TextStyle(fontSize: 12, color: AppColors.surface),
             ),
             const SizedBox(height: 8),
             VerticalBattery(
@@ -1131,7 +1714,7 @@ Widget _buildWeightBatteryCard() {
               height: 160,
               fillColor: AppColors.primary,
               backgroundColor: AppColors.lightGray.withOpacity(0.15),
-              borderColor: AppColors.charcoal.withOpacity(0.18),
+              borderColor: AppColors.textDark.withOpacity(0.18),
               showPercentage: false,
             ),
             const SizedBox(height: 8),
@@ -1230,7 +1813,7 @@ Future<void> _saveWeightUpdate(double weight, double? height) async {
           _smallIconBox(Icons.show_chart),
           const SizedBox(width: 12),
           const Expanded(child: Text('Progress Graph', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
-          Text('${_progressData.length} entries', style: TextStyle(color: AppColors.darkGray, fontSize: 12)),
+          Text('${_progressData.length} entries', style: TextStyle(color: AppColors.surface, fontSize: 12)),
         ]),
         const SizedBox(height: 16),
         SizedBox(
@@ -1241,9 +1824,9 @@ Future<void> _saveWeightUpdate(double weight, double? height) async {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildLegendItem('BMR', AppColors.lightBlue),
+            _buildLegendItem('BMR', AppColors.accentCyan),
             const SizedBox(width: 24),
-            _buildLegendItem('BMI', AppColors.accent1),
+            _buildLegendItem('BMI', AppColors.accentBlue),
           ],
         ),
       ]),
@@ -1263,7 +1846,7 @@ Future<void> _saveWeightUpdate(double weight, double? height) async {
           ),
         ),
         const SizedBox(width: 6),
-        Text(label, style: TextStyle(fontSize: 12, color: AppColors.darkGray)),
+        Text(label, style: TextStyle(fontSize: 12, color: AppColors.surface)),
       ],
     );
   }
@@ -1286,21 +1869,21 @@ Widget _buildFoodCarousel() {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFFF6B9D), Color(0xFFC06C84)],
+                    colors: [AppColors.accentPurple, AppColors.accentBlue],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFFF6B9D).withOpacity(0.3),
+                      color: AppColors.accentPurple.withOpacity(0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: Icon(Icons.restaurant_menu, color: AppColors.charcoal, size: 24),
-              ),
+                child: Icon(Icons.restaurant_menu, color: AppColors.textPrimary, size: 24),
+                              ),
               const SizedBox(width: 12),
               const Expanded(
                 child: Column(
@@ -1311,7 +1894,7 @@ Widget _buildFoodCarousel() {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
-                        color: AppColors.charcoal,
+                        color: AppColors.textDark,
                       ),
                     ),
                     SizedBox(height: 2),
@@ -1343,12 +1926,12 @@ Widget _buildFoodCarousel() {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.recommend, color: AppColors.charcoal, size: 16),
+                    Icon(Icons.recommend, color: AppColors.textDark, size: 16),
                     const SizedBox(width: 6),
                     Text(
                       '${foods.length}',
                       style: const TextStyle(
-                        color: AppColors.charcoal,
+                        color: AppColors.textDark,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -1386,7 +1969,7 @@ Widget _buildFoodCarousel() {
                         Text(
                           'No recommendations yet',
                           style: TextStyle(
-                            color: AppColors.darkGray,
+                            color: AppColors.surface,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1456,17 +2039,21 @@ Widget _buildFoodCarousel() {
           borderRadius: BorderRadius.circular(14),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 18),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [AppColors.accent1, AppColors.primary], begin: Alignment.centerLeft, end: Alignment.centerRight),
-              borderRadius: BorderRadius.circular(14),
-            ),
+           decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.accentBlue, AppColors.accentCyan],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(14),
+              ),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               ShaderMask(
                 shaderCallback: (bounds) => const LinearGradient(colors: [Colors.white, Color(0xFFFFFFB3)]).createShader(bounds),
-                child: Icon(Icons.fitness_center, color: AppColors.charcoal, size: 28),
+                child: Icon(Icons.fitness_center, color: AppColors.textDark, size: 28),
               ),
               const SizedBox(width: 12),
-              Text('Start Your Workout Now', style: TextStyle(color: AppColors.charcoal, fontSize: 18, fontWeight: FontWeight.w900, shadows: [Shadow(color: Colors.black26, blurRadius: 4)])),
+              Text('Start Your Workout Now', style: TextStyle(color: AppColors.textDark, fontSize: 18, fontWeight: FontWeight.w900, shadows: [Shadow(color: Colors.black26, blurRadius: 4)])),
             ]),
           ),
         ),
@@ -1478,7 +2065,7 @@ Widget _buildFoodCarousel() {
     return Container(
   decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
       padding: const EdgeInsets.all(10),
-  child: Icon(icon, size: 22, color: AppColors.charcoal),
+  child: Icon(icon, size: 22, color: AppColors.textDark),
     );
   }
 
@@ -1486,7 +2073,17 @@ Widget _buildFoodCarousel() {
     return Container(
       margin: margin ?? const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       padding: const EdgeInsets.all(14),
-  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: AppColors.charcoal.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 6))]),
+      decoration: BoxDecoration(
+        color: AppColors.cardWhite,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
+          )
+        ],
+      ),
       child: child,
     );
   }
@@ -1497,13 +2094,13 @@ Widget _buildFoodCarousel() {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(
         hintText: hint,
-        prefixIcon: Icon(icon, size: small ? 18 : 24, color: AppColors.mediumDark),
+        prefixIcon: Icon(icon, size: small ? 18 : 24, color: AppColors.mediumGray),
         filled: true,
-  fillColor: AppColors.charcoal.withOpacity(0.08),
+  fillColor: AppColors.textDark.withOpacity(0.08),
         contentPadding: EdgeInsets.symmetric(vertical: small ? 10 : 14, horizontal: 16),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
       ),
-      style: TextStyle(fontSize: small ? 13 : 14, color: AppColors.mediumDark),
+      style: TextStyle(fontSize: small ? 13 : 14, color: AppColors.mediumGray),
     );
   }
 
@@ -1513,7 +2110,7 @@ Widget _buildFoodCarousel() {
 
     return SafeArea(
       child: Material(
-        color: AppColors.tertiary.withOpacity(0.03),
+        color: AppColors.surface.withOpacity(0.03),
         child: Column(
           children: [
             _buildTopGreeting(),
@@ -1628,7 +2225,7 @@ class _ProgressGraphState extends State<_ProgressGraph> {
         width: 140,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.charcoal,
+          color: AppColors.textDark,
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
@@ -1642,7 +2239,7 @@ class _ProgressGraphState extends State<_ProgressGraph> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildTooltipRow('BMR', '${bmr.round()} kcal', Icons.local_fire_department, color: AppColors.charcoal),
+            _buildTooltipRow('BMR', '${bmr.round()} kcal', Icons.local_fire_department, color: AppColors.textSecondary),
             const SizedBox(height: 6),
             _buildTooltipRow('BMI', bmi.toStringAsFixed(1), Icons.monitor_weight, color: _getBMIColor(bmi)),
             const SizedBox(height: 4),
@@ -1660,7 +2257,7 @@ class _ProgressGraphState extends State<_ProgressGraph> {
     );
   }
 
-  Widget _buildTooltipRow(String label, String value, IconData icon, {Color color = AppColors.darkGray}) {
+  Widget _buildTooltipRow(String label, String value, IconData icon, {Color color = AppColors.surface}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -1672,7 +2269,7 @@ class _ProgressGraphState extends State<_ProgressGraph> {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: AppColors.darkGray,
+              color: AppColors.textPrimary,
             ),
           ),
           Text(
@@ -1690,9 +2287,9 @@ class _ProgressGraphState extends State<_ProgressGraph> {
 
   Color _getBMIColor(double bmi) {
   if (bmi < 18.5) return AppColors.orange;
-  if (bmi < 25) return AppColors.accent1;
+  if (bmi < 25) return AppColors.accentBlue;
   if (bmi < 30) return AppColors.orange;
-  return AppColors.red;
+  return AppColors.error;
   }
 }
 
@@ -1767,13 +2364,14 @@ class _GraphPainter extends CustomPainter {
 
     // Fill area under BMR line
     final bmrAreaPaint = Paint()
-  ..color = AppColors.lightBlue.withOpacity(0.1)
+  ..color = AppColors.accentCyan.withOpacity(0.1)
       ..style = PaintingStyle.fill;
     canvas.drawPath(bmrAreaPath, bmrAreaPaint);
 
     // Draw BMR line
     final bmrPaint = Paint()
-  ..color = AppColors.lightBlue
+      ..color = AppColors.accentCyan
+      ..color = AppColors.accentCyan
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
@@ -1805,13 +2403,13 @@ class _GraphPainter extends CustomPainter {
 
     // Fill area under BMI line
     final bmiAreaPaint = Paint()
-      ..color = AppColors.accent1.withOpacity(0.1)
+      ..color = AppColors.accentBlue.withOpacity(0.1)
       ..style = PaintingStyle.fill;
     canvas.drawPath(bmiAreaPath, bmiAreaPaint);
 
     // Draw BMI line
     final bmiPaint = Paint()
-      ..color = AppColors.accent1
+      ..color = AppColors.accentBlue
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
@@ -1844,7 +2442,7 @@ class _GraphPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = i == hoveredIndex ? 3 : 2;
       final bmrPointPaint = Paint()
-        ..color = i == hoveredIndex ? AppColors.lightBlue : AppColors.lightBlue.withOpacity(0.8)
+        ..color = i == hoveredIndex ? AppColors.accentCyan : AppColors.accentCyan.withOpacity(0.8)
         ..style = PaintingStyle.fill;
 
       canvas.drawCircle(Offset(x, bmrY), i == hoveredIndex ? 8 : 5, bmrPointBorderPaint);
@@ -1856,7 +2454,7 @@ class _GraphPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = i == hoveredIndex ? 3 : 2;
       final bmiPointPaint = Paint()
-        ..color = i == hoveredIndex ? AppColors.accent1 : AppColors.accent1.withOpacity(0.8)
+        ..color = i == hoveredIndex ? AppColors.accentBlue : AppColors.accentBlue.withOpacity(0.8)
         ..style = PaintingStyle.fill;
 
       canvas.drawCircle(Offset(x, bmiY), i == hoveredIndex ? 8 : 5, bmiPointBorderPaint);
@@ -1865,7 +2463,7 @@ class _GraphPainter extends CustomPainter {
 
     // Draw axes labels with simple text rendering
     final textStyle = TextStyle(
-      color: AppColors.darkGray,
+      color: AppColors.surface,
       fontSize: 10,
       fontWeight: FontWeight.w600,
     );
@@ -1874,14 +2472,14 @@ class _GraphPainter extends CustomPainter {
     for (int i = 0; i <= 4; i++) {
       double y = padding + (graphHeight * i / 4);
       double bmrValue = maxBMR - ((maxBMR - minBMR) * i / 4);
-  _drawText(canvas, bmrValue.round().toString(), Offset(5, y - 6), textStyle.copyWith(color: AppColors.lightBlue));
+  _drawText(canvas, bmrValue.round().toString(), Offset(5, y - 6), textStyle.copyWith(color: AppColors.accentCyan));
     }
 
     // Right axis (BMI) labels
     for (int i = 0; i <= 4; i++) {
       double y = padding + (graphHeight * i / 4);
       double bmiValue = maxBMI - ((maxBMI - minBMI) * i / 4);
-      _drawText(canvas, bmiValue.toStringAsFixed(1), Offset(size.width - padding + 5, y - 6), textStyle.copyWith(color: AppColors.accent1));
+      _drawText(canvas, bmiValue.toStringAsFixed(1), Offset(size.width - padding + 5, y - 6), textStyle.copyWith(color: AppColors.accentBlue));
     }
 
     // Draw date labels at bottom
@@ -1895,7 +2493,7 @@ class _GraphPainter extends CustomPainter {
           '${date.month}/${date.day}', 
           Offset(x - 10, size.height - padding + 12), 
           textStyle.copyWith(
-            color: i == hoveredIndex ? AppColors.primary : AppColors.darkGray,
+            color: i == hoveredIndex ? AppColors.primary : AppColors.surface,
             fontSize: i == hoveredIndex ? 11 : 9,
             fontWeight: i == hoveredIndex ? FontWeight.bold : FontWeight.normal,
           )
@@ -1997,7 +2595,7 @@ class _WeightActionButtonState extends State<_WeightActionButton> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [AppColors.accent1, AppColors.primary]),
+            gradient: LinearGradient(colors: [AppColors.accentBlue, AppColors.primary]),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -2047,8 +2645,8 @@ class _WeightActionButtonState extends State<_WeightActionButton> {
               Expanded(
                 child: TextButton.icon(
                   onPressed: () => setState(() => _isEditing = false),
-                  icon: const Icon(Icons.close, size: 18, color: AppColors.charcoal),
-                  label: const Text('Cancel', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.charcoal)),
+                  icon: const Icon(Icons.close, size: 18, color: AppColors.textDark),
+                  label: const Text('Cancel', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textDark)),
                 ),
               ),
             ],
@@ -2076,7 +2674,7 @@ class VerticalBattery extends StatelessWidget {
     this.height = 140,
     this.fillColor = AppColors.primary,
     this.backgroundColor = AppColors.lightGray,
-    this.borderColor = AppColors.charcoal,
+    this.borderColor = AppColors.textDark,
     this.showPercentage = true,
   });
 
@@ -2100,7 +2698,7 @@ class VerticalBattery extends StatelessWidget {
             width: width - 6,
             height: fillHeight,
             margin: const EdgeInsets.only(bottom: 4),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(bottom: const Radius.circular(6), top: Radius.circular(fillHeight < 8 ? 6 : 0)), boxShadow: [BoxShadow(color: AppColors.charcoal.withOpacity(0.12), blurRadius: 6, offset: const Offset(0, 2))]),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(bottom: const Radius.circular(6), top: Radius.circular(fillHeight < 8 ? 6 : 0)), boxShadow: [BoxShadow(color: AppColors.textDark.withOpacity(0.12), blurRadius: 6, offset: const Offset(0, 2))]),
           ),
           if (showPercentage)
             Positioned(
@@ -2164,7 +2762,7 @@ class _FoodItemCardState extends State<FoodItemCard> with SingleTickerProviderSt
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppColors.accent1, AppColors.primary],
+                  colors: [AppColors.accentBlue, AppColors.primary],
                 ),
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -2186,19 +2784,19 @@ class _FoodItemCardState extends State<FoodItemCard> with SingleTickerProviderSt
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.lightBlue,
+                color: AppColors.accentCyan,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.local_fire_department, color: AppColors.lightBlue),
+                  Icon(Icons.local_fire_department, color: AppColors.accentCyan),
                   const SizedBox(width: 8),
                   Text(
                     '${widget.food['kcal']} calories',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.lightBlue,
+                      color: AppColors.accentCyan,
                     ),
                   ),
                 ],
@@ -2265,7 +2863,7 @@ class _FoodItemCardState extends State<FoodItemCard> with SingleTickerProviderSt
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        AppColors.accent1.withOpacity(0.9),
+                        AppColors.accentBlue.withOpacity(0.9),
                         AppColors.primary,
                         AppColors.secondary,
                       ],

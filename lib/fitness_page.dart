@@ -13,7 +13,7 @@ class ExercisesScreen extends StatelessWidget {
     final exercises = provider.exercises;
 
     return Scaffold(
-  backgroundColor: AppColors.charcoal,
+      backgroundColor: AppColors.primary,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -30,18 +30,18 @@ class ExercisesScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.dark1,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColors.lightGray.withOpacity(0.3),
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
                         Icons.filter_list,
-                        color: AppColors.dark1,
+                        color: AppColors.accentBlue,
                       ),
                     ),
                   ],
@@ -51,7 +51,7 @@ class ExercisesScreen extends StatelessWidget {
                   'Choose your workout',
                   style: TextStyle(
                     fontSize: 16,
-                    color: AppColors.mediumGray,
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -93,22 +93,16 @@ class ExerciseTile extends StatelessWidget {
         return AppColors.red;
       case 'core':
         return AppColors.blue;
+      case 'flexibility':
+        return AppColors.green;
       default:
-        return AppColors.primary;
+        return AppColors.accentBlue;
     }
   }
 
   Color _getBackgroundByType(String type) {
-    switch (type.toLowerCase()) {
-      case 'strength':
-        return const Color(0xFFFFE8D6);
-      case 'cardio':
-        return const Color(0xFFFFE6E6);
-      case 'core':
-        return AppColors.lightBlue;
-      default:
-        return AppColors.accent1.withOpacity(0.2);
-    }
+    // All tiles use white/light background for consistency
+    return AppColors.cardWhite;
   }
 
   IconData _getIconByType(String type) {
@@ -119,6 +113,8 @@ class ExerciseTile extends StatelessWidget {
         return Icons.favorite;
       case 'core':
         return Icons.accessibility_new;
+      case 'flexibility':
+        return Icons.self_improvement;
       default:
         return Icons.sports_gymnastics;
     }
@@ -144,9 +140,9 @@ class ExerciseTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: accentColor.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+              color: accentColor.withOpacity(0.2),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -160,15 +156,8 @@ class ExerciseTile extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: AppColors.charcoal,
+                  color: accentColor.withOpacity(0.12),
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: accentColor.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
                 child: Icon(
                   _getIconByType(exercise.type),
@@ -184,7 +173,7 @@ class ExerciseTile extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.dark1,
+                  color: AppColors.textDark,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -195,7 +184,7 @@ class ExerciseTile extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.15),
+                  color: accentColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -240,7 +229,7 @@ class ExerciseTile extends StatelessWidget {
                     ),
                     child: const Icon(
                       Icons.play_arrow,
-                      color: AppColors.charcoal,
+                      color: Colors.white,
                       size: 20,
                     ),
                   ),
@@ -281,8 +270,10 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
         return AppColors.red;
       case 'core':
         return AppColors.blue;
+      case 'flexibility':
+        return AppColors.green;
       default:
-        return AppColors.primary;
+        return AppColors.accentBlue;
     }
   }
 
@@ -293,12 +284,12 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     final seconds = _remainingSeconds % 60;
 
     return Scaffold(
-  backgroundColor: AppColors.charcoal,
+      backgroundColor: AppColors.primary,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.dark1),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -314,7 +305,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                 style: const TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.dark1,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -327,6 +318,10 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                     decoration: BoxDecoration(
                       color: accentColor.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: accentColor.withOpacity(0.3),
+                        width: 1,
+                      ),
                     ),
                     child: Text(
                       widget.exercise.type,
@@ -341,7 +336,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: AppColors.lightGray.withOpacity(0.5),
+                      color: AppColors.surface,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -349,7 +344,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.dark1,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -401,7 +396,14 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                       color: accentColor,
                       width: 8,
                     ),
-                    color: accentColor.withOpacity(0.1),
+                    color: AppColors.surface,
+                    boxShadow: [
+                      BoxShadow(
+                        color: accentColor.withOpacity(0.3),
+                        blurRadius: 30,
+                        spreadRadius: 5,
+                      ),
+                    ],
                   ),
                   child: Center(
                     child: Text(
@@ -410,6 +412,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                         fontSize: 48,
                         fontWeight: FontWeight.bold,
                         color: accentColor,
+                        letterSpacing: 2,
                       ),
                     ),
                   ),
@@ -432,14 +435,15 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    elevation: 4,
+                    elevation: 8,
+                    shadowColor: accentColor.withOpacity(0.4),
                   ),
                   child: Text(
                     _isStarted ? 'Stop Workout' : 'Start Workout',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.charcoal,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -470,11 +474,11 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1.5,
+          color: color.withOpacity(0.4),
+          width: 2,
         ),
       ),
       child: Column(
@@ -492,9 +496,9 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
-              color: AppColors.mediumGray,
+              color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),

@@ -236,7 +236,7 @@ final List<Exercise> allExercises = [
 
   final Map<String, Map<String, dynamic>> typeStyles = {
     "Cardio": {"icon": Icons.favorite, "color": AppColors.red},
-    "Strength": {"icon": Icons.fitness_center, "color": AppColors.lightBlue},
+    "Strength": {"icon": Icons.fitness_center, "color": AppColors.accentBlue},
     "Legs": {"icon": Icons.directions_run, "color": AppColors.primary},
     "Core": {"icon": Icons.accessibility_new, "color": AppColors.orange},
   };
@@ -323,13 +323,13 @@ final List<Exercise> allExercises = [
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-    color: AppColors.charcoal,
+    color: AppColors.darkGray,
                   ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.accent1.withOpacity(0.2),
+                    color: AppColors.accentCyan.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -479,7 +479,7 @@ final List<Exercise> allExercises = [
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
-                        color: AppColors.charcoal,
+                        color: AppColors.darkGray,
                       ),
                     ),
                     const SizedBox(height: 6),

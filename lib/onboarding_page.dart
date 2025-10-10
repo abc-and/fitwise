@@ -522,14 +522,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.charcoal.withOpacity(0.25),
+              color: AppColors.textPrimary.withOpacity(0.25),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.charcoal.withOpacity(0.3),
+                color: AppColors.textDark.withOpacity(0.3),
                 width: 2,
               ),
             ),
-            child: Icon(icon, color: AppColors.charcoal, size: 36),
+            child: Icon(icon, color: AppColors.textPrimary, size: 36),
           ),
           const SizedBox(width: 18),
           Expanded(
@@ -550,7 +550,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   subtitle,
                   style: TextStyle(
                     fontSize: 15,
-                    color: AppColors.charcoal.withOpacity(0.9),
+                    color: AppColors.textSecondary.withOpacity(0.9),
                     fontWeight: FontWeight.w400,
                   ),
                 ),
@@ -586,7 +586,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       child: TextField(
         controller: controller,
         style: TextStyle(
-              color: AppColors.charcoal,
+              color: AppColors.textDark,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
@@ -639,7 +639,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   child: Text(
                     item.toString(),
                     style: TextStyle(
-                          color: AppColors.charcoal,
+                          color: AppColors.textDark,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -655,12 +655,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
             fontWeight: FontWeight.w500,
           ),
           prefixIcon: icon != null
-              ? Icon(icon, color: AppColors.tertiary, size: 24)
+              ? Icon(icon, color: AppColors.surface, size: 24)
               : null,
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         ),
-        icon: Icon(Icons.arrow_drop_down, color: AppColors.tertiary, size: 28),
+        icon: Icon(Icons.arrow_drop_down, color: AppColors.surface, size: 28),
       ),
     );
   }
@@ -720,7 +720,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                 child: Text(
                                   item,
                                   style: TextStyle(
-                                    color: AppColors.charcoal,
+                                    color: AppColors.textDark,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -737,7 +737,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 18),
                       ),
-                      icon: Icon(Icons.arrow_drop_down, color: AppColors.tertiary, size: 28),
+                      icon: Icon(Icons.arrow_drop_down, color: AppColors.surface, size: 28),
                       dropdownColor: Colors.white,
                     ),
                   ),
@@ -783,7 +783,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                 child: Text(
                                   item,
                                   style: TextStyle(
-                                    color: AppColors.charcoal,
+                                    color: AppColors.textDark,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -800,7 +800,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 18),
                       ),
-                      icon: Icon(Icons.arrow_drop_down, color: AppColors.tertiary, size: 28),
+                      icon: Icon(Icons.arrow_drop_down, color: AppColors.surface, size: 28),
                       dropdownColor: Colors.white,
                     ),
                   ),
@@ -946,7 +946,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        AppColors.accent1.withOpacity(0.15),
+                        AppColors.accentBlue.withOpacity(0.15),
                         AppColors.primary.withOpacity(0.1),
                       ],
                       begin: Alignment.topLeft,
@@ -954,7 +954,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     ),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.tertiary.withOpacity(0.3),
+                      color: AppColors.surface.withOpacity(0.3),
                       width: 1.5,
                     ),
                   ),
@@ -963,12 +963,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.2),
+                          color: AppColors.accentBlue.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
                           Icons.info_outline,
-                          color: AppColors.secondary,
+                          color: AppColors.textPrimary,
                           size: 22,
                         ),
                       ),
@@ -977,7 +977,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         child: Text(
                           _activityDescriptions[_activityLevel] ?? "",
                           style: TextStyle(
-                            color: AppColors.charcoal,
+                            color: AppColors.textDark,
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
                             height: 1.4,
@@ -1006,15 +1006,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        AppColors.lightBlue.withOpacity(0.5),
-                        AppColors.lightBlue.withOpacity(0.3),
+                        AppColors.accentBlue.withOpacity(0.5),
+                        AppColors.accentBlue.withOpacity(0.3),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.lightBlue.withOpacity(0.3),
+                      color: AppColors.accentBlue.withOpacity(0.3),
                       width: 1.5,
                     ),
                   ),
@@ -1023,12 +1023,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppColors.lightBlue.withOpacity(0.15),
+                          color: AppColors.accentBlue.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
                           Icons.info_outline,
-                          color: AppColors.lightBlue,
+                          color: AppColors.accentBlue,
                           size: 22,
                         ),
                       ),
@@ -1037,7 +1037,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         child: Text(
                           "Reproductive status is only applicable for female users.",
                           style: TextStyle(
-                            color: AppColors.charcoal,
+                            color: AppColors.textDark,
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
                             height: 1.4,
@@ -1113,7 +1113,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                   child: Text(
                                     item,
                                     style: TextStyle(
-                                      color: AppColors.charcoal,
+                                      color: AppColors.textDark,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -1130,7 +1130,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 18),
                         ),
-                        icon: Icon(Icons.arrow_drop_down, color: AppColors.tertiary, size: 28),
+                        icon: Icon(Icons.arrow_drop_down, color: AppColors.surface, size: 28),
                         dropdownColor: Colors.white,
                       ),
                     ),
@@ -1162,7 +1162,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                   child: Text(
                                     item,
                                     style: TextStyle(
-                                      color: AppColors.charcoal,
+                                      color: AppColors.textDark,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -1179,7 +1179,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 18),
                         ),
-                        icon: Icon(Icons.arrow_drop_down, color: AppColors.tertiary, size: 28),
+                        icon: Icon(Icons.arrow_drop_down, color: AppColors.surface, size: 28),
                         dropdownColor: Colors.white,
                       ),
                     ),
@@ -1206,7 +1206,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppColors.accent1.withOpacity(0.15),
+                      AppColors.accentBlue.withOpacity(0.15),
                       AppColors.primary.withOpacity(0.1),
                     ],
                     begin: Alignment.topLeft,
@@ -1214,14 +1214,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   ),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AppColors.tertiary.withOpacity(0.4),
+                    color: AppColors.surface.withOpacity(0.4),
                     width: 1.5,
                   ),
                 ),
                 child: TextFormField(
                   readOnly: true,
                   style: TextStyle(
-                    color: AppColors.charcoal,
+                    color: AppColors.textDark,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1235,7 +1235,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     hintStyle: TextStyle(
                       color: AppColors.mediumGray.withOpacity(0.6),
                     ),
-                    prefixIcon: Icon(Icons.event, color: AppColors.tertiary, size: 24),
+                    prefixIcon: Icon(Icons.event, color: AppColors.surface, size: 24),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                   ),
@@ -1320,7 +1320,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       Text(
                         "Saving your information...",
                         style: TextStyle(
-                          color: AppColors.charcoal,
+                          color: AppColors.textDark,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1362,7 +1362,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       borderRadius: BorderRadius.circular(6),
                       gradient: _currentPage == index
                           ? LinearGradient(
-                              colors: [AppColors.primary, AppColors.tertiary],
+                              colors: [AppColors.primary, AppColors.surface],
                             )
                           : null,
                       color: _currentPage != index ? AppColors.lightGray : null,
@@ -1414,7 +1414,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [AppColors.primary, AppColors.tertiary],
+                          colors: [AppColors.primary, AppColors.surface],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
