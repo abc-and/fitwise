@@ -185,7 +185,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("✅ Workout logged successfully!"),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.primary,
         ),
       );
       
@@ -507,12 +507,12 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                       IconButton(
                         icon: const Icon(Icons.arrow_back_ios),
                         onPressed: () => Navigator.pop(context),
-                        color: AppColors.dark1,
+                        color: AppColors.charcoal,
                       ),
                       const Text(
                         "Workout Streak",
                         style: TextStyle(
-                          color: AppColors.dark1,
+                          color: AppColors.charcoal,
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
@@ -884,7 +884,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.dark1,
+                                    color: AppColors.charcoal,
                                   ),
                                 ),
                                 const SizedBox(height: 20),
@@ -939,7 +939,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                                 style: TextStyle(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w600,
-                                                  color: isLit ? AppColors.dark1 : AppColors.mediumGray,
+                                                  color: isLit ? AppColors.charcoal : AppColors.mediumGray,
                                                 ),
                                               ),
                                             ],
@@ -972,7 +972,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                   "💪",
                                   "Workouts",
                                   "${_streak.workoutDates.length}",
-                                  AppColors.blue,
+                                  AppColors.lightBlue,
                                 ),
                               ),
                             ],

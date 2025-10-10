@@ -13,7 +13,7 @@ class ExercisesScreen extends StatelessWidget {
     final exercises = provider.exercises;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+  backgroundColor: AppColors.charcoal,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -160,7 +160,7 @@ class ExerciseTile extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.charcoal,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
@@ -240,7 +240,7 @@ class ExerciseTile extends StatelessWidget {
                     ),
                     child: const Icon(
                       Icons.play_arrow,
-                      color: Colors.white,
+                      color: AppColors.charcoal,
                       size: 20,
                     ),
                   ),
@@ -293,7 +293,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     final seconds = _remainingSeconds % 60;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+  backgroundColor: AppColors.charcoal,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -439,7 +439,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: AppColors.charcoal,
                     ),
                   ),
                 ),

@@ -77,7 +77,7 @@ class ProfilePage extends StatelessWidget {
                         "user@fitwise.com",
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.white.withOpacity(0.9),
+                          color: AppColors.charcoal.withOpacity(0.9),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -89,13 +89,13 @@ class ProfilePage extends StatelessWidget {
                           Container(
                             height: 40,
                             width: 1,
-                            color: Colors.white.withOpacity(0.3),
+                            color: AppColors.charcoal.withOpacity(0.3),
                           ),
                           _buildStatItem("12", "Days Streak", Icons.local_fire_department),
                           Container(
                             height: 40,
                             width: 1,
-                            color: Colors.white.withOpacity(0.3),
+                            color: AppColors.charcoal.withOpacity(0.3),
                           ),
                           _buildStatItem("2.5kg", "Lost", Icons.trending_down),
                         ],
@@ -117,7 +117,7 @@ class ProfilePage extends StatelessWidget {
                     icon: Icons.person_outline,
                     title: "Edit Profile",
                     subtitle: "Update your personal information",
-                    color: AppColors.blue,
+                    color: AppColors.lightBlue,
                     onTap: () {
                       // TODO: Navigate to edit profile
                     },
@@ -264,7 +264,7 @@ class ProfilePage extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 12,
-            color: Colors.white.withOpacity(0.9),
+            color: AppColors.charcoal.withOpacity(0.9),
           ),
         ),
       ],
@@ -323,7 +323,7 @@ class ProfilePage extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.dark1,
+                          color: AppColors.charcoal,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -377,7 +377,7 @@ class ProfilePage extends StatelessWidget {
                 "Logout",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.dark1,
+                  color: AppColors.charcoal,
                 ),
               ),
             ],

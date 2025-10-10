@@ -12,6 +12,7 @@ import 'onboarding_page.dart';
 
 // Providers
 import 'providers/fitness_provider.dart';
+import 'constants/app_colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,28 +41,27 @@ class FitWiseApp extends StatelessWidget {
       title: 'FitWise',
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.white,
-        primaryColor: const Color(0xFF65A30D),
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
+        primaryColor: AppColors.primary,
+        inputDecorationTheme: InputDecorationTheme(
+          border: const OutlineInputBorder(),
           focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Color(0xFF65A30D), width: 2.0),
+            borderSide: BorderSide(color: AppColors.primary, width: 2.0),
           ),
-          contentPadding: EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
+          contentPadding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
         ),
-        colorScheme: ColorScheme.fromSwatch(
-          primarySwatch: MaterialColor(0xFF65A30D, {
-            50: Color(0xFFEFF3E7),
-            100: Color(0xFFD8E4C3),
-            200: Color(0xFFC0D59D),
-            300: Color(0xFFA8C678),
-            400: Color(0xFF98BC5E),
-            500: Color(0xFF65A30D),
-            600: Color(0xFF5A930C),
-            700: Color(0xFF4C800A),
-            800: Color(0xFF3E6D08),
-            900: Color(0xFF284C05),
-          }),
-        ).copyWith(secondary: const Color(0xFF65A30D)),
+        colorScheme: ColorScheme(
+          brightness: Brightness.light,
+          primary: AppColors.primary,
+          onPrimary: Colors.white,
+          secondary: AppColors.accent1,
+          onSecondary: Colors.white,
+          error: AppColors.red,
+          onError: Colors.white,
+          background: AppColors.lightGray,
+          onBackground: AppColors.charcoal,
+          surface: Colors.white,
+          onSurface: AppColors.charcoal,
+        ),
       ),
       home: const AuthWrapper(),
     );

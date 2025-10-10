@@ -522,14 +522,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.25),
+              color: AppColors.charcoal.withOpacity(0.25),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.white.withOpacity(0.3),
+                color: AppColors.charcoal.withOpacity(0.3),
                 width: 2,
               ),
             ),
-            child: Icon(icon, color: Colors.white, size: 36),
+            child: Icon(icon, color: AppColors.charcoal, size: 36),
           ),
           const SizedBox(width: 18),
           Expanded(
@@ -550,7 +550,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   subtitle,
                   style: TextStyle(
                     fontSize: 15,
-                    color: Colors.white.withOpacity(0.9),
+                    color: AppColors.charcoal.withOpacity(0.9),
                     fontWeight: FontWeight.w400,
                   ),
                 ),
@@ -586,7 +586,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       child: TextField(
         controller: controller,
         style: TextStyle(
-          color: AppColors.dark1,
+              color: AppColors.charcoal,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
@@ -639,7 +639,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   child: Text(
                     item.toString(),
                     style: TextStyle(
-                      color: AppColors.dark1,
+                          color: AppColors.charcoal,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -720,7 +720,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                 child: Text(
                                   item,
                                   style: TextStyle(
-                                    color: AppColors.dark1,
+                                    color: AppColors.charcoal,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -783,7 +783,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                 child: Text(
                                   item,
                                   style: TextStyle(
-                                    color: AppColors.dark1,
+                                    color: AppColors.charcoal,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -977,7 +977,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         child: Text(
                           _activityDescriptions[_activityLevel] ?? "",
                           style: TextStyle(
-                            color: AppColors.dark1,
+                            color: AppColors.charcoal,
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
                             height: 1.4,
@@ -1014,7 +1014,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     ),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.blue.withOpacity(0.3),
+                      color: AppColors.lightBlue.withOpacity(0.3),
                       width: 1.5,
                     ),
                   ),
@@ -1023,12 +1023,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppColors.blue.withOpacity(0.15),
+                          color: AppColors.lightBlue.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
                           Icons.info_outline,
-                          color: AppColors.blue,
+                          color: AppColors.lightBlue,
                           size: 22,
                         ),
                       ),
@@ -1037,7 +1037,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         child: Text(
                           "Reproductive status is only applicable for female users.",
                           style: TextStyle(
-                            color: AppColors.dark1,
+                            color: AppColors.charcoal,
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
                             height: 1.4,
@@ -1113,7 +1113,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                   child: Text(
                                     item,
                                     style: TextStyle(
-                                      color: AppColors.dark1,
+                                      color: AppColors.charcoal,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -1162,7 +1162,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                   child: Text(
                                     item,
                                     style: TextStyle(
-                                      color: AppColors.dark1,
+                                      color: AppColors.charcoal,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -1221,7 +1221,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 child: TextFormField(
                   readOnly: true,
                   style: TextStyle(
-                    color: AppColors.dark1,
+                    color: AppColors.charcoal,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1320,7 +1320,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       Text(
                         "Saving your information...",
                         style: TextStyle(
-                          color: AppColors.dark1,
+                          color: AppColors.charcoal,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),

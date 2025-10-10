@@ -1,3 +1,4 @@
+// ...existing code...
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -102,7 +103,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
                 "Time's Up!",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.dark1,
+                    color: AppColors.charcoal,
                 ),
               ),
             ],
@@ -168,13 +169,13 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
             pinned: true,
             backgroundColor: AppColors.primary,
             leading: Container(
-              margin: const EdgeInsets.all(8),
+// ...existing code...
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
+                color: AppColors.charcoal.withOpacity(0.9),
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: AppColors.dark1),
+                icon: Icon(Icons.arrow_back, color: AppColors.charcoal),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
@@ -185,14 +186,13 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
                   if (widget.exercise.gifUrl != null)
                     Image.network(
                       widget.exercise.gifUrl!,
-                      fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
                           color: AppColors.primary.withOpacity(0.3),
                           child: const Icon(
                             Icons.fitness_center,
                             size: 100,
-                            color: Colors.white,
+                            color: AppColors.charcoal,
                           ),
                         );
                       },
@@ -219,7 +219,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
                         Text(
                           widget.exercise.name,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppColors.charcoal,
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
                           ),
@@ -233,7 +233,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
+                           color: AppColors.charcoal,
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -259,7 +259,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
                               child: Text(
                                 widget.exercise.difficulty,
                                 style: const TextStyle(
-                                  color: Colors.white,
+                                  color: AppColors.charcoal,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
@@ -287,7 +287,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
                           Icons.timer,
                           "Duration",
                           "${widget.exercise.duration}s",
-                          AppColors.blue,
+                          AppColors.lightBlue,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -317,7 +317,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.charcoal,
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
@@ -335,7 +335,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.dark1,
+                            color: AppColors.charcoal,
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -398,7 +398,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
                                             fontWeight: FontWeight.bold,
                                             color: isRunning
                                                 ? AppColors.primary
-                                                : AppColors.dark1,
+                                                : AppColors.charcoal,
                                           ),
                                         ),
                                         Text(
@@ -510,7 +510,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
                               ),
                               child: const Icon(
                                 Icons.tips_and_updates,
-                                color: Colors.white,
+                                color: AppColors.charcoal,
                                 size: 20,
                               ),
                             ),
@@ -520,7 +520,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.dark1,
+                                color: AppColors.charcoal,
                               ),
                             ),
                           ],
@@ -546,7 +546,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+  color: AppColors.charcoal,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -573,7 +573,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppColors.dark1,
+              color: AppColors.charcoal,
             ),
           ),
           const SizedBox(height: 4),
@@ -601,7 +601,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.charcoal,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -642,7 +642,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
             ),
             child: const Icon(
               Icons.check,
-              color: Colors.white,
+              color: AppColors.charcoal,
               size: 12,
             ),
           ),
@@ -652,7 +652,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
               text,
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.dark1,
+                color: AppColors.charcoal,
                 height: 1.4,
               ),
             ),
@@ -667,7 +667,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
       case "cardio":
         return AppColors.red;
       case "strength":
-        return AppColors.blue;
+  return AppColors.lightBlue;
       case "legs":
         return AppColors.primary;
       case "core":

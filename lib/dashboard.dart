@@ -154,36 +154,56 @@ class _HomeDashboardState extends State<HomeDashboard> {
     return DefaultTabController(
       length: screens.length,
       child: Scaffold(
-        body: Stack(
-          children: [
-            TabBarView(
-              physics: const NeverScrollableScrollPhysics(),
-              children: screens,
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.primary.withOpacity(0.12),
+                AppColors.accent2.withOpacity(0.10),
+                Colors.white.withOpacity(0.95),
+              ],
             ),
-          ],
+          ),
+          child: Stack(
+            children: [
+              TabBarView(
+                physics: const NeverScrollableScrollPhysics(),
+                children: screens,
+              ),
+            ],
+          ),
         ),
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 8,
+                color: AppColors.primary.withOpacity(0.10),
+                blurRadius: 12,
                 offset: const Offset(0, -2),
               ),
             ],
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
           ),
           child: TabBar(
-            indicatorColor: AppColors.primary,
-            labelColor: AppColors.primary,
+            indicator: UnderlineTabIndicator(
+              borderSide: BorderSide(width: 4, color: AppColors.accent1),
+              insets: const EdgeInsets.symmetric(horizontal: 24),
+            ),
+            labelColor: AppColors.charcoal,
             unselectedLabelColor: AppColors.mediumGray,
             indicatorSize: TabBarIndicatorSize.label,
             tabs: const [
-              Tab(icon: Icon(Icons.home), text: 'Home'),
-              Tab(icon: Icon(Icons.fitness_center), text: 'Exercise'),
-              Tab(icon: Icon(Icons.restaurant), text: 'Calories'),
-              Tab(icon: Icon(Icons.local_fire_department), text: 'Streak'),
-              Tab(icon: Icon(Icons.person), text: 'Profile'),
+              Tab(icon: Icon(Icons.home, color: AppColors.charcoal), text: 'Home'),
+              Tab(icon: Icon(Icons.fitness_center, color: AppColors.charcoal), text: 'Exercise'),
+              Tab(icon: Icon(Icons.restaurant, color: AppColors.charcoal), text: 'Calories'),
+              Tab(icon: Icon(Icons.local_fire_department, color: AppColors.charcoal), text: 'Streak'),
+              Tab(icon: Icon(Icons.person, color: AppColors.charcoal), text: 'Profile'),
             ],
           ),
         ),
@@ -326,7 +346,7 @@ Future<void> _markGoalCompleted({bool showCongratsDialog = true}) async {
                             child: const Icon(
                               Icons.emoji_events,
                               size: 48,
-                              color: Colors.white,
+                              color: AppColors.charcoal,
                             ),
                           ),
                         );
@@ -346,7 +366,7 @@ Future<void> _markGoalCompleted({bool showCongratsDialog = true}) async {
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppColors.charcoal,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -378,7 +398,7 @@ Future<void> _markGoalCompleted({bool showCongratsDialog = true}) async {
                       onPressed: () => Navigator.of(dialogContext).pop(),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.purple.shade600,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.charcoal,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 48,
                           vertical: 16,
@@ -780,9 +800,9 @@ Future<void> _fetchProgressData() async {
             decoration: BoxDecoration(
               gradient: LinearGradient(colors: [AppColors.accent1, AppColors.primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [BoxShadow(color: AppColors.dark1.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 6))],
+              boxShadow: [BoxShadow(color: AppColors.charcoal.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 6))],
             ),
-            child: const Icon(Icons.self_improvement, color: Colors.white, size: 28),
+            child: Icon(Icons.self_improvement, color: AppColors.charcoal, size: 28),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -794,8 +814,8 @@ Future<void> _fetchProgressData() async {
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(color: AppColors.lightBlue, borderRadius: BorderRadius.circular(12)),
-            child: Row(children: [Icon(Icons.local_fire_department, color: AppColors.blue), SizedBox(width: 6), Text('${_bmr.round()} kcal', style: TextStyle(fontWeight: FontWeight.bold))]),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+            child: Row(children: [Icon(Icons.local_fire_department, color: AppColors.charcoal), SizedBox(width: 6), Text('${_bmr.round()} kcal', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.charcoal))]),
           ),
         ],
       ),
@@ -827,7 +847,7 @@ Future<void> _fetchProgressData() async {
                 value: '${_bmr.round()}',
                 unit: 'kcal/day',
                 icon: Icons.local_fire_department,
-                color: AppColors.blue,
+                color: AppColors.charcoal,
               ),
             ),
             const SizedBox(width: 12),
@@ -847,12 +867,12 @@ Future<void> _fetchProgressData() async {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.lightBlue.withOpacity(0.3),
+              color: AppColors.charcoal.withOpacity(0.3),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               children: [
-                Icon(Icons.calendar_today, size: 18, color: AppColors.blue),
+                Icon(Icons.calendar_today, size: 18, color: AppColors.charcoal),
                 const SizedBox(width: 8),
                 Text('Target Date: $_targetDate', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               ],
@@ -864,10 +884,10 @@ Future<void> _fetchProgressData() async {
   }
   
   Color _getBMIColor() {
-    if (_bmi < 18.5) return Colors.orange;
-    if (_bmi < 25) return Colors.green;
-    if (_bmi < 30) return Colors.orange;
-    return Colors.red;
+  if (_bmi < 18.5) return AppColors.orange;
+  if (_bmi < 25) return AppColors.accent1;
+  if (_bmi < 30) return AppColors.orange;
+  return AppColors.red;
   }
   
   Widget _buildMetricBox({
@@ -1221,9 +1241,9 @@ Future<void> _saveWeightUpdate(double weight, double? height) async {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildLegendItem('BMR', AppColors.blue),
+            _buildLegendItem('BMR', AppColors.lightBlue),
             const SizedBox(width: 24),
-            _buildLegendItem('BMI', Colors.green),
+            _buildLegendItem('BMI', AppColors.accent1),
           ],
         ),
       ]),
@@ -1279,7 +1299,7 @@ Widget _buildFoodCarousel() {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.restaurant_menu, color: Colors.white, size: 24),
+                child: Icon(Icons.restaurant_menu, color: AppColors.charcoal, size: 24),
               ),
               const SizedBox(width: 12),
               const Expanded(
@@ -1291,7 +1311,7 @@ Widget _buildFoodCarousel() {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
-                        color: AppColors.dark1,
+                        color: AppColors.charcoal,
                       ),
                     ),
                     SizedBox(height: 2),
@@ -1323,12 +1343,12 @@ Widget _buildFoodCarousel() {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.recommend, color: Colors.white, size: 16),
+                    Icon(Icons.recommend, color: AppColors.charcoal, size: 16),
                     const SizedBox(width: 6),
                     Text(
                       '${foods.length}',
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.charcoal,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -1443,10 +1463,10 @@ Widget _buildFoodCarousel() {
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               ShaderMask(
                 shaderCallback: (bounds) => const LinearGradient(colors: [Colors.white, Color(0xFFFFFFB3)]).createShader(bounds),
-                child: const Icon(Icons.fitness_center, color: Colors.white, size: 28),
+                child: Icon(Icons.fitness_center, color: AppColors.charcoal, size: 28),
               ),
               const SizedBox(width: 12),
-              const Text('Start Your Workout Now', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, shadows: [Shadow(color: Colors.black26, blurRadius: 4)])),
+              Text('Start Your Workout Now', style: TextStyle(color: AppColors.charcoal, fontSize: 18, fontWeight: FontWeight.w900, shadows: [Shadow(color: Colors.black26, blurRadius: 4)])),
             ]),
           ),
         ),
@@ -1456,9 +1476,9 @@ Widget _buildFoodCarousel() {
 
   Widget _smallIconBox(IconData icon) {
     return Container(
-      decoration: BoxDecoration(color: AppColors.lightBlue, borderRadius: BorderRadius.circular(10)),
+  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
       padding: const EdgeInsets.all(10),
-      child: Icon(icon, size: 22, color: AppColors.blue),
+  child: Icon(icon, size: 22, color: AppColors.charcoal),
     );
   }
 
@@ -1466,7 +1486,7 @@ Widget _buildFoodCarousel() {
     return Container(
       margin: margin ?? const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: AppColors.dark1.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 6))]),
+  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: AppColors.charcoal.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 6))]),
       child: child,
     );
   }
@@ -1479,7 +1499,7 @@ Widget _buildFoodCarousel() {
         hintText: hint,
         prefixIcon: Icon(icon, size: small ? 18 : 24, color: AppColors.mediumDark),
         filled: true,
-        fillColor: AppColors.lightBlue.withOpacity(0.08),
+  fillColor: AppColors.charcoal.withOpacity(0.08),
         contentPadding: EdgeInsets.symmetric(vertical: small ? 10 : 14, horizontal: 16),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
       ),
@@ -1608,7 +1628,7 @@ class _ProgressGraphState extends State<_ProgressGraph> {
         width: 140,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.charcoal,
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
@@ -1622,7 +1642,7 @@ class _ProgressGraphState extends State<_ProgressGraph> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildTooltipRow('BMR', '${bmr.round()} kcal', Icons.local_fire_department, color: AppColors.blue),
+            _buildTooltipRow('BMR', '${bmr.round()} kcal', Icons.local_fire_department, color: AppColors.charcoal),
             const SizedBox(height: 6),
             _buildTooltipRow('BMI', bmi.toStringAsFixed(1), Icons.monitor_weight, color: _getBMIColor(bmi)),
             const SizedBox(height: 4),
@@ -1669,10 +1689,10 @@ class _ProgressGraphState extends State<_ProgressGraph> {
   }
 
   Color _getBMIColor(double bmi) {
-    if (bmi < 18.5) return Colors.orange;
-    if (bmi < 25) return Colors.green;
-    if (bmi < 30) return Colors.orange;
-    return Colors.red;
+  if (bmi < 18.5) return AppColors.orange;
+  if (bmi < 25) return AppColors.accent1;
+  if (bmi < 30) return AppColors.orange;
+  return AppColors.red;
   }
 }
 
@@ -1747,13 +1767,13 @@ class _GraphPainter extends CustomPainter {
 
     // Fill area under BMR line
     final bmrAreaPaint = Paint()
-      ..color = AppColors.blue.withOpacity(0.1)
+  ..color = AppColors.lightBlue.withOpacity(0.1)
       ..style = PaintingStyle.fill;
     canvas.drawPath(bmrAreaPath, bmrAreaPaint);
 
     // Draw BMR line
     final bmrPaint = Paint()
-      ..color = AppColors.blue
+  ..color = AppColors.lightBlue
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
@@ -1785,13 +1805,13 @@ class _GraphPainter extends CustomPainter {
 
     // Fill area under BMI line
     final bmiAreaPaint = Paint()
-      ..color = Colors.green.withOpacity(0.1)
+      ..color = AppColors.accent1.withOpacity(0.1)
       ..style = PaintingStyle.fill;
     canvas.drawPath(bmiAreaPath, bmiAreaPaint);
 
     // Draw BMI line
     final bmiPaint = Paint()
-      ..color = Colors.green
+      ..color = AppColors.accent1
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
@@ -1824,7 +1844,7 @@ class _GraphPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = i == hoveredIndex ? 3 : 2;
       final bmrPointPaint = Paint()
-        ..color = i == hoveredIndex ? AppColors.blue : AppColors.blue.withOpacity(0.8)
+        ..color = i == hoveredIndex ? AppColors.lightBlue : AppColors.lightBlue.withOpacity(0.8)
         ..style = PaintingStyle.fill;
 
       canvas.drawCircle(Offset(x, bmrY), i == hoveredIndex ? 8 : 5, bmrPointBorderPaint);
@@ -1836,7 +1856,7 @@ class _GraphPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = i == hoveredIndex ? 3 : 2;
       final bmiPointPaint = Paint()
-        ..color = i == hoveredIndex ? Colors.green : Colors.green.withOpacity(0.8)
+        ..color = i == hoveredIndex ? AppColors.accent1 : AppColors.accent1.withOpacity(0.8)
         ..style = PaintingStyle.fill;
 
       canvas.drawCircle(Offset(x, bmiY), i == hoveredIndex ? 8 : 5, bmiPointBorderPaint);
@@ -1854,14 +1874,14 @@ class _GraphPainter extends CustomPainter {
     for (int i = 0; i <= 4; i++) {
       double y = padding + (graphHeight * i / 4);
       double bmrValue = maxBMR - ((maxBMR - minBMR) * i / 4);
-      _drawText(canvas, bmrValue.round().toString(), Offset(5, y - 6), textStyle.copyWith(color: AppColors.blue));
+  _drawText(canvas, bmrValue.round().toString(), Offset(5, y - 6), textStyle.copyWith(color: AppColors.lightBlue));
     }
 
     // Right axis (BMI) labels
     for (int i = 0; i <= 4; i++) {
       double y = padding + (graphHeight * i / 4);
       double bmiValue = maxBMI - ((maxBMI - minBMI) * i / 4);
-      _drawText(canvas, bmiValue.toStringAsFixed(1), Offset(size.width - padding + 5, y - 6), textStyle.copyWith(color: Colors.green));
+      _drawText(canvas, bmiValue.toStringAsFixed(1), Offset(size.width - padding + 5, y - 6), textStyle.copyWith(color: AppColors.accent1));
     }
 
     // Draw date labels at bottom
@@ -2080,7 +2100,7 @@ class VerticalBattery extends StatelessWidget {
             width: width - 6,
             height: fillHeight,
             margin: const EdgeInsets.only(bottom: 4),
-            decoration: BoxDecoration(color: fillColor, borderRadius: BorderRadius.vertical(bottom: const Radius.circular(6), top: Radius.circular(fillHeight < 8 ? 6 : 0)), boxShadow: [BoxShadow(color: AppColors.dark1.withOpacity(0.12), blurRadius: 6, offset: const Offset(0, 2))]),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(bottom: const Radius.circular(6), top: Radius.circular(fillHeight < 8 ? 6 : 0)), boxShadow: [BoxShadow(color: AppColors.charcoal.withOpacity(0.12), blurRadius: 6, offset: const Offset(0, 2))]),
           ),
           if (showPercentage)
             Positioned(
@@ -2171,14 +2191,14 @@ class _FoodItemCardState extends State<FoodItemCard> with SingleTickerProviderSt
               ),
               child: Row(
                 children: [
-                  Icon(Icons.local_fire_department, color: AppColors.blue),
+                  Icon(Icons.local_fire_department, color: AppColors.lightBlue),
                   const SizedBox(width: 8),
                   Text(
                     '${widget.food['kcal']} calories',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.blue,
+                      color: AppColors.lightBlue,
                     ),
                   ),
                 ],

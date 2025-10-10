@@ -57,7 +57,7 @@ class CirclePatternPainter extends CustomPainter {
     final paint = Paint()
       ..style = PaintingStyle.fill;
 
-    final color = isOverGoal ? AppColors.orange : AppColors.blue;
+  final color = isOverGoal ? AppColors.orange : AppColors.lightBlue;
 
     // Draw decorative circles
     paint.color = color.withOpacity(0.05);
@@ -287,7 +287,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
       expandedHeight: 120,
       floating: false,
       pinned: true,
-      backgroundColor: AppColors.blue,
+  backgroundColor: AppColors.charcoal,
       elevation: 0,
       flexibleSpace: FlexibleSpaceBar(
         title: const Text(
@@ -303,7 +303,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.blue,
+                AppColors.lightBlue,
                 AppColors.secondary,
               ],
             ),
@@ -318,7 +318,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                   height: 150,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.1),
+                    color: AppColors.charcoal.withOpacity(0.1),
                   ),
                 ),
               ),
@@ -330,7 +330,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                   height: 100,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.08),
+                    color: AppColors.charcoal.withOpacity(0.08),
                   ),
                 ),
               ),
@@ -363,7 +363,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
             borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                color: AppColors.blue.withOpacity(0.15),
+                color:  AppColors.charcoal.withOpacity(0.85),
                 blurRadius: 30,
                 offset: const Offset(0, 10),
                 spreadRadius: 5,
@@ -405,7 +405,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                                   Icon(
                                     Icons.calendar_today,
                                     size: 16,
-                                    color: AppColors.blue,
+                                    color:  AppColors.charcoal,
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
@@ -430,7 +430,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                                       return Text(
                                         '$value',
                                         style: TextStyle(
-                                          color: isOverGoal ? AppColors.orange : AppColors.blue,
+                                          color: isOverGoal ? AppColors.orange :  AppColors.lightBlue,
                                           fontSize: 56,
                                           fontWeight: FontWeight.w900,
                                           height: 1,
@@ -492,8 +492,8 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                                                 AppColors.red.withOpacity(0.1),
                                               ]
                                             : [
-                                                AppColors.blue.withOpacity(0.1),
-                                                AppColors.lightBlue,
+                                                 AppColors.charcoal.withOpacity(0.7),
+                                                AppColors.charcoal,
                                               ],
                                       ),
                                     ),
@@ -507,7 +507,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                                       strokeWidth: 8,
                                       backgroundColor: Colors.transparent,
                                       valueColor: AlwaysStoppedAnimation<Color>(
-                                        isOverGoal ? AppColors.orange : AppColors.blue,
+                                        isOverGoal ? AppColors.orange :  AppColors.lightBlue,
                                       ),
                                       strokeCap: StrokeCap.round,
                                     ),
@@ -520,14 +520,14 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                                         isOverGoal
                                             ? Icons.warning_amber_rounded
                                             : Icons.local_fire_department_rounded,
-                                        color: isOverGoal ? AppColors.orange : AppColors.blue,
+                                        color: isOverGoal ? AppColors.orange :  AppColors.lightBlue,
                                         size: 28,
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
                                         '${(value * 100).toInt()}%',
                                         style: TextStyle(
-                                          color: isOverGoal ? AppColors.orange : AppColors.blue,
+                                          color: isOverGoal ? AppColors.orange :  AppColors.lightBlue,
                                           fontSize: 14,
                                           fontWeight: FontWeight.w900,
                                         ),
@@ -563,7 +563,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                             label: isOverGoal ? 'Over' : 'Remaining',
                             value: '${remaining.abs()}',
                             unit: 'kcal',
-                            color: isOverGoal ? AppColors.orange : AppColors.blue,
+                            color: isOverGoal ? AppColors.orange : AppColors.lightBlue,
                           ),
                         ),
                       ],
@@ -758,9 +758,9 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: entry.isRecommended
-                              ? [AppColors.accent1, AppColors.primary]
-                              : [AppColors.blue.withOpacity(0.7), AppColors.blue],
+              colors: entry.isRecommended
+                ? [AppColors.accent1, AppColors.primary]
+                : [AppColors.lightBlue.withOpacity(0.7), AppColors.lightBlue],
                         ),
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -783,7 +783,7 @@ class _CalorieLogPageState extends State<CalorieLogPage>
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.dark1,
+                                    color: AppColors.charcoal,
                                   ),
                                 ),
                               ),
@@ -999,7 +999,7 @@ class _AddFoodBottomSheetState extends State<_AddFoodBottomSheet>
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.dark1,
+                              color: AppColors.charcoal,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1042,7 +1042,7 @@ class _AddFoodBottomSheetState extends State<_AddFoodBottomSheet>
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppColors.dark1,
+              color: AppColors.charcoal,
             ),
           ),
           const SizedBox(height: 8),
@@ -1065,7 +1065,7 @@ class _AddFoodBottomSheetState extends State<_AddFoodBottomSheet>
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppColors.dark1,
+              color: AppColors.charcoal,
             ),
           ),
           const SizedBox(height: 8),

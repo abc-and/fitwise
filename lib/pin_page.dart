@@ -1,3 +1,4 @@
+import 'constants/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -127,7 +128,7 @@ class _PinPageState extends State<PinPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: const Color(0xFF65A30D),
+        backgroundColor: AppColors.primary,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -161,7 +162,7 @@ class _PinPageState extends State<PinPage> {
             },
             child: const Text(
               'Go to Login',
-              style: TextStyle(color: Color(0xFF65A30D)),
+              style: TextStyle(color: AppColors.primary),
             ),
           ),
         ],
@@ -225,7 +226,7 @@ class _PinPageState extends State<PinPage> {
                       height: 18,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: filled ? const Color(0xFF65A30D) : Colors.grey[300],
+                        color: filled ? AppColors.primary : Colors.grey[300],
                       ),
                     );
                   }),
@@ -276,11 +277,11 @@ class _PinPageState extends State<PinPage> {
             if (_isLoading)
               Container(
                 color: Colors.black26,
-                child: const Center(
-                  child: CircularProgressIndicator(
-                    color: Color(0xFF65A30D),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primary,
+                    ),
                   ),
-                ),
               ),
           ],
         ),

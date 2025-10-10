@@ -1,3 +1,4 @@
+// ...existing code...
 import 'package:flutter/material.dart';
 import '../models/exercise.dart';
 import 'exercise_detail_screen.dart';
@@ -235,7 +236,7 @@ final List<Exercise> allExercises = [
 
   final Map<String, Map<String, dynamic>> typeStyles = {
     "Cardio": {"icon": Icons.favorite, "color": AppColors.red},
-    "Strength": {"icon": Icons.fitness_center, "color": AppColors.blue},
+    "Strength": {"icon": Icons.fitness_center, "color": AppColors.lightBlue},
     "Legs": {"icon": Icons.directions_run, "color": AppColors.primary},
     "Core": {"icon": Icons.accessibility_new, "color": AppColors.orange},
   };
@@ -322,7 +323,7 @@ final List<Exercise> allExercises = [
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.dark1,
+    color: AppColors.charcoal,
                   ),
                 ),
                 Container(
@@ -478,7 +479,7 @@ final List<Exercise> allExercises = [
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
-                        color: AppColors.dark1,
+                        color: AppColors.charcoal,
                       ),
                     ),
                     const SizedBox(height: 6),
