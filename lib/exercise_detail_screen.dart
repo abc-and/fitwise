@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+// 💡 REQUIRED IMPORTS FOR VIDEO/USER DATA
+import 'package:video_player/video_player.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/exercise.dart';
 import '../constants/app_colors.dart';
 
@@ -22,6 +26,68 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
 
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+  
+  // 💡 VIDEO STATE VARIABLES
+  late VideoPlayerController _videoPlayerController;
+  String? userSex;
+  bool _isVideoInitialized = false;
+  bool _hasVideoError = false;
+
+  // Static maps for filename lookup (You must ensure files are named exactly like this)
+  static const Map<String, String> _femaleVideoMap = {
+    "Bicep Curl": "Female_Bicep_Curls.mp4",
+    "Bicycle Crunch": "Female_Bicycle_Crunches.mp4",
+    "Box Jump": "Female_Box_Jump.mp4",
+    "Bulgarian Squat": "Female_Bulgarian_Squats.mp4",
+    "Burpee": "Female_Burpees.mp4",
+    "Butt Kick": "Female_Butt_Kicks.mp4",
+    "Calf Raise": "Female_Calf_Raises.mp4",
+    "Curl Ups": "Female_Curl_Ups.mp4",
+    "Diamond Push Up": "Female_Diamond_Push_Ups.mp4",
+    "Dip": "Female_Dips.mp4",
+    "High Knee": "Female_High_Knees.mp4",
+    "Jump Rope": "Female_Jump_Rope.mp4",
+    "Jumping Jack": "Female_Jumping_Jacks.mp4",
+    "Leg Raise": "Female_Leg_Raise.mp4",
+    "Lunge": "Female_Lunges.mp4",
+    "Mountain Climber": "Female_Mountain_Climbers.mp4",
+    "Plank": "Female_Planks.mp4",
+    "Push Up": "Female_Push_Up.mp4",
+    "Russian Twist": "Female_Russian_Twists.mp4",
+    "Shoulder Press": "Female_Shoulder_Press.mp4",
+    "Side Plank": "Female_Side_Planks.mp4",
+    "Sprint Interval": "Female_Sprint_Intervals.mp4",
+    "Squat": "Female_Squats.mp4",
+    "Wall Sit": "Female_Wall_Sit.mp4",
+  };
+
+  static const Map<String, String> _maleVideoMap = {
+    "Bicep Curl": "Male_Bicep_Curls.mp4",
+    "Bicycle Crunch": "Male_Bicycle_Crunches.mp4",
+    "Box Jump": "Male_Box_Jumps.mp4",
+    "Bulgarian Squat": "Male_Bulgarian_Squats.mp4",
+    "Burpee": "Male_Burpees.mp4",
+    "Butt Kick": "Male_Butt_Kicks.mp4",
+    "Calf Raise": "Male_Calf_Raise.mp4",
+    "Curl Ups": "Male_Curl_ups.mp4",
+    "Diamond Push Up": "Male_Diamond_Push_Up.mp4",
+    "Dip": "Male_Dips.mp4",
+    "High Knee": "Male_High_Knees.mp4",
+    "Jump Rope": "Male_Jump_Rope.mp4",
+    "Jumping Jack": "Male_Jumping-Jacks.mp4",
+    "Leg Raise": "Male_Leg_Raise.mp4",
+    "Lunge": "Male_Lunges.mp4",
+    "Mountain Climber": "Male_Mountain_Climbers.mp4",
+    "Plank": "Male_Planks.mp4",
+    "Push Up": "Male_Push-Up.mp4", 
+    "Russian Twist": "Male_Russian_Twists.mp4",
+    "Shoulder Press": "Male_Shoulder_Press.mp4",
+    "Side Plank": "Male_Side_Planks.mp4",
+    "Sprint Interval": "Male_Sprint_Intervals.mp4",
+    "Squat": "Male_Squats.mp4",
+    "Wall Sit": "Male_Wall_Sits.mp4",
+  };
+
 
   @override
   void initState() {
@@ -36,7 +102,52 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
+
+    // 💡 START VIDEO LOADING
+    _loadUserSexAndVideo();
   }
+  
+  // 💡 NEW METHOD: Loads user sex from Firestore and then loads the corresponding video asset.
+  Future<void> _loadUserSexAndVideo() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final doc = await FirebaseFirestore.instance
+            .collection('user_info')
+            .doc(user.uid)
+            .get();
+        userSex = doc.exists ? doc['sex'] : null;
+      }
+
+      final isFemale = userSex?.toLowerCase() == "female";
+      final folder = isFemale ? "female_exercises" : "male_exercises";
+      final fileNameMap = isFemale ? _femaleVideoMap : _maleVideoMap;
+      final exerciseKey = widget.exercise.name;
+      final fileName = fileNameMap[exerciseKey];
+
+      if (fileName != null) {
+        final videoPath = "assets/$folder/$fileName";
+        _videoPlayerController = VideoPlayerController.asset(videoPath)
+          ..setLooping(true)
+          ..setVolume(1.0) // Enable full volume
+          ..initialize().then((_) {
+            _videoPlayerController.play();
+            if (mounted) setState(() => _isVideoInitialized = true);
+          })
+          .catchError((error) {
+            debugPrint("VideoPlayerController init failed for path: $videoPath. Error: $error");
+            if (mounted) setState(() => _hasVideoError = true);
+          });
+      } else {
+        if (mounted) setState(() => _hasVideoError = true);
+      }
+    } catch (e) {
+      debugPrint("General video load error: $e");
+      if (mounted) setState(() => _hasVideoError = true);
+    }
+    
+  }
+
 
   void startTimer() {
     if (isRunning) return;
@@ -44,6 +155,11 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
     _controller.reverse(
       from: remainingTime / widget.exercise.duration,
     );
+    
+    // Play video if initialized
+    if (_isVideoInitialized && !_hasVideoError) {
+      _videoPlayerController.play();
+    }
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (remainingTime > 0) {
@@ -60,6 +176,10 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
   void pauseTimer() {
     _timer?.cancel();
     _controller.stop();
+    // Pause video
+    if (_isVideoInitialized && !_hasVideoError) {
+      _videoPlayerController.pause();
+    }
     setState(() => isRunning = false);
   }
 
@@ -67,6 +187,11 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
     _timer?.cancel();
     _audioPlayer.stop();
     _controller.reset();
+    // Reset video
+    if (_isVideoInitialized && !_hasVideoError) {
+      _videoPlayerController.seekTo(Duration.zero);
+      _videoPlayerController.pause();
+    }
     setState(() {
       remainingTime = widget.exercise.duration;
       isRunning = false;
@@ -74,6 +199,10 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
   }
 
   Future<void> _playAlarm() async {
+    // Stop video when alarm sounds
+    if (_isVideoInitialized && !_hasVideoError) {
+      _videoPlayerController.pause();
+    }
     await _audioPlayer.play(AssetSource("sounds/alarm.mp3"));
 
     if (mounted) {
@@ -144,6 +273,10 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
     _timer?.cancel();
     _audioPlayer.dispose();
     _controller.dispose();
+    // 💡 Dispose video controller if it was initialized
+    if (_isVideoInitialized && !_hasVideoError) {
+      _videoPlayerController.dispose();
+    }
     super.dispose();
   }
 
@@ -158,6 +291,64 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
       default:
         return AppColors.mediumGray;
     }
+  }
+  
+  // 💡 NEW METHOD: Builds the background content (Video or GIF)
+  Widget _buildBackgroundContent() {
+    if (_hasVideoError) {
+      // Fallback to GIF/Image on video error
+      if (widget.exercise.gifUrl != null) {
+        return Image.network(
+          widget.exercise.gifUrl!,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _buildErrorPlaceholder(),
+        );
+      }
+      return _buildErrorPlaceholder();
+    }
+
+    if (_isVideoInitialized) {
+      // Display the video once initialized
+      return SizedBox.expand(
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: _videoPlayerController.value.size.width,
+            height: _videoPlayerController.value.size.height,
+            child: VideoPlayer(_videoPlayerController),
+          ),
+        ),
+      );
+    }
+
+    // Loading state or initial GIF display
+    if (widget.exercise.gifUrl != null) {
+      return Image.network(
+        widget.exercise.gifUrl!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildLoadingPlaceholder(),
+      );
+    }
+    return _buildLoadingPlaceholder();
+  }
+  
+  Widget _buildLoadingPlaceholder() {
+    return Container(
+      color: AppColors.accentBlue.withOpacity(0.3),
+      alignment: Alignment.center,
+      child: const CircularProgressIndicator(color: AppColors.primary),
+    );
+  }
+  
+  Widget _buildErrorPlaceholder() {
+    return Container(
+      color: AppColors.accentBlue.withOpacity(0.3),
+      child: const Icon(
+        Icons.fitness_center,
+        size: 100,
+        color: AppColors.primary,
+      ),
+    );
   }
 
   @override
@@ -187,20 +378,10 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  if (widget.exercise.gifUrl != null)
-                    Image.network(
-                      widget.exercise.gifUrl!,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: AppColors.accentBlue.withOpacity(0.3),
-                          child: const Icon(
-                            Icons.fitness_center,
-                            size: 100,
-                            color: AppColors.primary,
-                          ),
-                        );
-                      },
-                    ),
+                  // 💡 Use the new background content method here
+                  _buildBackgroundContent(),
+                  
+                  // Gradient Overlay
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -213,6 +394,8 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
                       ),
                     ),
                   ),
+                  
+                  // Text Content
                   Positioned(
                     bottom: 16,
                     left: 16,
@@ -573,7 +756,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
           const SizedBox(height: 8),
           Text(
             value,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: AppColors.textDark,

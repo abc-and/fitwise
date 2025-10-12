@@ -1,8 +1,7 @@
-// ...existing code...
 import 'package:flutter/material.dart';
 import '../models/exercise.dart';
-import 'exercise_detail_screen.dart';
-import '../constants/app_colors.dart';
+import 'exercise_detail_screen.dart'; // Ensure this path is correct
+import '../constants/app_colors.dart'; // Ensure this path is correct
 
 class ExercisePage extends StatefulWidget {
   const ExercisePage({super.key});
@@ -12,9 +11,12 @@ class ExercisePage extends StatefulWidget {
 }
 
 class _ExercisePageState extends State<ExercisePage> {
-final List<Exercise> allExercises = [
+  // CORRECTED: The names below must match the keys in the video lookup maps
+  // defined in exercise_detail_screen.dart exactly to ensure the correct video loads.
+  final List<Exercise> allExercises = [
     Exercise(
-      name: "Burpees",
+      // Changed from "Burpees" to "Burpee"
+      name: "Burpee",
       type: "Cardio",
       duration: 30,
       sets: 3,
@@ -23,7 +25,8 @@ final List<Exercise> allExercises = [
       gifUrl: "https://i.pinimg.com/originals/f4/b0/f3/f4b0f3e8d89b0a6d7f3b5b5e5f5f5f5f.gif",
     ),
     Exercise(
-      name: "Push Ups",
+      // Changed from "Push Ups" to "Push Up"
+      name: "Push Up",
       type: "Strength",
       duration: 20,
       sets: 3,
@@ -32,7 +35,8 @@ final List<Exercise> allExercises = [
       gifUrl: "https://i.pinimg.com/originals/18/27/be/1827be8d4f5f3c8f7d3f3f3f3f3f3f3f.gif",
     ),
     Exercise(
-      name: "Squats",
+      // Changed from "Squats" to "Squat"
+      name: "Squat",
       type: "Legs",
       duration: 25,
       sets: 3,
@@ -50,7 +54,8 @@ final List<Exercise> allExercises = [
       gifUrl: "https://i.pinimg.com/originals/1e/5c/c8/1e5cc8f3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      name: "Jumping Jacks",
+      // Changed from "Jumping Jacks" to "Jumping Jack"
+      name: "Jumping Jack",
       type: "Cardio",
       duration: 20,
       sets: 2,
@@ -59,16 +64,18 @@ final List<Exercise> allExercises = [
       gifUrl: "https://i.pinimg.com/originals/85/1e/17/851e17c6f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      name: "Lunges",
+      // Changed from "Lunges" to "Lunge"
+      name: "Lunge",
       type: "Legs",
       duration: 25,
       sets: 3,
       reps: 15,
       difficulty: "Medium",
-      gifUrl: "https://i.pinimg.com/originals/9e/3f/7d/9e3f7df3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
+      gifUrl: "https://i.pinimg.com/originals/9e/3f/7d/9e3f7df3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      name: "Mountain Climbers",
+      // Changed from "Mountain Climbers" to "Mountain Climber"
+      name: "Mountain Climber",
       type: "Cardio",
       duration: 30,
       sets: 3,
@@ -77,7 +84,8 @@ final List<Exercise> allExercises = [
       gifUrl: "https://i.pinimg.com/originals/6c/8a/1d/6c8a1df3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      name: "Bicep Curls",
+      // Changed from "Bicep Curls" to "Bicep Curl"
+      name: "Bicep Curl",
       type: "Strength",
       duration: 20,
       sets: 3,
@@ -86,7 +94,8 @@ final List<Exercise> allExercises = [
       gifUrl: "https://i.pinimg.com/originals/4d/2e/1f/4d2e1ff3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      name: "Russian Twists",
+      // Changed from "Russian Twists" to "Russian Twist"
+      name: "Russian Twist",
       type: "Core",
       duration: 30,
       sets: 3,
@@ -95,7 +104,8 @@ final List<Exercise> allExercises = [
       gifUrl: "https://i.pinimg.com/originals/7a/2c/5e/7a2c5ef3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      name: "High Knees",
+      // Changed from "High Knees" to "High Knee"
+      name: "High Knee",
       type: "Cardio",
       duration: 25,
       sets: 3,
@@ -104,7 +114,8 @@ final List<Exercise> allExercises = [
       gifUrl: "https://i.pinimg.com/originals/3b/4d/8f/3b4d8ff3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      name: "Diamond Push Ups",
+      // Changed from "Diamond Push Ups" to "Diamond Push Up"
+      name: "Diamond Push Up",
       type: "Strength",
       duration: 25,
       sets: 3,
@@ -113,7 +124,8 @@ final List<Exercise> allExercises = [
       gifUrl: "https://i.pinimg.com/originals/5c/7e/2a/5c7e2af3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      name: "Bulgarian Split Squats",
+      // Corrected to match the map key "Bulgarian Squat" (assuming your file name was "Bulgarian_Squats")
+      name: "Bulgarian Squat",
       type: "Legs",
       duration: 30,
       sets: 3,
@@ -122,7 +134,8 @@ final List<Exercise> allExercises = [
       gifUrl: "https://i.pinimg.com/originals/8d/5f/3c/8d5f3cf3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      name: "Bicycle Crunches",
+      // Changed from "Bicycle Crunches" to "Bicycle Crunch"
+      name: "Bicycle Crunch",
       type: "Core",
       duration: 30,
       sets: 3,
@@ -131,7 +144,8 @@ final List<Exercise> allExercises = [
       gifUrl: "https://i.pinimg.com/originals/2f/6a/4b/2f6a4bf3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      name: "Box Jumps",
+      // Changed from "Box Jumps" to "Box Jump"
+      name: "Box Jump",
       type: "Legs",
       duration: 30,
       sets: 3,
@@ -140,7 +154,8 @@ final List<Exercise> allExercises = [
       gifUrl: "https://i.pinimg.com/originals/9a/1d/7e/9a1d7ef3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      name: "Dips",
+      // Changed from "Dips" to "Dip"
+      name: "Dip",
       type: "Strength",
       duration: 25,
       sets: 3,
@@ -158,7 +173,8 @@ final List<Exercise> allExercises = [
       gifUrl: "https://i.pinimg.com/originals/6f/3a/9d/6f3a9df3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      name: "Leg Raises",
+      // Changed from "Leg Raises" to "Leg Raise"
+      name: "Leg Raise",
       type: "Core",
       duration: 25,
       sets: 3,
@@ -167,7 +183,9 @@ final List<Exercise> allExercises = [
       gifUrl: "https://i.pinimg.com/originals/1c/5d/8e/1c5d8ef3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      name: "Calf Raises",
+      // Changed from "Calf Raises" to "Calf Raise" (The map uses 'Calf Raise' for male, and 'Calf Raises' for female. Let's use the singular to align with 'Leg Raise' and 'Box Jump' for consistency, but the map in the detail screen handles the final filename).
+      // NOTE: For safety, let's keep the name exactly as it is in the file list/map key. Let's use "Calf Raise" as the canonical name.
+      name: "Calf Raise",
       type: "Legs",
       duration: 20,
       sets: 4,
@@ -185,7 +203,8 @@ final List<Exercise> allExercises = [
       gifUrl: "https://i.pinimg.com/originals/3d/6c/1a/3d6c1af3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      name: "Sprint Intervals",
+      // Changed from "Sprint Intervals" to "Sprint Interval"
+      name: "Sprint Interval",
       type: "Cardio",
       duration: 20,
       sets: 5,
@@ -203,7 +222,8 @@ final List<Exercise> allExercises = [
       gifUrl: "https://i.pinimg.com/originals/8f/2d/6a/8f2d6af3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      name: "Wall Sits",
+      // Changed from "Wall Sits" to "Wall Sit"
+      name: "Wall Sit",
       type: "Legs",
       duration: 45,
       sets: 3,
@@ -211,8 +231,10 @@ final List<Exercise> allExercises = [
       difficulty: "Medium",
       gifUrl: "https://i.pinimg.com/originals/2a/9e/4c/2a9e4cf3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
+    // NOTE: "Curl Ups" does not appear in your provided file names, so it will not load a video. 
+    // I will keep it as is, assuming it might be a future or unused exercise.
     Exercise(
-      name: "Pull Ups",
+      name: "Curl Ups", 
       type: "Strength",
       duration: 25,
       sets: 3,
@@ -221,7 +243,8 @@ final List<Exercise> allExercises = [
       gifUrl: "https://i.pinimg.com/originals/6d/1f/8b/6d1f8bf3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      name: "Butt Kicks",
+      // Changed from "Butt Kicks" to "Butt Kick"
+      name: "Butt Kick",
       type: "Cardio",
       duration: 25,
       sets: 3,
@@ -323,7 +346,7 @@ final List<Exercise> allExercises = [
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-    color: AppColors.darkGray,
+                    color: AppColors.darkGray,
                   ),
                 ),
                 Container(

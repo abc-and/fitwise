@@ -16,16 +16,25 @@ dependencies:
   crypto: ^3.0.3
   provider: ^6.1.1
   cupertino_icons: ^1.0.8
-  audioplayers: ^6.0.0   # 🎵 added for alarm sound
+  audioplayers: ^6.0.0   # 🎵 for alarm sound
   intl: ^0.18.0
+  video_player: ^2.9.1
+  video_player_web: ^2.3.5
+
+
+dependency_overrides:
+  video_player_web: 2.4.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
 
+
 flutter:
   uses-material-design: true
 
   assets:
-    - assets/sounds/alarm.mp3   # 🎵 add your alarm sound here
+    - assets/sounds/alarm.mp3   # 🎵 alarm sound
+    - assets/male_exercises/
+    - assets/female_exercises/
