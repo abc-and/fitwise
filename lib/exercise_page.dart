@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/theme.dart';
 import '../models/exercise.dart';
-import 'exercise_detail_screen.dart'; // Ensure this path is correct
-import '../constants/app_colors.dart'; // Ensure this path is correct
+import 'exercise_detail_screen.dart';
+import '../constants/app_colors.dart';
 
 class ExercisePage extends StatefulWidget {
   const ExercisePage({super.key});
@@ -15,7 +17,6 @@ class _ExercisePageState extends State<ExercisePage> {
   // defined in exercise_detail_screen.dart exactly to ensure the correct video loads.
   final List<Exercise> allExercises = [
     Exercise(
-      // Changed from "Burpees" to "Burpee"
       name: "Burpee",
       type: "Cardio",
       duration: 30,
@@ -25,7 +26,6 @@ class _ExercisePageState extends State<ExercisePage> {
       gifUrl: "https://i.pinimg.com/originals/f4/b0/f3/f4b0f3e8d89b0a6d7f3b5b5e5f5f5f5f.gif",
     ),
     Exercise(
-      // Changed from "Push Ups" to "Push Up"
       name: "Push Up",
       type: "Strength",
       duration: 20,
@@ -35,7 +35,6 @@ class _ExercisePageState extends State<ExercisePage> {
       gifUrl: "https://i.pinimg.com/originals/18/27/be/1827be8d4f5f3c8f7d3f3f3f3f3f3f3f.gif",
     ),
     Exercise(
-      // Changed from "Squats" to "Squat"
       name: "Squat",
       type: "Legs",
       duration: 25,
@@ -54,7 +53,6 @@ class _ExercisePageState extends State<ExercisePage> {
       gifUrl: "https://i.pinimg.com/originals/1e/5c/c8/1e5cc8f3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      // Changed from "Jumping Jacks" to "Jumping Jack"
       name: "Jumping Jack",
       type: "Cardio",
       duration: 20,
@@ -64,7 +62,6 @@ class _ExercisePageState extends State<ExercisePage> {
       gifUrl: "https://i.pinimg.com/originals/85/1e/17/851e17c6f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      // Changed from "Lunges" to "Lunge"
       name: "Lunge",
       type: "Legs",
       duration: 25,
@@ -74,7 +71,6 @@ class _ExercisePageState extends State<ExercisePage> {
       gifUrl: "https://i.pinimg.com/originals/9e/3f/7d/9e3f7df3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      // Changed from "Mountain Climbers" to "Mountain Climber"
       name: "Mountain Climber",
       type: "Cardio",
       duration: 30,
@@ -84,7 +80,6 @@ class _ExercisePageState extends State<ExercisePage> {
       gifUrl: "https://i.pinimg.com/originals/6c/8a/1d/6c8a1df3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      // Changed from "Bicep Curls" to "Bicep Curl"
       name: "Bicep Curl",
       type: "Strength",
       duration: 20,
@@ -94,7 +89,6 @@ class _ExercisePageState extends State<ExercisePage> {
       gifUrl: "https://i.pinimg.com/originals/4d/2e/1f/4d2e1ff3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      // Changed from "Russian Twists" to "Russian Twist"
       name: "Russian Twist",
       type: "Core",
       duration: 30,
@@ -104,7 +98,6 @@ class _ExercisePageState extends State<ExercisePage> {
       gifUrl: "https://i.pinimg.com/originals/7a/2c/5e/7a2c5ef3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      // Changed from "High Knees" to "High Knee"
       name: "High Knee",
       type: "Cardio",
       duration: 25,
@@ -114,7 +107,6 @@ class _ExercisePageState extends State<ExercisePage> {
       gifUrl: "https://i.pinimg.com/originals/3b/4d/8f/3b4d8ff3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      // Changed from "Diamond Push Ups" to "Diamond Push Up"
       name: "Diamond Push Up",
       type: "Strength",
       duration: 25,
@@ -124,7 +116,6 @@ class _ExercisePageState extends State<ExercisePage> {
       gifUrl: "https://i.pinimg.com/originals/5c/7e/2a/5c7e2af3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      // Corrected to match the map key "Bulgarian Squat" (assuming your file name was "Bulgarian_Squats")
       name: "Bulgarian Squat",
       type: "Legs",
       duration: 30,
@@ -134,7 +125,6 @@ class _ExercisePageState extends State<ExercisePage> {
       gifUrl: "https://i.pinimg.com/originals/8d/5f/3c/8d5f3cf3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      // Changed from "Bicycle Crunches" to "Bicycle Crunch"
       name: "Bicycle Crunch",
       type: "Core",
       duration: 30,
@@ -144,7 +134,6 @@ class _ExercisePageState extends State<ExercisePage> {
       gifUrl: "https://i.pinimg.com/originals/2f/6a/4b/2f6a4bf3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      // Changed from "Box Jumps" to "Box Jump"
       name: "Box Jump",
       type: "Legs",
       duration: 30,
@@ -154,7 +143,6 @@ class _ExercisePageState extends State<ExercisePage> {
       gifUrl: "https://i.pinimg.com/originals/9a/1d/7e/9a1d7ef3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      // Changed from "Dips" to "Dip"
       name: "Dip",
       type: "Strength",
       duration: 25,
@@ -173,7 +161,6 @@ class _ExercisePageState extends State<ExercisePage> {
       gifUrl: "https://i.pinimg.com/originals/6f/3a/9d/6f3a9df3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      // Changed from "Leg Raises" to "Leg Raise"
       name: "Leg Raise",
       type: "Core",
       duration: 25,
@@ -183,8 +170,6 @@ class _ExercisePageState extends State<ExercisePage> {
       gifUrl: "https://i.pinimg.com/originals/1c/5d/8e/1c5d8ef3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      // Changed from "Calf Raises" to "Calf Raise" (The map uses 'Calf Raise' for male, and 'Calf Raises' for female. Let's use the singular to align with 'Leg Raise' and 'Box Jump' for consistency, but the map in the detail screen handles the final filename).
-      // NOTE: For safety, let's keep the name exactly as it is in the file list/map key. Let's use "Calf Raise" as the canonical name.
       name: "Calf Raise",
       type: "Legs",
       duration: 20,
@@ -203,7 +188,6 @@ class _ExercisePageState extends State<ExercisePage> {
       gifUrl: "https://i.pinimg.com/originals/3d/6c/1a/3d6c1af3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      // Changed from "Sprint Intervals" to "Sprint Interval"
       name: "Sprint Interval",
       type: "Cardio",
       duration: 20,
@@ -222,7 +206,6 @@ class _ExercisePageState extends State<ExercisePage> {
       gifUrl: "https://i.pinimg.com/originals/8f/2d/6a/8f2d6af3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      // Changed from "Wall Sits" to "Wall Sit"
       name: "Wall Sit",
       type: "Legs",
       duration: 45,
@@ -231,8 +214,6 @@ class _ExercisePageState extends State<ExercisePage> {
       difficulty: "Medium",
       gifUrl: "https://i.pinimg.com/originals/2a/9e/4c/2a9e4cf3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
-    // NOTE: "Curl Ups" does not appear in your provided file names, so it will not load a video. 
-    // I will keep it as is, assuming it might be a future or unused exercise.
     Exercise(
       name: "Curl Ups", 
       type: "Strength",
@@ -243,7 +224,6 @@ class _ExercisePageState extends State<ExercisePage> {
       gifUrl: "https://i.pinimg.com/originals/6d/1f/8b/6d1f8bf3f3f3f3f3f3f3f3f3f3f3f3f3.gif",
     ),
     Exercise(
-      // Changed from "Butt Kicks" to "Butt Kick"
       name: "Butt Kick",
       type: "Cardio",
       duration: 25,
@@ -258,14 +238,15 @@ class _ExercisePageState extends State<ExercisePage> {
   String selectedFilter = "All";
 
   final Map<String, Map<String, dynamic>> typeStyles = {
-    "Cardio": {"icon": Icons.favorite, "color": AppColors.red},
+    "Cardio": {"icon": Icons.favorite, "color": AppColors.orange},
     "Strength": {"icon": Icons.fitness_center, "color": AppColors.accentBlue},
-    "Legs": {"icon": Icons.directions_run, "color": AppColors.primary},
-    "Core": {"icon": Icons.accessibility_new, "color": AppColors.orange},
+    "Legs": {"icon": Icons.directions_run, "color": AppColors.accentPurple},
+    "Core": {"icon": Icons.accessibility_new, "color": AppColors.accentCyan},
   };
 
   @override
   Widget build(BuildContext context) {
+    final theme = Provider.of<ThemeManager>(context);
     final exercises = allExercises.where((e) {
       final matchesSearch = e.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
           e.type.toLowerCase().contains(searchQuery.toLowerCase());
@@ -274,16 +255,16 @@ class _ExercisePageState extends State<ExercisePage> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: theme.surfaceColor,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: AppColors.primary,
-        title: const Text(
+        backgroundColor: theme.primaryBackground,
+        title: Text(
           "Exercise Library",
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 24,
-            color: Colors.white,
+            color: theme.primaryText,
           ),
         ),
         centerTitle: false,
@@ -292,7 +273,7 @@ class _ExercisePageState extends State<ExercisePage> {
         children: [
           Container(
             decoration: BoxDecoration(
-              color: AppColors.primary,
+              color: theme.primaryBackground,
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(30),
                 bottomRight: Radius.circular(30),
@@ -304,10 +285,10 @@ class _ExercisePageState extends State<ExercisePage> {
                 TextField(
                   decoration: InputDecoration(
                     hintText: "Search exercises...",
-                    hintStyle: TextStyle(color: Colors.grey[600]),
-                    prefixIcon: const Icon(Icons.search, color: AppColors.secondary),
+                    hintStyle: TextStyle(color: theme.tertiaryText),
+                    prefixIcon: Icon(Icons.search, color: theme.secondaryText),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: theme.cardColor,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
                       borderSide: BorderSide.none,
@@ -324,11 +305,11 @@ class _ExercisePageState extends State<ExercisePage> {
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     children: [
-                      _buildFilterChip("All"),
-                      _buildFilterChip("Cardio"),
-                      _buildFilterChip("Strength"),
-                      _buildFilterChip("Legs"),
-                      _buildFilterChip("Core"),
+                      _buildFilterChip("All", theme),
+                      _buildFilterChip("Cardio", theme),
+                      _buildFilterChip("Strength", theme),
+                      _buildFilterChip("Legs", theme),
+                      _buildFilterChip("Core", theme),
                     ],
                   ),
                 ),
@@ -346,7 +327,7 @@ class _ExercisePageState extends State<ExercisePage> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.darkGray,
+                    color: theme.secondaryText,
                   ),
                 ),
                 Container(
@@ -367,7 +348,7 @@ class _ExercisePageState extends State<ExercisePage> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.secondary,
+                          color: theme.secondaryText,
                         ),
                       ),
                     ],
@@ -382,13 +363,13 @@ class _ExercisePageState extends State<ExercisePage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
+                        Icon(Icons.search_off, size: 80, color: theme.tertiaryText),
                         const SizedBox(height: 16),
                         Text(
                           "No exercises found",
                           style: TextStyle(
                             fontSize: 18,
-                            color: Colors.grey[600],
+                            color: theme.secondaryText,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -401,7 +382,7 @@ class _ExercisePageState extends State<ExercisePage> {
                     itemBuilder: (context, index) {
                       final exercise = exercises[index];
                       final typeStyle = typeStyles[exercise.type] ?? {};
-                      return _buildExerciseCard(exercise, typeStyle);
+                      return _buildExerciseCard(exercise, typeStyle, theme);
                     },
                   ),
           ),
@@ -410,7 +391,7 @@ class _ExercisePageState extends State<ExercisePage> {
     );
   }
 
-  Widget _buildFilterChip(String label) {
+  Widget _buildFilterChip(String label, ThemeManager theme) {
     final isSelected = selectedFilter == label;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -418,7 +399,7 @@ class _ExercisePageState extends State<ExercisePage> {
         label: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : AppColors.secondary,
+            color: isSelected ? Colors.white : theme.primaryText,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -426,8 +407,8 @@ class _ExercisePageState extends State<ExercisePage> {
         onSelected: (selected) {
           setState(() => selectedFilter = label);
         },
-        backgroundColor: Colors.white,
-        selectedColor: AppColors.secondary,
+        backgroundColor: theme.cardColor,
+        selectedColor: AppColors.accentBlue,
         checkmarkColor: Colors.white,
         elevation: isSelected ? 4 : 0,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -435,15 +416,15 @@ class _ExercisePageState extends State<ExercisePage> {
     );
   }
 
-  Widget _buildExerciseCard(Exercise exercise, Map<String, dynamic> typeStyle) {
+  Widget _buildExerciseCard(Exercise exercise, Map<String, dynamic> typeStyle, ThemeManager theme) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: Colors.white,
+        color: theme.cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: theme.shadowColor,
             spreadRadius: 1,
             blurRadius: 10,
             offset: const Offset(0, 4),
@@ -469,7 +450,7 @@ class _ExercisePageState extends State<ExercisePage> {
                 height: 90,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  color: (typeStyle["color"] as Color?)?.withOpacity(0.1) ?? AppColors.lightGray,
+                  color: (typeStyle["color"] as Color?)?.withOpacity(0.1) ?? theme.borderColor,
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
@@ -481,14 +462,14 @@ class _ExercisePageState extends State<ExercisePage> {
                             return Icon(
                               typeStyle["icon"] ?? Icons.sports,
                               size: 40,
-                              color: typeStyle["color"] ?? AppColors.mediumGray,
+                              color: typeStyle["color"] ?? theme.tertiaryText,
                             );
                           },
                         )
                       : Icon(
                           typeStyle["icon"] ?? Icons.sports,
                           size: 40,
-                          color: typeStyle["color"] ?? AppColors.mediumGray,
+                          color: typeStyle["color"] ?? theme.tertiaryText,
                         ),
                 ),
               ),
@@ -499,10 +480,10 @@ class _ExercisePageState extends State<ExercisePage> {
                   children: [
                     Text(
                       exercise.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
-                        color: AppColors.darkGray,
+                        color: theme.primaryText,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -511,7 +492,7 @@ class _ExercisePageState extends State<ExercisePage> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: typeStyle["color"]?.withOpacity(0.15) ?? AppColors.lightGray,
+                            color: typeStyle["color"]?.withOpacity(0.15) ?? theme.borderColor,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -519,7 +500,7 @@ class _ExercisePageState extends State<ExercisePage> {
                               Icon(
                                 typeStyle["icon"] ?? Icons.sports,
                                 size: 14,
-                                color: typeStyle["color"] ?? AppColors.mediumGray,
+                                color: typeStyle["color"] ?? theme.tertiaryText,
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -527,7 +508,7 @@ class _ExercisePageState extends State<ExercisePage> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: typeStyle["color"] ?? AppColors.mediumGray,
+                                  color: typeStyle["color"] ?? theme.tertiaryText,
                                 ),
                               ),
                             ],
@@ -554,18 +535,18 @@ class _ExercisePageState extends State<ExercisePage> {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(Icons.timer_outlined, size: 16, color: AppColors.darkGray),
+                        Icon(Icons.timer_outlined, size: 16, color: theme.secondaryText),
                         const SizedBox(width: 4),
                         Text(
                           "${exercise.duration}s",
-                          style: TextStyle(fontSize: 13, color: AppColors.darkGray),
+                          style: TextStyle(fontSize: 13, color: theme.secondaryText),
                         ),
                         const SizedBox(width: 12),
-                        Icon(Icons.repeat, size: 16, color: AppColors.darkGray),
+                        Icon(Icons.repeat, size: 16, color: theme.secondaryText),
                         const SizedBox(width: 4),
                         Text(
                           "${exercise.sets}×${exercise.reps}",
-                          style: TextStyle(fontSize: 13, color: AppColors.darkGray),
+                          style: TextStyle(fontSize: 13, color: theme.secondaryText),
                         ),
                       ],
                     ),
@@ -575,12 +556,12 @@ class _ExercisePageState extends State<ExercisePage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.accentBlue.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.play_arrow,
-                  color: AppColors.primary,
+                  color: AppColors.accentBlue,
                   size: 24,
                 ),
               ),
@@ -594,13 +575,13 @@ class _ExercisePageState extends State<ExercisePage> {
   Color _getDifficultyColor(String difficulty) {
     switch (difficulty.toLowerCase()) {
       case "easy":
-        return AppColors.primary;
+        return AppColors.green;
       case "medium":
         return AppColors.orange;
       case "hard":
-        return AppColors.red;
+        return AppColors.orange;
       default:
-        return AppColors.mediumGray;
+        return AppColors.accentBlue;
     }
   }
 }
