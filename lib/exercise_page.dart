@@ -49,6 +49,7 @@ class _ExercisePageState extends State<ExercisePage> {
   Map<String, dynamic>? userInfo;
   List<Exercise> recommended = [];
   String selectedFilter = "All";
+  bool workoutCompleted = false; // Track if workout is completed
 
   final Map<String, Map<String, dynamic>> typeStyles = {
     "Cardio": {"icon": Icons.favorite, "color": AppColors.orange},
@@ -211,9 +212,124 @@ class _ExercisePageState extends State<ExercisePage> {
         .toList();
   }
 
+  // Callback function to update workout completion status
+  void _onWorkoutCompleted(bool isCompleted, int completedExercises, int totalExercises) {
+    setState(() {
+      workoutCompleted = isCompleted;
+    });
+    
+    // Automatically log streak if ALL exercises were completed (not skipped)
+    if (isCompleted && completedExercises == totalExercises) {
+      _logStreakAutomatically();
+    }
+  }
+
+  // Add this method to automatically log streak
+  Future<void> _logStreakAutomatically() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final today = DateTime.now();
+      final userDoc = FirebaseFirestore.instance.collection('streaks').doc(user.uid);
+      
+      final doc = await userDoc.get();
+      
+      int newStreak = 1;
+      int newBestStreak = 1;
+      bool isNewRecord = false;
+      bool hitMilestone = false;
+      int milestoneValue = 0;
+      
+      if (doc.exists) {
+        final data = doc.data()!;
+        final lastWorkout = DateTime.parse(data['lastWorkout']);
+        final currentStreak = data['currentStreak'] ?? 0;
+        final bestStreak = data['bestStreak'] ?? 0;
+        final workoutDates = List<String>.from(data['workoutDates'] ?? []);
+        
+        // Check if already logged today
+        if (_isSameDay(today, lastWorkout)) {
+          debugPrint('Streak already logged for today');
+          return;
+        }
+        
+        newStreak = _isConsecutiveDay(today, lastWorkout) ? currentStreak + 1 : 1;
+        newBestStreak = newStreak > bestStreak ? newStreak : bestStreak;
+        isNewRecord = newStreak > bestStreak;
+        
+        final milestones = [3, 5, 7, 10, 15, 20, 30, 50, 75, 100, 150, 200, 365];
+        if (milestones.contains(newStreak)) {
+          hitMilestone = true;
+          milestoneValue = newStreak;
+        }
+        
+        workoutDates.add(today.toIso8601String());
+        
+        await userDoc.update({
+          'currentStreak': newStreak,
+          'bestStreak': newBestStreak,
+          'lastWorkout': today.toIso8601String(),
+          'workoutDates': workoutDates,
+        });
+        
+        debugPrint('✅ Workout streak automatically logged - New streak: $newStreak, Best: $newBestStreak');
+      } else {
+        // First workout
+        await userDoc.set({
+          'currentStreak': 1,
+          'bestStreak': 1,
+          'lastWorkout': today.toIso8601String(),
+          'workoutDates': [today.toIso8601String()],
+        });
+        
+        debugPrint('✅ First workout streak automatically logged');
+      }
+      
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("🔥 Streak updated! $newStreak days in a row!"),
+            backgroundColor: AppColors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      
+    } catch (e) {
+      debugPrint("❌ Error automatically logging streak: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to update streak: $e"),
+            backgroundColor: AppColors.orange,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    }
+  }
+
+  // Helper methods for date comparison
+  bool _isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
+  }
+
+  bool _isConsecutiveDay(DateTime today, DateTime lastWorkout) {
+    final yesterday = today.subtract(const Duration(days: 1));
+    return _isSameDay(lastWorkout, yesterday) || _isSameDay(lastWorkout, today);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Provider.of<ThemeManager>(context);
+    final themeData = Theme.of(context);
     final filteredExercises = _getFilteredRecommendedExercises();
 
     return Scaffold(
@@ -367,7 +483,7 @@ class _ExercisePageState extends State<ExercisePage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: theme.primaryText,
+                          color: themeData.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -389,11 +505,11 @@ class _ExercisePageState extends State<ExercisePage> {
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           children: [
                             const SizedBox(width: 4),
-                            _buildCompactFilterChip("All", Icons.all_inclusive, theme),
-                            _buildCompactFilterChip("Cardio", Icons.favorite, theme),
-                            _buildCompactFilterChip("Strength", Icons.fitness_center, theme),
-                            _buildCompactFilterChip("Legs", Icons.directions_run, theme),
-                            _buildCompactFilterChip("Core", Icons.accessibility_new, theme),
+                            _buildCompactFilterChip("All", Icons.all_inclusive, theme, themeData),
+                            _buildCompactFilterChip("Cardio", Icons.favorite, theme, themeData),
+                            _buildCompactFilterChip("Strength", Icons.fitness_center, theme, themeData),
+                            _buildCompactFilterChip("Legs", Icons.directions_run, theme, themeData),
+                            _buildCompactFilterChip("Core", Icons.accessibility_new, theme, themeData),
                             const SizedBox(width: 4),
                           ],
                         ),
@@ -407,18 +523,29 @@ class _ExercisePageState extends State<ExercisePage> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.accentBlue,
-                          AppColors.accentPurple,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      gradient: workoutCompleted 
+                        ? LinearGradient(
+                            colors: [
+                              AppColors.green.withOpacity(0.8),
+                              AppColors.green.withOpacity(0.6),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : LinearGradient(
+                            colors: [
+                              AppColors.accentBlue,
+                              AppColors.accentPurple,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.accentBlue.withOpacity(0.3),
+                          color: workoutCompleted 
+                            ? AppColors.green.withOpacity(0.3)
+                            : AppColors.accentBlue.withOpacity(0.3),
                           blurRadius: 15,
                           offset: const Offset(0, 6),
                         ),
@@ -435,7 +562,7 @@ class _ExercisePageState extends State<ExercisePage> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
-                            Icons.play_arrow_rounded,
+                            workoutCompleted ? Icons.check_circle_rounded : Icons.play_arrow_rounded,
                             color: Colors.white,
                             size: 28,
                           ),
@@ -447,7 +574,7 @@ class _ExercisePageState extends State<ExercisePage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Ready to Train?",
+                                workoutCompleted ? "Workout Completed!" : "Ready to Train?",
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -456,7 +583,9 @@ class _ExercisePageState extends State<ExercisePage> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                "Start your personalized workout",
+                                workoutCompleted 
+                                  ? "You've completed today's workout"
+                                  : "Start your personalized workout",
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: Colors.white.withOpacity(0.9),
@@ -479,22 +608,31 @@ class _ExercisePageState extends State<ExercisePage> {
                             ],
                           ),
                           child: ElevatedButton(
-                            onPressed: recommended.isEmpty ? null : () {
-                              Navigator.of(context).push(MaterialPageRoute(
-                                builder: (_) => WorkoutRunner(exercises: recommended)
-                              ));
-                            },
+                            onPressed: workoutCompleted 
+                              ? null 
+                              : recommended.isEmpty ? null : () {
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                    builder: (_) => WorkoutRunner(
+                                      exercises: recommended,
+                                      onWorkoutCompleted: _onWorkoutCompleted,
+                                    )
+                                  ));
+                                },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: AppColors.accentBlue,
+                              backgroundColor: workoutCompleted 
+                                ? Colors.grey 
+                                : Colors.white,
+                              foregroundColor: workoutCompleted 
+                                ? Colors.white 
+                                : AppColors.accentBlue,
                               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               elevation: 0,
                             ),
-                            child: const Text(
-                              "Begin",
+                            child: Text(
+                              workoutCompleted ? "Completed" : "Begin",
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
@@ -516,7 +654,7 @@ class _ExercisePageState extends State<ExercisePage> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
-                          color: theme.primaryText,
+                          color: themeData.colorScheme.onSurface,
                         ),
                       ),
                       const Spacer(),
@@ -552,7 +690,7 @@ class _ExercisePageState extends State<ExercisePage> {
                 final style = typeStyles[ex.type] ?? {};
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                  child: _buildMasculineExerciseTile(ex, style, theme),
+                  child: _buildMasculineExerciseTile(ex, style, theme, themeData),
                 );
               },
               childCount: filteredExercises.length,
@@ -598,7 +736,7 @@ class _ExercisePageState extends State<ExercisePage> {
     );
   }
 
-  Widget _buildCompactFilterChip(String label, IconData icon, ThemeManager theme) {
+  Widget _buildCompactFilterChip(String label, IconData icon, ThemeManager theme, ThemeData themeData) {
     final isSelected = selectedFilter == label;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 6),
@@ -637,13 +775,13 @@ class _ExercisePageState extends State<ExercisePage> {
                   Icon(
                     icon,
                     size: 14,
-                    color: isSelected ? Colors.white : theme.primaryText,
+                    color: isSelected ? Colors.white : themeData.colorScheme.onSurface,
                   ),
                   const SizedBox(width: 5),
                   Text(
                     label,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : theme.primaryText,
+                      color: isSelected ? Colors.white : themeData.colorScheme.onSurface,
                       fontWeight: FontWeight.w600,
                       fontSize: 12,
                     ),
@@ -657,7 +795,7 @@ class _ExercisePageState extends State<ExercisePage> {
     );
   }
 
-  Widget _buildMasculineExerciseTile(Exercise ex, Map<String, dynamic> style, ThemeManager theme) {
+  Widget _buildMasculineExerciseTile(Exercise ex, Map<String, dynamic> style, ThemeManager theme, ThemeData themeData) {
     return Container(
       decoration: BoxDecoration(
         color: theme.cardColor,
@@ -708,10 +846,10 @@ class _ExercisePageState extends State<ExercisePage> {
                             fit: BoxFit.cover,
                             width: 60,
                             height: 60,
-                            errorBuilder: (c, e, st) => _buildExerciseIcon(style, theme),
+                            errorBuilder: (c, e, st) => _buildExerciseIcon(style, themeData),
                           )
                         else
-                          _buildExerciseIcon(style, theme),
+                          _buildExerciseIcon(style, themeData),
                       ],
                     ),
                   ),
@@ -732,7 +870,7 @@ class _ExercisePageState extends State<ExercisePage> {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: theme.primaryText,
+                                color: themeData.colorScheme.onSurface,
                               ),
                             ),
                           ),
@@ -767,7 +905,7 @@ class _ExercisePageState extends State<ExercisePage> {
                                 Icon(
                                   style["icon"] ?? Icons.sports,
                                   size: 12,
-                                  color: style["color"] ?? theme.tertiaryText,
+                                  color: style["color"] ?? themeData.colorScheme.onSurface.withOpacity(0.6),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
@@ -775,16 +913,16 @@ class _ExercisePageState extends State<ExercisePage> {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
-                                    color: style["color"] ?? theme.tertiaryText,
+                                    color: style["color"] ?? themeData.colorScheme.onSurface.withOpacity(0.6),
                                   ),
                                 ),
                               ],
                             ),
                           ),
                           const SizedBox(width: 8),
-                          _buildExerciseStat(Icons.timer_outlined, "${ex.duration}s", theme),
+                          _buildExerciseStat(Icons.timer_outlined, "${ex.duration}s", themeData),
                           const SizedBox(width: 8),
-                          _buildExerciseStat(Icons.repeat, "${ex.sets}×${ex.reps}", theme),
+                          _buildExerciseStat(Icons.repeat, "${ex.sets}×${ex.reps}", themeData),
                         ],
                       ),
                     ],
@@ -814,26 +952,26 @@ class _ExercisePageState extends State<ExercisePage> {
     );
   }
 
-  Widget _buildExerciseIcon(Map<String, dynamic> style, ThemeManager theme) {
+  Widget _buildExerciseIcon(Map<String, dynamic> style, ThemeData themeData) {
     return Center(
       child: Icon(
         style["icon"] ?? Icons.fitness_center,
         size: 24,
-        color: (style["color"] as Color?)?.withOpacity(0.6) ?? theme.tertiaryText,
+        color: (style["color"] as Color?)?.withOpacity(0.6) ?? themeData.colorScheme.onSurface.withOpacity(0.6),
       ),
     );
   }
 
-  Widget _buildExerciseStat(IconData icon, String text, ThemeManager theme) {
+  Widget _buildExerciseStat(IconData icon, String text, ThemeData themeData) {
     return Row(
       children: [
-        Icon(icon, size: 12, color: theme.tertiaryText),
+        Icon(icon, size: 12, color: themeData.colorScheme.onSurface.withOpacity(0.6)),
         const SizedBox(width: 3),
         Text(
           text,
           style: TextStyle(
             fontSize: 11,
-            color: theme.tertiaryText,
+            color: themeData.colorScheme.onSurface.withOpacity(0.6),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -859,8 +997,14 @@ class _ExercisePageState extends State<ExercisePage> {
 class WorkoutRunner extends StatefulWidget {
   final List<Exercise> exercises;
   final int cooldownSeconds;
+  final Function(bool, int, int) onWorkoutCompleted; // Updated signature
 
-  const WorkoutRunner({super.key, required this.exercises, this.cooldownSeconds = 10});
+  const WorkoutRunner({
+    super.key, 
+    required this.exercises, 
+    this.cooldownSeconds = 10,
+    required this.onWorkoutCompleted,
+  });
 
   @override
   State<WorkoutRunner> createState() => _WorkoutRunnerState();
@@ -871,6 +1015,8 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
   bool inCooldown = false;
   int cooldownRemaining = 0;
   Timer? cooldownTimer;
+  int completedExercises = 0; // Track actually completed exercises
+  int skippedExercises = 0; // Track skipped exercises
 
   @override
   void dispose() {
@@ -882,6 +1028,11 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
   void _onSetComplete() {
     debugPrint('=== Exercise Complete Called ===');
     debugPrint('Exercise completed: ${widget.exercises[currentIndex].name}');
+    
+    // Increment completed exercises counter
+    completedExercises++;
+    debugPrint('Completed exercises: $completedExercises');
+    
     debugPrint('Moving to next exercise or finishing workout');
     
     // When ExerciseDetailScreen calls onComplete, it means the ENTIRE exercise is done
@@ -933,10 +1084,26 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
   }
 
   void _finishWorkout() {
+    // Check if ALL exercises were actually completed (not skipped)
+    final bool allExercisesCompleted = completedExercises == widget.exercises.length;
+    final bool isWorkoutCompleted = completedExercises > 0;
+    
+    debugPrint('=== Workout Finish Summary ===');
+    debugPrint('Total exercises: ${widget.exercises.length}');
+    debugPrint('Completed exercises: $completedExercises');
+    debugPrint('Skipped exercises: $skippedExercises');
+    debugPrint('All exercises completed: $allExercisesCompleted');
+    debugPrint('Workout marked as completed: $isWorkoutCompleted');
+    
+    // Call the callback to update the parent widget with completion details
+    widget.onWorkoutCompleted(isWorkoutCompleted, completedExercises, widget.exercises.length);
+    
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (_) {
+        final bool streakLogged = allExercisesCompleted;
+        
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           child: Padding(
@@ -948,33 +1115,68 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: AppColors.accentBlue.withOpacity(0.1),
+                    color: streakLogged 
+                      ? AppColors.green.withOpacity(0.1)
+                      : isWorkoutCompleted 
+                        ? AppColors.accentBlue.withOpacity(0.1)
+                        : AppColors.orange.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    Icons.celebration_rounded,
+                    streakLogged ? Icons.celebration_rounded : 
+                    isWorkoutCompleted ? Icons.check_circle_rounded : Icons.warning_amber_rounded,
                     size: 40,
-                    color: AppColors.accentBlue,
+                    color: streakLogged ? AppColors.green : 
+                           isWorkoutCompleted ? AppColors.accentBlue : AppColors.orange,
                   ),
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  "Workout Complete!",
+                  streakLogged ? "Workout Complete! 🎉" : 
+                  isWorkoutCompleted ? "Workout Complete!" : "Workout Ended",
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.accentBlue,
+                    color: streakLogged ? AppColors.green : 
+                           isWorkoutCompleted ? AppColors.accentBlue : AppColors.orange,
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  "Amazing job! You've completed your workout.",
+                  streakLogged 
+                    ? "Amazing job! You completed all exercises and your streak has been updated! 🔥"
+                    : isWorkoutCompleted 
+                      ? "Great work! You completed $completedExercises/${widget.exercises.length} exercises."
+                      : "You skipped all exercises. Complete ALL exercises to count towards your streak.",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey[600],
                   ),
                 ),
+                if (streakLogged) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    "Your dedication is inspiring! 💪",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.green,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ] else if (!isWorkoutCompleted) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    "Complete ALL exercises to count towards your streak.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
@@ -984,16 +1186,18 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
                       Navigator.of(context).pop(); // exit runner
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accentBlue,
+                      backgroundColor: streakLogged ? AppColors.green : 
+                                     isWorkoutCompleted ? AppColors.accentBlue : AppColors.orange,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: const Text(
-                      "Finish Workout",
-                      style: TextStyle(
+                    child: Text(
+                      streakLogged ? "Awesome! 🎯" : 
+                      isWorkoutCompleted ? "Finish Workout" : "Exit Workout",
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -1008,10 +1212,98 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
     );
   }
 
+  void _showLastExerciseWarning() {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                size: 48,
+                color: AppColors.orange,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "Last Exercise",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                "This is the last exercise. If you skip it, it will not count towards your streak. Complete ALL exercises to maintain your streak.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        "Cancel",
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        skippedExercises++;
+                        _finishWorkout();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.orange,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        "Skip & Finish",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Provider.of<ThemeManager>(context);
+    final themeData = Theme.of(context);
     final ex = widget.exercises[currentIndex];
+    final isLastExercise = currentIndex >= widget.exercises.length - 1;
 
     return Scaffold(
       backgroundColor: theme.primaryBackground,
@@ -1031,7 +1323,7 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
               ex.name,
               style: TextStyle(
                 fontSize: 13,
-                color: theme.secondaryText,
+                color: themeData.colorScheme.onSurface.withOpacity(0.7),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1046,7 +1338,7 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
               color: theme.cardColor,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.close, size: 20, color: theme.primaryText),
+            child: Icon(Icons.close, size: 20, color: themeData.colorScheme.onSurface),
           ), 
           onPressed: () {
             showDialog(
@@ -1069,15 +1361,15 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: theme.primaryText,
+                          color: themeData.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        "Are you sure you want to stop the workout? Your progress will be saved.",
+                        "Are you sure you want to exit the workout? Your progress will NOT be saved if you exit mid-exercise.",
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: theme.secondaryText,
+                          color: themeData.colorScheme.onSurface.withOpacity(0.7),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -1095,7 +1387,7 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
                               child: Text(
                                 "Cancel",
                                 style: TextStyle(
-                                  color: theme.primaryText,
+                                  color: themeData.colorScheme.onSurface,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -1189,86 +1481,91 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
                 child: Icon(Icons.skip_next, size: 20, color: AppColors.accentBlue),
               ),
               onPressed: () {
-                showDialog(
-                  context: context, 
-                  builder: (_) => Dialog(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            "Skip Exercise?",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: theme.primaryText,
+                if (isLastExercise) {
+                  _showLastExerciseWarning();
+                } else {
+                  showDialog(
+                    context: context, 
+                    builder: (_) => Dialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              "Skip Exercise?",
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: themeData.colorScheme.onSurface,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            "Skip this exercise and go to the next one?",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: theme.secondaryText,
+                            const SizedBox(height: 12),
+                            Text(
+                              "Skip this exercise and go to the next one? Skipped exercises will not count towards your streak. Complete ALL exercises to maintain your streak.",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: themeData.colorScheme.onSurface.withOpacity(0.7),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 24),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: () => Navigator.of(context).pop(),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                            const SizedBox(height: 24),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                     ),
-                                  ),
-                                  child: Text(
-                                    "Cancel",
-                                    style: TextStyle(
-                                      color: theme.primaryText,
-                                      fontWeight: FontWeight.w600,
+                                    child: Text(
+                                      "Cancel",
+                                      style: TextStyle(
+                                        color: themeData.colorScheme.onSurface,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                    if (currentIndex >= widget.exercises.length - 1) {
-                                      _finishWorkout();
-                                    } else {
-                                      _advanceToNextExercise();
-                                    }
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.accentBlue,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                      skippedExercises++;
+                                      if (currentIndex >= widget.exercises.length - 1) {
+                                        _finishWorkout();
+                                      } else {
+                                        _advanceToNextExercise();
+                                      }
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.accentBlue,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                     ),
-                                  ),
-                                  child: const Text(
-                                    "Skip",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
+                                    child: const Text(
+                                      "Skip",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
+                  );
+                }
               },
             ),
         ],
@@ -1288,7 +1585,7 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: theme.secondaryText,
+                        color: themeData.colorScheme.onSurface.withOpacity(0.7),
                       ),
                     ),
                     Text(
@@ -1353,7 +1650,7 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
                           "Next Up",
                           style: TextStyle(
                             fontSize: 12,
-                            color: theme.secondaryText,
+                            color: themeData.colorScheme.onSurface.withOpacity(0.7),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -1386,4 +1683,3 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
     );
   }
 }
-

@@ -28,7 +28,6 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
   late Animation<double> _badgeScaleAnimation;
   bool _showDebugPanel = false;
   bool _isLoading = true;
-  bool _isLogging = false;
   final NotificationService _notificationService = NotificationService();
 
   @override
@@ -110,14 +109,14 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
           debugPrint('WorkoutStreakPage: Sending streak warning notification');
           await _notificationService.sendLocalNotification(
             title: '🔥 Streak Alert!',
-            body: 'Your ${_streak.currentStreak}-day streak is about to break! Log your workout today.',
+            body: 'Your ${_streak.currentStreak}-day streak is about to break! Complete your workout today.',
             type: 'streak_warning',
           );
         } else if (daysSinceLastWorkout >= 2 && _streak.currentStreak > 0) {
           debugPrint('WorkoutStreakPage: Streak has broken - sending notification');
           await _notificationService.sendLocalNotification(
             title: '💔 Streak Broken',
-            body: 'Your streak has ended. Start a new one today!',
+            body: 'Your streak has ended. Complete ALL exercises to start a new one!',
             type: 'streak_warning',
           );
         }
@@ -180,186 +179,6 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
   bool _isConsecutiveDay(DateTime today, DateTime lastWorkout) {
     final yesterday = today.subtract(const Duration(days: 1));
     return _isSameDay(lastWorkout, yesterday);
-  }
-
-  void _logWorkout() async {
-    if (_isLogging) return;
-
-    setState(() {
-      _isLogging = true;
-    });
-
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception("Please make sure you're logged in");
-      }
-
-      final today = DateTime.now();
-      final userDoc = FirebaseFirestore.instance.collection('streaks').doc(user.uid);
-      
-      final doc = await userDoc.get();
-      
-      int newStreak = 1;
-      int newBestStreak = 1;
-      bool isNewRecord = false;
-      bool hitMilestone = false;
-      int milestoneValue = 0;
-      
-      if (doc.exists) {
-        final data = doc.data()!;
-        final lastWorkout = DateTime.parse(data['lastWorkout']);
-        final currentStreak = data['currentStreak'] ?? 0;
-        final bestStreak = data['bestStreak'] ?? 0;
-        final workoutDates = List<String>.from(data['workoutDates'] ?? []);
-        
-        if (_isSameDay(today, lastWorkout)) {
-          throw Exception("You already logged today's workout!");
-        }
-        
-        newStreak = _isConsecutiveDay(today, lastWorkout) ? currentStreak + 1 : 1;
-        newBestStreak = newStreak > bestStreak ? newStreak : bestStreak;
-        isNewRecord = newStreak > bestStreak;
-        
-        final milestones = [3, 5, 7, 10, 15, 20, 30, 50, 75, 100, 150, 200, 365];
-        if (milestones.contains(newStreak)) {
-          hitMilestone = true;
-          milestoneValue = newStreak;
-        }
-        
-        workoutDates.add(today.toIso8601String());
-        
-        await userDoc.update({
-          'currentStreak': newStreak,
-          'bestStreak': newBestStreak,
-          'lastWorkout': today.toIso8601String(),
-          'workoutDates': workoutDates,
-        });
-        
-        debugPrint('WorkoutStreakPage: Workout logged - New streak: $newStreak, Best: $newBestStreak');
-      } else {
-        await userDoc.set({
-          'currentStreak': 1,
-          'bestStreak': 1,
-          'lastWorkout': today.toIso8601String(),
-          'workoutDates': [today.toIso8601String()],
-        });
-        
-        debugPrint('WorkoutStreakPage: First workout logged');
-        await _notificationService.sendAchievement(
-          'Welcome to your fitness journey! Keep it up! 🎉',
-        );
-      }
-      
-      await _initializeStreak();
-      _showSuccessAnimation();
-      
-      if (hitMilestone) {
-        debugPrint('WorkoutStreakPage: Milestone hit: $milestoneValue');
-        await _sendMilestoneNotification(milestoneValue);
-      } else if (isNewRecord) {
-        debugPrint('WorkoutStreakPage: New record: $newStreak');
-        await _notificationService.sendAchievement(
-          '🏆 New Personal Record! $newStreak-day streak!',
-        );
-      } else if (newStreak >= 3) {
-        debugPrint('WorkoutStreakPage: Progress update: $newStreak');
-        await _notificationService.sendProgressUpdate(
-          '🔥 Great work! $newStreak days in a row!',
-        );
-      }
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text("✅ Workout logged successfully!"),
-            backgroundColor: AppColors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-      }
-      
-    } catch (e) {
-      debugPrint("WorkoutStreakPage: Log workout error: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Failed to log workout: $e"),
-            backgroundColor: AppColors.orange,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-      }
-    } finally {
-      setState(() {
-        _isLogging = false;
-      });
-    }
-  }
-
-  Future<void> _sendMilestoneNotification(int milestone) async {
-    String body = '';
-    
-    switch (milestone) {
-      case 3:
-        body = 'You\'re building a habit! Keep going! 🌟';
-        break;
-      case 5:
-        body = 'Fantastic! You\'re on fire! 🔥';
-        break;
-      case 7:
-        body = 'Amazing! A full week of commitment! 🎯';
-        break;
-      case 10:
-        body = 'You\'re unstoppable! Double digits! 💪';
-        break;
-      case 15:
-        body = '15 days straight! You\'re a fitness legend! 🏆';
-        break;
-      case 20:
-        body = '20 days! You\'re absolutely crushing it! 🔥';
-        break;
-      case 30:
-        body = 'Incredible! 30 days of dedication! 🌟';
-        break;
-      case 50:
-        body = '50 days! You\'re pure inspiration! 👑';
-        break;
-      case 75:
-        body = '75 days! Your dedication is remarkable! 💎';
-        break;
-      case 100:
-        body = '100 DAYS! You\'re a fitness legend! ✨';
-        break;
-      case 150:
-        body = '150 days! You\'re in elite territory! 🚀';
-        break;
-      case 200:
-        body = '200 days! You\'re a true master! 👑';
-        break;
-      case 365:
-        body = 'UNBELIEVABLE! 365 days! You\'re a FITNESS GOD! 🎊';
-        break;
-      default:
-        body = '$milestone-day streak! Keep it up!';
-    }
-    
-    debugPrint('WorkoutStreakPage: Sending milestone notification - $milestone days: $body');
-    try {
-      await _notificationService.sendAchievement(body);
-      debugPrint('WorkoutStreakPage: Milestone notification sent successfully');
-    } catch (e) {
-      debugPrint('WorkoutStreakPage: Failed to send milestone notification: $e');
-    }
-  }
-
-  void _showSuccessAnimation() {
-    _badgeController.reset();
-    _badgeController.forward();
-    _weekFireController.reset();
-    _weekFireController.forward();
   }
 
   // Enhanced debug streak setter with notification trigger option
@@ -489,7 +308,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
       // 4. Test streak warning
       await _notificationService.sendLocalNotification(
         title: '⚠️ Test: Streak Warning',
-        body: 'Your streak is about to break! This is a test.',
+        body: 'Your streak is about to break! Complete ALL exercises to maintain it.',
         type: 'streak_warning',
       );
       
@@ -547,6 +366,69 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
         );
       }
     }
+  }
+
+  Future<void> _sendMilestoneNotification(int milestone) async {
+    String body = '';
+    
+    switch (milestone) {
+      case 3:
+        body = 'You\'re building a habit! Complete ALL exercises to keep going! 🌟';
+        break;
+      case 5:
+        body = 'Fantastic! You\'re on fire! Complete ALL exercises to maintain your streak! 🔥';
+        break;
+      case 7:
+        body = 'Amazing! A full week of commitment! Complete ALL exercises to continue! 🎯';
+        break;
+      case 10:
+        body = 'You\'re unstoppable! Double digits! Complete ALL exercises to keep it up! 💪';
+        break;
+      case 15:
+        body = '15 days straight! You\'re a fitness legend! Complete ALL exercises to continue! 🏆';
+        break;
+      case 20:
+        body = '20 days! You\'re absolutely crushing it! Complete ALL exercises to maintain! 🔥';
+        break;
+      case 30:
+        body = 'Incredible! 30 days of dedication! Complete ALL exercises to continue! 🌟';
+        break;
+      case 50:
+        body = '50 days! You\'re pure inspiration! Complete ALL exercises to keep going! 👑';
+        break;
+      case 75:
+        body = '75 days! Your dedication is remarkable! Complete ALL exercises to continue! 💎';
+        break;
+      case 100:
+        body = '100 DAYS! You\'re a fitness legend! Complete ALL exercises to maintain! ✨';
+        break;
+      case 150:
+        body = '150 days! You\'re in elite territory! Complete ALL exercises to continue! 🚀';
+        break;
+      case 200:
+        body = '200 days! You\'re a true master! Complete ALL exercises to keep going! 👑';
+        break;
+      case 365:
+        body = 'UNBELIEVABLE! 365 days! You\'re a FITNESS GOD! Complete ALL exercises to continue! 🎊';
+        break;
+      default:
+        body = '$milestone-day streak! Complete ALL exercises to maintain it!';
+    }
+    
+    debugPrint('WorkoutStreakPage: Sending milestone notification - $milestone days: $body');
+    try {
+      await _notificationService.sendAchievement(body);
+      debugPrint('WorkoutStreakPage: Milestone notification sent successfully');
+    } catch (e) {
+      debugPrint('WorkoutStreakPage: Failed to send milestone notification: $e');
+    }
+  }
+
+  void _showSuccessAnimation() {
+    _badgeController.reset();
+    _badgeController.forward();
+    _weekFireController.reset();
+    _weekFireController.forward();
   }
 
   Map<String, dynamic> _getBadgeInfo() {
@@ -1173,33 +1055,47 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                           ),
                           const SizedBox(height: 40),
                           Container(
-                            width: double.infinity,
-                            height: 65,
+                            padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(35),
-                              gradient: LinearGradient(
-                                colors: _streak.currentStreak >= 50 ? [streakColor, streakColor.withOpacity(0.7)] : [AppColors.accentBlue, AppColors.accentCyan],
-                              ),
-                              boxShadow: [BoxShadow(color: (_streak.currentStreak >= 50 ? streakColor : AppColors.accentBlue).withOpacity(0.4), blurRadius: 15, offset: const Offset(0, 8))],
+                              color: theme.cardColor,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: AppColors.green.withOpacity(0.3), width: 2),
+                              boxShadow: [BoxShadow(color: AppColors.green.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 5))],
                             ),
-                            child: ElevatedButton(
-                              onPressed: _isLogging ? null : _logWorkout,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
-                                disabledBackgroundColor: theme.primaryText,
-                              ),
-                              child: _isLogging
-                                  ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 3)
-                                  : const Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.fitness_center, color: Colors.white, size: 28),
-                                        SizedBox(width: 12),
-                                        Text("Log Today's Workout", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5)),
-                                      ],
-                                    ),
+                            child: Column(
+                              children: [
+                                Icon(Icons.auto_awesome, color: AppColors.green, size: 40),
+                                const SizedBox(height: 12),
+                                Text("Automatic Streak Tracking", 
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.primaryText)),
+                                const SizedBox(height: 8),
+                                Text(
+                                  "Your streak updates automatically when you complete ALL recommended exercises in your daily workout.",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(fontSize: 14, color: theme.secondaryText, height: 1.4),
+                                ),
+                                const SizedBox(height: 12),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.green.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.check_circle, color: AppColors.green, size: 16),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        _isSameDay(DateTime.now(), _streak.lastWorkout) 
+                                          ? "Streak updated today! 🔥"
+                                          : "Complete ALL exercises to continue streak",
+                                        style: TextStyle(fontSize: 12, color: AppColors.green, fontWeight: FontWeight.w600),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 40),
