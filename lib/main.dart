@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:provider/provider.dart'; // ✅ Provider package
+import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 
 // Screens
@@ -12,6 +12,7 @@ import 'onboarding_page.dart';
 
 // Providers
 import 'providers/fitness_provider.dart';
+import 'providers/theme.dart';
 import 'constants/app_colors.dart';
 
 void main() async {
@@ -25,6 +26,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => FitnessProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeManager()),
       ],
       child: const FitWiseApp(),
     ),
@@ -36,34 +38,15 @@ class FitWiseApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'FitWise',
-      theme: ThemeData(
-        scaffoldBackgroundColor: Colors.white,
-        primaryColor: AppColors.primary,
-        inputDecorationTheme: InputDecorationTheme(
-          border: const OutlineInputBorder(),
-          focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: AppColors.primary, width: 2.0),
-          ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
-        ),
-        colorScheme: ColorScheme(
-          brightness: Brightness.light,
-          primary: AppColors.primary,
-          onPrimary: Colors.white,
-          secondary: AppColors.accentBlue,
-          onSecondary: Colors.white,
-          error: AppColors.red,
-          onError: Colors.white,
-          background: AppColors.lightGray,
-          onBackground: AppColors.darkGray,
-          surface: Colors.white,
-          onSurface: AppColors.darkGray,
-        ),
-      ),
-      home: const AuthWrapper(),
+    return Consumer<ThemeManager>(
+      builder: (context, themeManager, child) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'FitWise',
+          theme: themeManager.themeData,
+          home: const AuthWrapper(),
+        );
+      },
     );
   }
 }
