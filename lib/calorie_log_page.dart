@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../providers/theme.dart';
 import 'models/food_recommendation.dart';
 import 'constants/app_colors.dart';
+// Add this import for the history page
+import 'cal_history.dart';
 
 class FoodLogEntry {
   final String name;
@@ -419,6 +421,16 @@ class _CalorieLogPageState extends State<CalorieLogPage>
     );
   }
 
+ // Navigate to Calories History Page
+void _navigateToCaloriesHistory() {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => const CalorieHistoryPage(),
+    ),
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     final theme = Provider.of<ThemeManager>(context);
@@ -432,6 +444,9 @@ class _CalorieLogPageState extends State<CalorieLogPage>
               children: [
                 _buildCalorieHeader(theme),
                 const SizedBox(height: 20),
+                // Add Calories History Section here
+                _buildCaloriesHistorySection(theme),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -439,6 +454,89 @@ class _CalorieLogPageState extends State<CalorieLogPage>
         ],
       ),
       floatingActionButton: _buildFAB(theme),
+    );
+  }
+
+  // New method for Calories History Section
+  Widget _buildCaloriesHistorySection(ThemeManager theme) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: theme.shadowColor,
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: _navigateToCaloriesHistory,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.accentPurple,
+                        AppColors.accentBlue,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Icon(
+                    Icons.history,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Calories History',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: theme.primaryText,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'View your past calorie intake and trends',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.secondaryText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: theme.tertiaryText,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -856,157 +954,158 @@ class _CalorieLogPageState extends State<CalorieLogPage>
   }
 
   Widget _buildFoodCard(FoodLogEntry entry, int index, ThemeManager theme) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 300 + (index * 100)),
-      curve: Curves.easeOutBack,
-      builder: (context, value, child) {
-        return Transform.scale(
-          scale: value.clamp(0.0, 1.0),
-          child: Opacity(
-            opacity: value.clamp(0.0, 1.0),
-            child: child,
-          ),
-        );
-      },
-      child: Dismissible(
-        key: Key(entry.timestamp.millisecondsSinceEpoch.toString()),
-        direction: DismissDirection.endToStart,
-        onDismissed: (direction) => _removeFood(index),
-        background: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: AppColors.orange,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 20),
-          child: Icon(
-            Icons.delete_outline,
-            color: theme.primaryText,
-            size: 28,
-          ),
+  return TweenAnimationBuilder<double>(
+    tween: Tween(begin: 0.0, end: 1.0),
+    duration: Duration(milliseconds: 300 + (index * 100)),
+    curve: Curves.easeOutBack,
+    builder: (context, value, child) {
+      return Transform.scale(
+        scale: value.clamp(0.0, 1.0),
+        child: Opacity(
+          opacity: value.clamp(0.0, 1.0),
+          child: child,
         ),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: theme.cardColor,
+      );
+    },
+    child: Dismissible(
+      key: Key(entry.timestamp.millisecondsSinceEpoch.toString()),
+      direction: DismissDirection.endToStart,
+      onDismissed: (direction) => _removeFood(index),
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: AppColors.orange,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        child: Icon(
+          Icons.delete_outline,
+          color: theme.primaryText,
+          size: 28,
+        ),
+      ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: theme.shadowColor,
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: theme.shadowColor,
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () {},
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: entry.isRecommended
-                              ? [AppColors.accentCyan, AppColors.accentBlue]
-                              : [AppColors.accentPurple, AppColors.accentBlue.withOpacity(0.7)],
-                        ),
-                        borderRadius: BorderRadius.circular(14),
+            onTap: () {},
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: entry.isRecommended
+                            ? [AppColors.accentCyan, AppColors.accentBlue]
+                            : [AppColors.accentPurple, AppColors.accentBlue.withOpacity(0.7)],
                       ),
-                      child: Icon(
-                        entry.icon,
-                        color: Colors.white,
-                        size: 28,
-                      ),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
+                    child: Icon(
+                      entry.icon,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                entry.name,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.primaryText,
+                                ),
+                              ),
+                            ),
+                            if (entry.isRecommended)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.accentCyan.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
                                 child: Text(
-                                  entry.name,
+                                  'Recommended',
                                   style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: theme.primaryText,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.accentCyan,
                                   ),
                                 ),
                               ),
-                              if (entry.isRecommended)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.accentCyan.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    'Recommended',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.accentCyan,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            DateFormat('h:mm a').format(entry.timestamp),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: theme.secondaryText,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '${entry.kcal}',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: theme.primaryText,
-                          ),
+                          ],
                         ),
-                        Text(
-                          'kcal',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: theme.secondaryText,
-                          ),
-                        ),
+                        // TIME DISPLAY REMOVED - This is where the time was previously shown
+                        // const SizedBox(height: 4),
+                        // Text(
+                        //   DateFormat('h:mm a').format(entry.timestamp),
+                        //   style: TextStyle(
+                        //     fontSize: 12,
+                        //     color: theme.secondaryText,
+                        //   ),
+                        // ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${entry.kcal}',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: theme.primaryText,
+                        ),
+                      ),
+                      Text(
+                        'kcal',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: theme.secondaryText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildFAB(ThemeManager theme) {
     return FloatingActionButton.extended(
@@ -1191,94 +1290,93 @@ class _AddFoodBottomSheetState extends State<_AddFoodBottomSheet>
   }
 
   Widget _buildCustomTab(ThemeManager theme) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Food Name',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: theme.primaryText,
-            ),
+  return SingleChildScrollView(
+    padding: const EdgeInsets.all(20),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Food Name',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: theme.primaryText,
           ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _nameController,
-            decoration: InputDecoration(
-              hintText: 'e.g., Chicken Salad',
-              hintStyle: TextStyle(color: theme.tertiaryText),
-              filled: true,
-              fillColor: theme.borderColor.withOpacity(0.2),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              prefixIcon: Icon(Icons.restaurant, color: AppColors.accentPurple),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _nameController,
+          decoration: InputDecoration(
+            hintText: 'e.g., Chicken Salad',
+            hintStyle: TextStyle(color: theme.tertiaryText),
+            filled: true,
+            fillColor: theme.borderColor.withOpacity(0.2),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
             ),
+            prefixIcon: Icon(Icons.restaurant, color: AppColors.accentPurple),
           ),
-          const SizedBox(height: 20),
-          Text(
-            'Calories (kcal)',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: theme.primaryText,
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'Calories (kcal)',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: theme.primaryText,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _calorieController,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            hintText: 'e.g., 350',
+            hintStyle: TextStyle(color: theme.tertiaryText),
+            filled: true,
+            fillColor: theme.borderColor.withOpacity(0.2),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
             ),
+            prefixIcon: Icon(Icons.local_fire_department, color: AppColors.orange),
           ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _calorieController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              hintText: 'e.g., 350',
-              hintStyle: TextStyle(color: theme.tertiaryText),
-              filled: true,
-              fillColor: theme.borderColor.withOpacity(0.2),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              prefixIcon: Icon(Icons.local_fire_department,
-                  color: AppColors.orange),
-            ),
-          ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: () {
-                final name = _nameController.text.trim();
-                final calStr = _calorieController.text.trim();
-                if (name.isNotEmpty && calStr.isNotEmpty) {
-                  final cal = int.tryParse(calStr);
-                  if (cal != null && cal > 0) {
-                    widget.onAddCustom(name, cal);
-                  }
+        ),
+        const SizedBox(height: 32),
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton(
+            onPressed: () {
+              final name = _nameController.text.trim();
+              final calStr = _calorieController.text.trim();
+              if (name.isNotEmpty && calStr.isNotEmpty) {
+                final cal = int.tryParse(calStr);
+                if (cal != null && cal > 0) {
+                  widget.onAddCustom(name, cal);
                 }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accentBlue,
-                foregroundColor: Colors.white,
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.accentBlue,
+              foregroundColor: Colors.white,
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: const Text(
-                'Add Food',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+            ),
+            child: const Text(
+              'Add Food',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
-        ],
-      ),
-    );
+        ),
+      ],
+    ),
+  );
   }
 }
