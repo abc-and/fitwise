@@ -513,235 +513,238 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   // Call this to set a brand-new goal (user inputs weight + optional type)
-  Future<void> _updateGoalWeightAndType(double targetDelta, String newType) async {
-    final user = _auth.currentUser;
-    double newGoalWeight = _currentWeight;
-    if (newType == 'gain') {
-      newGoalWeight = _currentWeight + targetDelta.abs();
-    } else if (newType == 'lose') {
-      newGoalWeight = _currentWeight - targetDelta.abs();
-    }
-    
-    // Check if goal is healthy
-    final healthCheck = _checkGoalHealth(newGoalWeight);
-    
-    // Show warning dialog if unhealthy or dangerous
-    if (healthCheck['isDangerous'] == true || healthCheck['isUnhealthy'] == true) {
-      final theme = Provider.of<ThemeManager>(context);
-      final shouldProceed = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) => AlertDialog(
-          backgroundColor: theme.cardColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: healthCheck['color'].withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  healthCheck['isDangerous'] == true 
-                      ? Icons.dangerous 
-                      : Icons.warning_amber,
-                  color: healthCheck['color'],
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  healthCheck['title'],
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: healthCheck['color'],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.borderColor.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Current Weight:',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: theme.secondaryText,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            '${_currentWeight.toStringAsFixed(1)} kg',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: theme.primaryText,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Target Weight:',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: theme.secondaryText,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            '${newGoalWeight.toStringAsFixed(1)} kg',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: healthCheck['color'],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Target BMI:',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: theme.secondaryText,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            healthCheck['projectedBMI'].toStringAsFixed(1),
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: healthCheck['color'],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  healthCheck['message'],
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.5,
-                    color: theme.primaryText,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            if (healthCheck['isDangerous'] == true) ...[
-              // Only cancel button for dangerous goals
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => Navigator.of(dialogContext).pop(false),
-                  icon: const Icon(Icons.close, size: 20),
-                  label: const Text('Cancel Goal'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.orange,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
+      Future<void> _updateGoalWeightAndType(double targetDelta, String newType) async {
+        final user = _auth.currentUser;
+        double newGoalWeight = _currentWeight;
+        if (newType == 'gain') {
+          newGoalWeight = _currentWeight + targetDelta.abs();
+        } else if (newType == 'lose') {
+          newGoalWeight = _currentWeight - targetDelta.abs();
+        }
+        
+        // Check if goal is healthy
+        final healthCheck = _checkGoalHealth(newGoalWeight);
+        
+        // Show warning dialog if unhealthy or dangerous
+        if (healthCheck['isDangerous'] == true || healthCheck['isUnhealthy'] == true) {
+          // Get theme BEFORE async operations
+          final theme = Provider.of<ThemeManager>(context, listen: false);
+          
+          final shouldProceed = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (dialogContext) => AlertDialog(
+              backgroundColor: theme.cardColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: healthCheck['color'].withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
+                    child: Icon(
+                      healthCheck['isDangerous'] == true 
+                          ? Icons.dangerous 
+                          : Icons.warning_amber,
+                      color: healthCheck['color'],
+                      size: 28,
+                    ),
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      healthCheck['title'],
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: healthCheck['color'],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: theme.borderColor.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Current Weight:',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: theme.secondaryText,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                '${_currentWeight.toStringAsFixed(1)} kg',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.primaryText,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Target Weight:',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: theme.secondaryText,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                '${newGoalWeight.toStringAsFixed(1)} kg',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: healthCheck['color'],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Target BMI:',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: theme.secondaryText,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                healthCheck['projectedBMI'].toStringAsFixed(1),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: healthCheck['color'],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      healthCheck['message'],
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: theme.primaryText,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ] else ...[
-              // Both options for unhealthy (but not dangerous) goals
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: Text(
-                  'Change Goal',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: theme.secondaryText,
+              actions: [
+                if (healthCheck['isDangerous'] == true) ...[
+                  // Only cancel button for dangerous goals
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => Navigator.of(dialogContext).pop(false),
+                      icon: const Icon(Icons.close, size: 20),
+                      label: const Text('Cancel Goal'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.orange,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.orange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                ] else ...[
+                  // Both options for unhealthy (but not dangerous) goals
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(false),
+                    child: Text(
+                      'Change Goal',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: theme.secondaryText,
+                      ),
+                    ),
                   ),
-                ),
-                child: const Text(
-                  'Proceed Anyway',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ],
-        ),
-      );
-      
-      // If user cancels or it's dangerous, don't set the goal
-      if (shouldProceed != true) {
-        return;
-      }
-    }
-    
-    // Proceed with setting the goal
-    setState(() {
-      _goalWeight = newGoalWeight;
-      _goalType = newType;
-      _startWeight = _currentWeight;
-      _goalCompleted = false;
-    });
-
-    if (user != null) {
-      try {
-        final updateData = {
-          'goalWeight': newGoalWeight,
-          'goalType': newType,
-          'goalCompleted': false,
-        };
-        if (newType == 'gain') {
-          updateData['targetWeightGain'] = targetDelta.abs().toStringAsFixed(1);
-          updateData['targetWeightLoss'] = '';
-        } else if (newType == 'lose') {
-          updateData['targetWeightLoss'] = targetDelta.abs().toStringAsFixed(1);
-          updateData['targetWeightGain'] = '';
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.orange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Proceed Anyway',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+          
+          // If user cancels or it's dangerous, don't set the goal
+          if (shouldProceed != true) {
+            return;
+          }
         }
-        await _firestore.collection('user_info').doc(user.uid).update(updateData);
-      } catch (e) {
-        debugPrint('Error saving new goal to firestore: $e');
+        
+        // Rest of your method remains the same...
+        // Proceed with setting the goal
+        setState(() {
+          _goalWeight = newGoalWeight;
+          _goalType = newType;
+          _startWeight = _currentWeight;
+          _goalCompleted = false;
+        });
+
+        if (user != null) {
+          try {
+            final updateData = {
+              'goalWeight': newGoalWeight,
+              'goalType': newType,
+              'goalCompleted': false,
+            };
+            if (newType == 'gain') {
+              updateData['targetWeightGain'] = targetDelta.abs().toStringAsFixed(1);
+              updateData['targetWeightLoss'] = '';
+            } else if (newType == 'lose') {
+              updateData['targetWeightLoss'] = targetDelta.abs().toStringAsFixed(1);
+              updateData['targetWeightGain'] = '';
+            }
+            await _firestore.collection('user_info').doc(user.uid).update(updateData);
+          } catch (e) {
+            debugPrint('Error saving new goal to firestore: $e');
+          }
+        }
       }
-    }
-  }
 
   // Historical data for graph (simulated)
   List<Map<String, dynamic>> _progressData = [];
@@ -1043,25 +1046,33 @@ class _HomeContentState extends State<HomeContent> {
     return 'Good Evening';
   }
 
-  double _batteryPercent() {
-    final isGain = _goalType == 'gain';
-    // If no progress, battery is 0%
-    if (_currentWeight == _startWeight) return 0.0;
-    if (_startWeight == _goalWeight) return 0.0;
-    // If at goal, battery is 100%
-    if ((_goalType == 'gain' && _currentWeight >= _goalWeight) || (_goalType != 'gain' && _currentWeight <= _goalWeight)) {
-      return 1.0;
-    }
-    double progress;
-    if (isGain) {
-      progress = (_currentWeight - _startWeight) / (_goalWeight - _startWeight);
-    } else {
-      progress = (_startWeight - _currentWeight) / (_startWeight - _goalWeight);
-    }
-    // Clamp between 0 and 1 for UI, but allow proportional progress
-    if (progress.isNaN || progress.isInfinite) return 0.0;
-    return progress.clamp(0.0, 1.0);
+double _batteryPercent() {
+  final isGain = _goalType == 'gain';
+  
+  // Handle edge cases first
+  if (_startWeight == _goalWeight) return 0.0;
+  if (_currentWeight == _startWeight) return 0.0;
+  
+  // Check if goal is reached
+  final bool isGoalReached = (isGain && _currentWeight >= _goalWeight) || 
+                            (!isGain && _currentWeight <= _goalWeight);
+  
+  if (isGoalReached) return 1.0;
+  
+  // Calculate progress
+  double progress;
+  if (isGain) {
+    progress = (_currentWeight - _startWeight) / (_goalWeight - _startWeight);
+  } else {
+    progress = (_startWeight - _currentWeight) / (_startWeight - _goalWeight);
   }
+  
+  // Handle invalid calculations
+  if (progress.isNaN || progress.isInfinite) return 0.0;
+  
+  // Clamp between 0 and 1
+  return progress.clamp(0.0, 1.0);
+}
 
  // Add this to your home dashboard greeting section
 // Replace the _buildTopGreeting widget with this updated version
@@ -1453,7 +1464,7 @@ StreamBuilder<int>(
     final isGain = _goalType == 'gain';
     final isGoalReached = _hasReachedGoal();
 
-    // handleSave will update weight + height, then check for goal completion
+        // handleSave will update weight + height, then check for goal completion
     void handleSave() async {
       final wt = double.tryParse(_weightController.text);
       if (wt == null) {
@@ -1466,23 +1477,28 @@ StreamBuilder<int>(
       final ht = double.tryParse(_heightController.text);
       if (ht != null && ht > 0) _heightCm = ht;
 
-      final wasAtStart = (_currentWeight == _startWeight);
+      // Store previous state for comparison
+      final previousWeight = _currentWeight;
+      
       setState(() {
         _currentWeight = wt;
         _calculateHealthMetrics();
       });
 
-      // If this is the first progress, update startWeight in Firestore
-      if (wasAtStart && wt != _startWeight) {
+      // Only update startWeight if this is the VERY FIRST progress entry
+      // (when current weight was previously equal to start weight)
+      if (previousWeight == _startWeight && wt != _startWeight) {
         final user = _auth.currentUser;
         if (user != null) {
-          await _firestore.collection('user_info').doc(user.uid).set({'startWeight': _startWeight}, SetOptions(merge: true));
+          await _firestore.collection('user_info').doc(user.uid).set({
+            'startWeight': _startWeight
+          }, SetOptions(merge: true));
         }
       }
 
       await _saveWeightUpdate(wt, ht);
 
-      // refresh progress data
+      // Refresh progress data
       await Future.delayed(const Duration(milliseconds: 300));
       await _fetchProgressData();
 
@@ -1499,10 +1515,11 @@ StreamBuilder<int>(
         );
       }
 
-      // Auto-check completion — will mark firestore and show dialog once
-      _markGoalCompleted();
+      // Only check for goal completion if we haven't already completed it
+      if (!_goalCompleted && _hasReachedGoal()) {
+        _markGoalCompleted();
+      }
     }
-
     // Build the goal display / editor area
     Widget _buildGoalSection() {
       // Only show the new goal input if the goal is completed (not just reached, but marked completed)
@@ -1877,6 +1894,7 @@ StreamBuilder<int>(
                                   );
                                   return;
                                 }
+                                // Call with the correct parameters - parsed is the target weight, not delta
                                 _updateGoalWeightAndType(parsed, _selectedNewGoalType);
                                 _newGoalController.clear();
                                 FocusScope.of(context).unfocus();

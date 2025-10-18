@@ -11,12 +11,20 @@ class NotificationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Stream controller for unread count
-  final StreamController<int> _unreadCountController = StreamController<int>.broadcast();
+  // FIXED: Use BehaviorSubject-like pattern with proper lifecycle
+  StreamController<int>? _unreadCountController;
   StreamSubscription<QuerySnapshot>? _notificationSubscription;
+  bool _isDisposed = false;
 
   Future<void> initialize() async {
     debugPrint('NotificationService: Initializing...');
+    
+    // Don't reinitialize if already disposed
+    if (_isDisposed) {
+      debugPrint('NotificationService: Cannot initialize - service is disposed');
+      return;
+    }
+    
     await _setupNotificationListener();
   }
 
@@ -25,7 +33,7 @@ class NotificationService {
       final user = _auth.currentUser;
       if (user == null) {
         debugPrint('NotificationService: No user logged in');
-        _unreadCountController.add(0);
+        _safeAddToStream(0);
         return;
       }
 
@@ -33,6 +41,9 @@ class NotificationService {
 
       // Cancel existing subscription if any
       await _notificationSubscription?.cancel();
+
+      // Create stream controller if it doesn't exist
+      _unreadCountController ??= StreamController<int>.broadcast();
 
       // Listen to notifications collection
       _notificationSubscription = _firestore
@@ -45,28 +56,44 @@ class NotificationService {
             (snapshot) {
               final count = snapshot.docs.length;
               debugPrint('NotificationService: Unread count updated: $count');
-              _unreadCountController.add(count);
+              _safeAddToStream(count);
             },
             onError: (error) {
               debugPrint('NotificationService: Stream error: $error');
-              _unreadCountController.addError(error);
+              _safeAddErrorToStream(error);
             },
           );
     } catch (e) {
       debugPrint('NotificationService: Setup error: $e');
-      _unreadCountController.addError(e);
+      _safeAddErrorToStream(e);
+    }
+  }
+
+  // FIXED: Safe stream operations
+  void _safeAddToStream(int value) {
+    if (!_isDisposed && _unreadCountController != null && !_unreadCountController!.isClosed) {
+      _unreadCountController!.add(value);
+    }
+  }
+
+  void _safeAddErrorToStream(Object error) {
+    if (!_isDisposed && _unreadCountController != null && !_unreadCountController!.isClosed) {
+      _unreadCountController!.addError(error);
     }
   }
 
   Stream<int> getUnreadCount() {
     debugPrint('NotificationService: getUnreadCount() called');
     
+    // Create stream controller if it doesn't exist
+    _unreadCountController ??= StreamController<int>.broadcast();
+    
     // Ensure listener is set up
-    if (_notificationSubscription == null) {
+    if (_notificationSubscription == null && !_isDisposed) {
       _setupNotificationListener();
     }
     
-    return _unreadCountController.stream;
+    return _unreadCountController!.stream;
   }
 
   Future<void> sendLocalNotification({
@@ -75,6 +102,12 @@ class NotificationService {
     required String type,
   }) async {
     try {
+      // Don't proceed if disposed
+      if (_isDisposed) {
+        debugPrint('NotificationService: Cannot send notification - service is disposed');
+        return;
+      }
+
       final user = _auth.currentUser;
       if (user == null) {
         debugPrint('NotificationService: Cannot send notification - no user logged in');
@@ -102,7 +135,7 @@ class NotificationService {
       debugPrint('NotificationService: Notification sent successfully');
     } catch (e) {
       debugPrint('NotificationService: Error sending notification: $e');
-      rethrow;
+      // Don't rethrow to prevent app crashes
     }
   }
 
@@ -211,8 +244,20 @@ class NotificationService {
     }
   }
 
+  // FIXED: Proper disposal with state management
   void dispose() {
+    if (_isDisposed) return;
+    
+    _isDisposed = true;
+    
     _notificationSubscription?.cancel();
-    _unreadCountController.close();
+    _notificationSubscription = null;
+    
+    if (_unreadCountController != null && !_unreadCountController!.isClosed) {
+      _unreadCountController!.close();
+    }
+    _unreadCountController = null;
+    
+    debugPrint('NotificationService: Disposed successfully');
   }
 }

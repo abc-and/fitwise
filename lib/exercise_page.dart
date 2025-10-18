@@ -25,14 +25,14 @@ class _ExercisePageState extends State<ExercisePage> {
     Exercise(name: "Plank", type: "Core", duration: 40, sets: 2, reps: 1, difficulty: "Hard", gifUrl: "https://i.pinimg.com/originals/1e/5c/c8/1e5cc8f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
     Exercise(name: "Jumping Jack", type: "Cardio", duration: 20, sets: 2, reps: 20, difficulty: "Easy", gifUrl: "https://i.pinimg.com/originals/85/1e/17/851e17c6f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
     Exercise(name: "Lunge", type: "Legs", duration: 25, sets: 3, reps: 15, difficulty: "Medium", gifUrl: "https://i.pinimg.com/originals/9e/3f/7d/9e3f7df3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Mountain Climber", type: "Cardio", duration: 30, sets: 3, reps: 20, difficulty: "Medium", gifUrl: "https://i.pinimg.com/originals/6c/8a/1d/6c8a1df3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.gif"),
+    Exercise(name: "Mountain Climber", type: "Cardio", duration: 30, sets: 3, reps: 20, difficulty: "Medium", gifUrl: "https://i.pinimg.com/originals/6c/8a/1d/6c8a1df3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.gif"),
     Exercise(name: "Bicep Curl", type: "Strength", duration: 20, sets: 3, reps: 12, difficulty: "Easy", gifUrl: "https://i.pinimg.com/originals/4d/2e/1f/4d2e1ff3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
     Exercise(name: "Russian Twist", type: "Core", duration: 30, sets: 3, reps: 20, difficulty: "Medium", gifUrl: "https://i.pinimg.com/originals/7a/2c/5e/7a2c5ef3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
     Exercise(name: "High Knee", type: "Cardio", duration: 25, sets: 3, reps: 30, difficulty: "Easy", gifUrl: "https://i.pinimg.com/originals/3b/4d/8f/3b4d8ff3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
     Exercise(name: "Diamond Push Up", type: "Strength", duration: 25, sets: 3, reps: 10, difficulty: "Hard", gifUrl: "https://i.pinimg.com/originals/5c/7e/2a/5c7e2af3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Bulgarian Squat", type: "Legs", duration: 30, sets: 3, reps: 12, difficulty: "Hard", gifUrl: "https://i.pinimg.com/originals/8d/5f/3c/8d5f3cf3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
+    Exercise(name: "Bulgarian Squat", type: "Legs", duration: 30, sets: 3, reps: 12, difficulty: "Hard", gifUrl: "https://i.pinimg.com/originals/8d/5f/3c/8d5f3cf3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.gif"),
     Exercise(name: "Bicycle Crunch", type: "Core", duration: 30, sets: 3, reps: 20, difficulty: "Medium", gifUrl: "https://i.pinimg.com/originals/2f/6a/4b/2f6a4bf3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Box Jump", type: "Legs", duration: 30, sets: 3, reps: 10, difficulty: "Hard", gifUrl: "https://i.pinimg.com/originals/9a/1d/7e/9a1d7ef3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
+    Exercise(name: "Box Jump", type: "Legs", duration: 30, sets: 3, reps: 10, difficulty: "Hard", gifUrl: "https://i.pinimg.com/originals/9a/1d/7e/9a1d7ef3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.gif"),
     Exercise(name: "Dip", type: "Strength", duration: 25, sets: 3, reps: 12, difficulty: "Medium", gifUrl: "https://i.pinimg.com/originals/4e/8c/1f/4e8c1ff3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
     Exercise(name: "Jump Rope", type: "Cardio", duration: 45, sets: 3, reps: 50, difficulty: "Easy", gifUrl: "https://i.pinimg.com/originals/6f/3a/9d/6f3a9df3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
     Exercise(name: "Leg Raise", type: "Core", duration: 25, sets: 3, reps: 15, difficulty: "Medium", gifUrl: "https://i.pinimg.com/originals/1c/5d/8e/1c5d8ef3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
@@ -49,7 +49,7 @@ class _ExercisePageState extends State<ExercisePage> {
   Map<String, dynamic>? userInfo;
   List<Exercise> recommended = [];
   String selectedFilter = "All";
-  bool workoutCompleted = false; // Track if workout is completed
+  bool workoutCompleted = false;
 
   final Map<String, Map<String, dynamic>> typeStyles = {
     "Cardio": {"icon": Icons.favorite, "color": AppColors.orange},
@@ -62,6 +62,7 @@ class _ExercisePageState extends State<ExercisePage> {
   void initState() {
     super.initState();
     _loadUserInfoAndPrepareRecommendations();
+    _checkIfWorkoutCompletedToday();
   }
 
   Future<void> _loadUserInfoAndPrepareRecommendations() async {
@@ -92,6 +93,34 @@ class _ExercisePageState extends State<ExercisePage> {
       recommended = allExercises.take(7).toList();
     } finally {
       setState(() => loadingUser = false);
+    }
+  }
+
+  // NEW METHOD: Check if user already worked out today
+  Future<void> _checkIfWorkoutCompletedToday() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('streaks')
+          .doc(user.uid)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data()!;
+        final lastWorkout = DateTime.parse(data['lastWorkout']);
+        final today = DateTime.now();
+        
+        if (_isSameDay(today, lastWorkout)) {
+          setState(() {
+            workoutCompleted = true;
+          });
+          debugPrint('✅ User already worked out today - marking as completed');
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error checking workout status: $e');
     }
   }
 
@@ -224,7 +253,7 @@ class _ExercisePageState extends State<ExercisePage> {
     }
   }
 
-  // Add this method to automatically log streak
+  // Automatically log streak to Firebase
   Future<void> _logStreakAutomatically() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -997,7 +1026,7 @@ class _ExercisePageState extends State<ExercisePage> {
 class WorkoutRunner extends StatefulWidget {
   final List<Exercise> exercises;
   final int cooldownSeconds;
-  final Function(bool, int, int) onWorkoutCompleted; // Updated signature
+  final Function(bool, int, int) onWorkoutCompleted;
 
   const WorkoutRunner({
     super.key, 
@@ -1015,8 +1044,8 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
   bool inCooldown = false;
   int cooldownRemaining = 0;
   Timer? cooldownTimer;
-  int completedExercises = 0; // Track actually completed exercises
-  int skippedExercises = 0; // Track skipped exercises
+  int completedExercises = 0;
+  int skippedExercises = 0;
 
   @override
   void dispose() {
@@ -1024,19 +1053,15 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
     super.dispose();
   }
 
-  // Called by ExerciseDetailScreen when the ENTIRE exercise is completed
   void _onSetComplete() {
     debugPrint('=== Exercise Complete Called ===');
     debugPrint('Exercise completed: ${widget.exercises[currentIndex].name}');
     
-    // Increment completed exercises counter
     completedExercises++;
     debugPrint('Completed exercises: $completedExercises');
     
     debugPrint('Moving to next exercise or finishing workout');
     
-    // When ExerciseDetailScreen calls onComplete, it means the ENTIRE exercise is done
-    // (all sets + final rest + completion screen)
     if (currentIndex >= widget.exercises.length - 1) {
       debugPrint('🏁 Last exercise completed - finishing workout');
       _finishWorkout();
@@ -1084,7 +1109,6 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
   }
 
   void _finishWorkout() {
-    // Check if ALL exercises were actually completed (not skipped)
     final bool allExercisesCompleted = completedExercises == widget.exercises.length;
     final bool isWorkoutCompleted = completedExercises > 0;
     
@@ -1095,7 +1119,6 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
     debugPrint('All exercises completed: $allExercisesCompleted');
     debugPrint('Workout marked as completed: $isWorkoutCompleted');
     
-    // Call the callback to update the parent widget with completion details
     widget.onWorkoutCompleted(isWorkoutCompleted, completedExercises, widget.exercises.length);
     
     showDialog(

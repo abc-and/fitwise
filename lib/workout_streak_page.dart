@@ -28,6 +28,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
   late Animation<double> _badgeScaleAnimation;
   bool _showDebugPanel = false;
   bool _isLoading = true;
+  bool _showStreakBrokenMessage = false;
   final NotificationService _notificationService = NotificationService();
 
   @override
@@ -70,8 +71,13 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
           .get();
 
       if (doc.exists && doc.data() != null) {
+        final loadedStreak = WorkoutStreak.fromMap(doc.data()!);
+        
+        // Check if streak is broken and reset if needed
+        final updatedStreak = _checkAndUpdateStreak(loadedStreak);
+        
         setState(() {
-          _streak = WorkoutStreak.fromMap(doc.data()!);
+          _streak = updatedStreak;
           _isLoading = false;
         });
         
@@ -93,6 +99,99 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
     }
   }
 
+  // NEW: Check and update streak based on current date
+  WorkoutStreak _checkAndUpdateStreak(WorkoutStreak streak) {
+    final now = DateTime.now();
+    final lastWorkout = streak.lastWorkout;
+    
+    // If never worked out, return as is
+    if (lastWorkout == DateTime(1970)) return streak;
+    
+    final daysSinceLastWorkout = now.difference(lastWorkout).inDays;
+    debugPrint('WorkoutStreakPage: Days since last workout: $daysSinceLastWorkout');
+    
+    // If streak is already 0, no need to check
+    if (streak.currentStreak == 0) return streak;
+    
+    // If worked out today or yesterday, streak continues
+    if (daysSinceLastWorkout == 0 || daysSinceLastWorkout == 1) {
+      return streak;
+    }
+    
+    // If 2 or more days have passed, streak is broken
+    if (daysSinceLastWorkout >= 2) {
+      debugPrint('WorkoutStreakPage: Streak broken! Resetting current streak to 0');
+      
+      // Show non-invasive message
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showStreakBrokenSnackbar();
+      });
+      
+      // Reset current streak but keep best streak
+      return WorkoutStreak(
+        currentStreak: 0,
+        bestStreak: streak.bestStreak,
+        lastWorkout: streak.lastWorkout,
+        workoutDates: streak.workoutDates,
+      );
+    }
+    
+    return streak;
+  }
+
+  // NEW: Show non-invasive snackbar for broken streak
+  void _showStreakBrokenSnackbar() {
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.warning_amber, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '💔 Streak Broken',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Complete ALL exercises today to start a new streak!',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 5),
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        action: SnackBarAction(
+          label: 'Got it',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
+  }
+
   Future<void> _checkStreakStatus() async {
     try {
       final now = DateTime.now();
@@ -109,14 +208,14 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
           debugPrint('WorkoutStreakPage: Sending streak warning notification');
           await _notificationService.sendLocalNotification(
             title: '🔥 Streak Alert!',
-            body: 'Your ${_streak.currentStreak}-day streak is about to break! Complete your workout today.',
+            body: 'Your ${_getGrammaticalDays(_streak.currentStreak)} streak is about to break! Complete your workout today.',
             type: 'streak_warning',
           );
         } else if (daysSinceLastWorkout >= 2 && _streak.currentStreak > 0) {
           debugPrint('WorkoutStreakPage: Streak has broken - sending notification');
           await _notificationService.sendLocalNotification(
             title: '💔 Streak Broken',
-            body: 'Your streak has ended. Complete ALL exercises to start a new one!',
+            body: 'Your ${_getGrammaticalDays(_streak.currentStreak)} streak has ended. Complete ALL exercises to start a new one!',
             type: 'streak_warning',
           );
         }
@@ -176,9 +275,13 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
         date1.day == date2.day;
   }
 
-  bool _isConsecutiveDay(DateTime today, DateTime lastWorkout) {
-    final yesterday = today.subtract(const Duration(days: 1));
-    return _isSameDay(lastWorkout, yesterday);
+  // CORRECTED: Grammar helper functions
+  String _getGrammaticalDays(int days) {
+    return days == 1 ? '$days day' : '$days days';
+  }
+
+  String _getGrammaticalWorkouts(int workouts) {
+    return workouts == 1 ? '$workouts workout' : '$workouts workouts';
   }
 
   // Enhanced debug streak setter with notification trigger option
@@ -219,8 +322,8 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(triggerNotification 
-                ? '✅ Streak set to $days days + notification sent!' 
-                : '✅ Streak set to $days days'),
+                ? '✅ Streak set to ${_getGrammaticalDays(days)} + notification sent!' 
+                : '✅ Streak set to ${_getGrammaticalDays(days)}'),
             backgroundColor: AppColors.green,
             behavior: SnackBarBehavior.floating,
           ),
@@ -255,13 +358,16 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
         workoutDates: _streak.workoutDates,
       );
 
+      // Check if this would break the streak
+      final updatedStreak = _checkAndUpdateStreak(debugStreak);
+      
       await FirebaseFirestore.instance
           .collection('streaks')
           .doc(user.uid)
-          .set(debugStreak.toMap());
+          .set(updatedStreak.toMap());
       
       setState(() {
-        _streak = debugStreak;
+        _streak = updatedStreak;
       });
       
       debugPrint('WorkoutStreakPage: Set last workout to $daysAgo days ago ($lastWorkoutDate)');
@@ -269,7 +375,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Last workout set to $daysAgo days ago'),
+            content: Text('✅ Last workout set to ${_getGrammaticalDays(daysAgo)} ago'),
             backgroundColor: AppColors.green,
             behavior: SnackBarBehavior.floating,
           ),
@@ -348,7 +454,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Milestone notification sent for $milestone days!'),
+            content: Text('✅ Milestone notification sent for ${_getGrammaticalDays(milestone)}!'),
             backgroundColor: AppColors.green,
             behavior: SnackBarBehavior.floating,
           ),
@@ -412,7 +518,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
         body = 'UNBELIEVABLE! 365 days! You\'re a FITNESS GOD! Complete ALL exercises to continue! 🎊';
         break;
       default:
-        body = '$milestone-day streak! Complete ALL exercises to maintain it!';
+        body = '${_getGrammaticalDays(milestone)} streak! Complete ALL exercises to maintain it!';
     }
     
     debugPrint('WorkoutStreakPage: Sending milestone notification - $milestone days: $body');
@@ -653,6 +759,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
     _weekFireController.dispose();
     _particleController.dispose();
     _backgroundController.dispose();
+    _notificationService.dispose();
     super.dispose();
   }
 
@@ -681,6 +788,12 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
     final streakColor = _getStreakColor();
     final particleCount = _getParticleCount();
 
+    // FIXED: Grammatically correct text
+    final daysSinceLastWorkout = DateTime.now().difference(_streak.lastWorkout).inDays;
+    final lastWorkoutText = _isSameDay(DateTime.now(), _streak.lastWorkout) 
+        ? 'Today' 
+        : '$daysSinceLastWorkout ${daysSinceLastWorkout == 1 ? 'day' : 'days'} ago';
+
     return Scaffold(
       backgroundColor: theme.primaryBackground,
       body: Stack(
@@ -699,6 +812,7 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
               );
             },
           ),
+          
           if (particleCount > 0)
             ...List.generate(particleCount, (index) {
               return AnimatedBuilder(
@@ -861,8 +975,8 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                           children: [
                                             Text("Current Status:", style: TextStyle(color: theme.tertiaryText, fontSize: 11)),
                                             const SizedBox(height: 4),
-                                            Text("Streak: ${_streak.currentStreak} days", style: TextStyle(color: theme.primaryText, fontSize: 12, fontWeight: FontWeight.w600)),
-                                            Text("Last: ${_isSameDay(DateTime.now(), _streak.lastWorkout) ? 'Today' : '${DateTime.now().difference(_streak.lastWorkout).inDays}d ago'}", 
+                                            Text("Streak: ${_getGrammaticalDays(_streak.currentStreak)}", style: TextStyle(color: theme.primaryText, fontSize: 12, fontWeight: FontWeight.w600)),
+                                            Text("Last: $lastWorkoutText", 
                                               style: TextStyle(color: theme.secondaryText, fontSize: 11)),
                                           ],
                                         ),
@@ -940,9 +1054,12 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                                           children: [
                                             Text("${_streak.currentStreak}", style: const TextStyle(fontSize: 72, color: Colors.white, fontWeight: FontWeight.bold, height: 1)),
                                             const SizedBox(width: 8),
-                                            const Padding(
-                                              padding: EdgeInsets.only(bottom: 12),
-                                              child: Text("days", style: TextStyle(fontSize: 24, color: Colors.white, fontWeight: FontWeight.w500)),
+                                            Padding(
+                                              padding: const EdgeInsets.only(bottom: 12),
+                                              child: Text(
+                                                _streak.currentStreak == 1 ? "day" : "days",
+                                                style: const TextStyle(fontSize: 24, color: Colors.white, fontWeight: FontWeight.w500),
+                                              ),
                                             ),
                                           ],
                                         ),
@@ -1015,9 +1132,9 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
                           const SizedBox(height: 30),
                           Row(
                             children: [
-                              Expanded(child: _buildStatCard("🏅", "Best Streak", "${_streak.bestStreak}", AppColors.orange, theme)),
+                              Expanded(child: _buildStatCard("🏅", "Best Streak", _getGrammaticalDays(_streak.bestStreak), AppColors.orange, theme)),
                               const SizedBox(width: 15),
-                              Expanded(child: _buildStatCard("💪", "Workouts", "${_streak.workoutDates.length}", AppColors.accentBlue, theme)),
+                              Expanded(child: _buildStatCard("💪", "Total Workouts", _getGrammaticalWorkouts(_streak.workoutDates.length), AppColors.accentBlue, theme)),
                             ],
                           ),
                           const SizedBox(height: 30),
