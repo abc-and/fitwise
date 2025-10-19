@@ -13,6 +13,7 @@ import 'profile_page.dart';
 import 'calorie_log_page.dart';
 import 'notification/notification_service.dart';
 import 'notification/notification_center.dart';
+import '../providers/quote_scheduler.dart'; 
 
 // Controls whether the new goal input is shown after clicking 'Update Goal'
 bool _showNewGoalInput = false;
@@ -105,6 +106,88 @@ class HealthCalculator {
     return 'Obese';
   }
 }
+
+  // Achievement definitions with thresholds
+  class AchievementDefinition {
+    final String id;
+    final String title;
+    final String description;
+    final IconData icon;
+    final double threshold; // Weight loss/gain threshold in kg
+    final String type; // 'weight_loss', 'weight_gain', 'bmi_milestone', 'consistency'
+
+    AchievementDefinition({
+      required this.id,
+      required this.title,
+      required this.description,
+      required this.icon,
+      required this.threshold,
+      required this.type,
+    });
+  }
+
+    // Achievement system
+  Set<String> _unlockedAchievements = {};
+
+  // List of achievements to check against
+  final List<AchievementDefinition> _achievements = [
+    AchievementDefinition(
+      id: 'first_step',
+      title: 'First Step',
+      description: 'You\'ve started your fitness journey!',
+      icon: Icons.directions_walk,
+      threshold: 0.1,
+      type: 'weight_loss',
+    ),
+    AchievementDefinition(
+      id: 'halfway_there',
+      title: '🎯 Halfway There',
+      description: 'You\'ve reached 50% of your goal!',
+      icon: Icons.trending_down,
+      threshold: 0.5,
+      type: 'weight_loss',
+    ),
+    AchievementDefinition(
+      id: 'five_kg_milestone',
+      title: '💪 5kg Milestone',
+      description: 'Incredible! You\'ve lost 5kg!',
+      icon: Icons.emoji_events,
+      threshold: 5.0,
+      type: 'weight_loss',
+    ),
+    AchievementDefinition(
+      id: 'ten_kg_milestone',
+      title: '🏆 10kg Milestone',
+      description: 'Outstanding dedication! 10kg down!',
+      icon: Icons.emoji_events,
+      threshold: 10.0,
+      type: 'weight_loss',
+    ),
+    AchievementDefinition(
+      id: 'bmi_improvement',
+      title: 'Health Improved',
+      description: 'Your BMI has moved to a healthier category!',
+      icon: Icons.favorite,
+      threshold: 0.0, // Checked separately
+      type: 'bmi_milestone',
+    ),
+    AchievementDefinition(
+      id: 'goal_reached',
+      title: '⭐ Goal Achieved',
+      description: 'You\'ve reached your fitness goal!',
+      icon: Icons.star,
+      threshold: 1.0,
+      type: 'consistency',
+    ),
+    AchievementDefinition(
+      id: 'weight_gain_milestone',
+      title: 'Strong Start',
+      description: 'Great progress! You\'ve gained 5kg of muscle!',
+      icon: Icons.fitness_center,
+      threshold: 5.0,
+      type: 'weight_gain',
+    ),
+  ];
 
 // --- Main Dashboard Implementation ---
 class HomeDashboard extends StatefulWidget {
@@ -513,238 +596,237 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   // Call this to set a brand-new goal (user inputs weight + optional type)
-      Future<void> _updateGoalWeightAndType(double targetDelta, String newType) async {
-        final user = _auth.currentUser;
-        double newGoalWeight = _currentWeight;
-        if (newType == 'gain') {
-          newGoalWeight = _currentWeight + targetDelta.abs();
-        } else if (newType == 'lose') {
-          newGoalWeight = _currentWeight - targetDelta.abs();
-        }
-        
-        // Check if goal is healthy
-        final healthCheck = _checkGoalHealth(newGoalWeight);
-        
-        // Show warning dialog if unhealthy or dangerous
-        if (healthCheck['isDangerous'] == true || healthCheck['isUnhealthy'] == true) {
-          // Get theme BEFORE async operations
-          final theme = Provider.of<ThemeManager>(context, listen: false);
-          
-          final shouldProceed = await showDialog<bool>(
-            context: context,
-            barrierDismissible: false,
-            builder: (dialogContext) => AlertDialog(
-              backgroundColor: theme.cardColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: healthCheck['color'].withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      healthCheck['isDangerous'] == true 
-                          ? Icons.dangerous 
-                          : Icons.warning_amber,
-                      color: healthCheck['color'],
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      healthCheck['title'],
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: healthCheck['color'],
-                      ),
-                    ),
-                  ),
-                ],
+  Future<void> _updateGoalWeightAndType(double targetDelta, String newType) async {
+    final user = _auth.currentUser;
+    double newGoalWeight = _currentWeight;
+    if (newType == 'gain') {
+      newGoalWeight = _currentWeight + targetDelta.abs();
+    } else if (newType == 'lose') {
+      newGoalWeight = _currentWeight - targetDelta.abs();
+    }
+    
+    // Check if goal is healthy
+    final healthCheck = _checkGoalHealth(newGoalWeight);
+    
+    // Show warning dialog if unhealthy or dangerous
+    if (healthCheck['isDangerous'] == true || healthCheck['isUnhealthy'] == true) {
+      // Get theme BEFORE async operations
+      final theme = Provider.of<ThemeManager>(context, listen: false);
+      
+      final shouldProceed = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: theme.cardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: healthCheck['color'].withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  healthCheck['isDangerous'] == true 
+                      ? Icons.dangerous 
+                      : Icons.warning_amber,
+                  color: healthCheck['color'],
+                  size: 28,
+                ),
               ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: theme.borderColor.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  healthCheck['title'],
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: healthCheck['color'],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.borderColor.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Current Weight:',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: theme.secondaryText,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              Text(
-                                '${_currentWeight.toStringAsFixed(1)} kg',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: theme.primaryText,
-                                ),
-                              ),
-                            ],
+                          Text(
+                            'Current Weight:',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: theme.secondaryText,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                          const SizedBox(height: 6),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Target Weight:',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: theme.secondaryText,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              Text(
-                                '${newGoalWeight.toStringAsFixed(1)} kg',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: healthCheck['color'],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Target BMI:',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: theme.secondaryText,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              Text(
-                                healthCheck['projectedBMI'].toStringAsFixed(1),
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: healthCheck['color'],
-                                ),
-                              ),
-                            ],
+                          Text(
+                            '${_currentWeight.toStringAsFixed(1)} kg',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: theme.primaryText,
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      healthCheck['message'],
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.5,
-                        color: theme.primaryText,
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Target Weight:',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: theme.secondaryText,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            '${newGoalWeight.toStringAsFixed(1)} kg',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: healthCheck['color'],
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Target BMI:',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: theme.secondaryText,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            healthCheck['projectedBMI'].toStringAsFixed(1),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: healthCheck['color'],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              actions: [
-                if (healthCheck['isDangerous'] == true) ...[
-                  // Only cancel button for dangerous goals
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => Navigator.of(dialogContext).pop(false),
-                      icon: const Icon(Icons.close, size: 20),
-                      label: const Text('Cancel Goal'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.orange,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
+                const SizedBox(height: 16),
+                Text(
+                  healthCheck['message'],
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: theme.primaryText,
                   ),
-                ] else ...[
-                  // Both options for unhealthy (but not dangerous) goals
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(false),
-                    child: Text(
-                      'Change Goal',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: theme.secondaryText,
-                      ),
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.orange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Proceed Anyway',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
+                ),
               ],
             ),
-          );
-          
-          // If user cancels or it's dangerous, don't set the goal
-          if (shouldProceed != true) {
-            return;
-          }
-        }
-        
-        // Rest of your method remains the same...
-        // Proceed with setting the goal
-        setState(() {
-          _goalWeight = newGoalWeight;
-          _goalType = newType;
-          _startWeight = _currentWeight;
-          _goalCompleted = false;
-        });
-
-        if (user != null) {
-          try {
-            final updateData = {
-              'goalWeight': newGoalWeight,
-              'goalType': newType,
-              'goalCompleted': false,
-            };
-            if (newType == 'gain') {
-              updateData['targetWeightGain'] = targetDelta.abs().toStringAsFixed(1);
-              updateData['targetWeightLoss'] = '';
-            } else if (newType == 'lose') {
-              updateData['targetWeightLoss'] = targetDelta.abs().toStringAsFixed(1);
-              updateData['targetWeightGain'] = '';
-            }
-            await _firestore.collection('user_info').doc(user.uid).update(updateData);
-          } catch (e) {
-            debugPrint('Error saving new goal to firestore: $e');
-          }
-        }
+          ),
+          actions: [
+            if (healthCheck['isDangerous'] == true) ...[
+              // Only cancel button for dangerous goals
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  icon: const Icon(Icons.close, size: 20),
+                  label: const Text('Cancel Goal'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.orange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ] else ...[
+              // Both options for unhealthy (but not dangerous) goals
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(
+                  'Change Goal',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: theme.secondaryText,
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.orange,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Proceed Anyway',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+      
+      // If user cancels or it's dangerous, don't set the goal
+      if (shouldProceed != true) {
+        return;
       }
+    }
+    
+    // Proceed with setting the goal
+    setState(() {
+      _goalWeight = newGoalWeight;
+      _goalType = newType;
+      _startWeight = _currentWeight;
+      _goalCompleted = false;
+    });
+
+    if (user != null) {
+      try {
+        final updateData = {
+          'goalWeight': newGoalWeight,
+          'goalType': newType,
+          'goalCompleted': false,
+        };
+        if (newType == 'gain') {
+          updateData['targetWeightGain'] = targetDelta.abs().toStringAsFixed(1);
+          updateData['targetWeightLoss'] = '';
+        } else if (newType == 'lose') {
+          updateData['targetWeightLoss'] = targetDelta.abs().toStringAsFixed(1);
+          updateData['targetWeightGain'] = '';
+        }
+        await _firestore.collection('user_info').doc(user.uid).update(updateData);
+      } catch (e) {
+        debugPrint('Error saving new goal to firestore: $e');
+      }
+    }
+  }
 
   // Historical data for graph (simulated)
   List<Map<String, dynamic>> _progressData = [];
@@ -761,16 +843,30 @@ class _HomeContentState extends State<HomeContent> {
     super.initState();
     _initializeServices();
     _fetchUserData(); 
-    
+     _scheduleMotivationalQuotes(); // Add this line
   }
 
-  Future<void> _initializeServices() async {
-  // Initialize notification service first
-  await _notificationService.initialize();
+  Future<void> _scheduleMotivationalQuotes() async {
+  // Only for Option A (Android AlarmManager)
+  final quoteScheduler = QuoteScheduler();
   
-  // Then fetch user data
-  await _fetchUserData();
+  try {
+    // Schedule quotes for 8:00 AM daily
+    // Adjust time as needed
+    await quoteScheduler.scheduleDailyQuote(hour: 8, minute: 0);
+  } catch (e) {
+    debugPrint('Error setting up quote scheduler: $e');
+  }
 }
+
+  Future<void> _initializeServices() async {
+    // Initialize notification service first
+    await _notificationService.initialize();
+    
+    // Then fetch user data
+    await _fetchUserData();
+  }
+
   void _filterFoodsByTime() {
     if (_userInfo == null) return;
     final h = DateTime.now().hour;
@@ -876,6 +972,11 @@ class _HomeContentState extends State<HomeContent> {
 
           // Load persisted completed flag (default false)
           _goalCompleted = data['goalCompleted'] == true;
+          
+          // Load unlocked achievements
+          if (data.containsKey('unlockedAchievements') && data['unlockedAchievements'] != null) {
+            _unlockedAchievements = Set<String>.from(data['unlockedAchievements'] as List);
+          }
           
           // Get target date and duration
           if (data.containsKey('targetDate')) {
@@ -1046,314 +1147,435 @@ class _HomeContentState extends State<HomeContent> {
     return 'Good Evening';
   }
 
-double _batteryPercent() {
-  final isGain = _goalType == 'gain';
-  
-  // Handle edge cases first
-  if (_startWeight == _goalWeight) return 0.0;
-  if (_currentWeight == _startWeight) return 0.0;
-  
-  // Check if goal is reached
-  final bool isGoalReached = (isGain && _currentWeight >= _goalWeight) || 
+  double _batteryPercent() {
+    final isGain = _goalType == 'gain';
+    
+    // Handle edge cases first
+    if (_startWeight == _goalWeight) return 0.0;
+    if (_currentWeight == _startWeight) return 0.0;
+    
+    // Check if goal is reached
+    final bool isGoalReached = (isGain && _currentWeight >= _goalWeight) || 
                             (!isGain && _currentWeight <= _goalWeight);
-  
-  if (isGoalReached) return 1.0;
-  
-  // Calculate progress
-  double progress;
-  if (isGain) {
-    progress = (_currentWeight - _startWeight) / (_goalWeight - _startWeight);
-  } else {
-    progress = (_startWeight - _currentWeight) / (_startWeight - _goalWeight);
+    
+    if (isGoalReached) return 1.0;
+    
+    // Calculate progress
+    double progress;
+    if (isGain) {
+      progress = (_currentWeight - _startWeight) / (_goalWeight - _startWeight);
+    } else {
+      progress = (_startWeight - _currentWeight) / (_startWeight - _goalWeight);
+    }
+    
+    // Handle invalid calculations
+    if (progress.isNaN || progress.isInfinite) return 0.0;
+    
+    // Clamp between 0 and 1
+    return progress.clamp(0.0, 1.0);
   }
-  
-  // Handle invalid calculations
-  if (progress.isNaN || progress.isInfinite) return 0.0;
-  
-  // Clamp between 0 and 1
-  return progress.clamp(0.0, 1.0);
+
+  // Method to check and trigger achievements
+  Future<void> _checkAndTriggerAchievements() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      // Get previously unlocked achievements from Firestore
+      final userDoc = await _firestore.collection('user_info').doc(user.uid).get();
+      if (userDoc.exists) {
+        final data = userDoc.data();
+        if (data != null && data['unlockedAchievements'] != null) {
+          _unlockedAchievements = Set<String>.from(data['unlockedAchievements'] as List);
+        }
+      }
+
+      for (final achievement in _achievements) {
+        // Skip if already unlocked
+        if (_unlockedAchievements.contains(achievement.id)) continue;
+
+        bool isUnlocked = false;
+
+        if (achievement.type == 'weight_loss') {
+          final weightLost = _startWeight - _currentWeight;
+          if (_goalType == 'lose' && weightLost >= achievement.threshold) {
+            isUnlocked = true;
+          }
+        } else if (achievement.type == 'weight_gain') {
+          final weightGained = _currentWeight - _startWeight;
+          if (_goalType == 'gain' && weightGained >= achievement.threshold) {
+            isUnlocked = true;
+          }
+        } else if (achievement.type == 'bmi_milestone') {
+          // Check if BMI improved to a better category
+          final previousBmiCategory = HealthCalculator.getBMICategory(
+            HealthCalculator.calculateBMI(
+              weightKg: _startWeight,
+              heightCm: _heightCm,
+            ),
+          );
+          final currentBmiCategory = _bmiCategory;
+          
+          // Define category rankings
+          const categoryRanking = {
+            'Underweight': 0,
+            'Normal': 1,
+            'Overweight': 2,
+            'Obese': 3,
+          };
+
+          if ((categoryRanking[currentBmiCategory] ?? 0) < 
+              (categoryRanking[previousBmiCategory] ?? 0)) {
+            isUnlocked = true;
+          }
+        } else if (achievement.type == 'consistency') {
+          // This is for goal completion
+          if (_goalCompleted) {
+            isUnlocked = true;
+          }
+        }
+
+        if (isUnlocked) {
+          // Unlock the achievement
+          _unlockedAchievements.add(achievement.id);
+
+          // Send notification
+          await _notificationService.sendAchievement(
+            title: achievement.title,
+            message: achievement.description,
+          );
+
+          // Save to Firestore
+          await _firestore.collection('user_info').doc(user.uid).update({
+            'unlockedAchievements': _unlockedAchievements.toList(),
+          });
+
+          debugPrint('Achievement Unlocked: ${achievement.id}');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error checking achievements: $e');
+    }
+  }
+
+ // Call this method after updating weight
+Future<void> _saveWeightUpdateWithAchievementCheck(double weight, double? height) async {
+  try {
+    final user = _auth.currentUser;
+    if (user == null) {
+      debugPrint('No user logged in');
+      return;
+    }
+
+    final timestamp = DateTime.now();
+
+    Map<String, dynamic> updateData = {
+      'weight': weight.toString(),
+      'lastWeightUpdate': Timestamp.fromDate(timestamp),
+    };
+
+    if (height != null) {
+      updateData['height'] = height.toString();
+    }
+
+    await _firestore.collection('user_info').doc(user.uid).update(updateData);
+    debugPrint('Main document updated successfully');
+
+    final historyRef = _firestore.collection('user_info').doc(user.uid).collection('weight_history');
+
+    final historyData = {
+      'weight': weight.toString(),
+      'height': height?.toString() ?? _heightCm.toString(),
+      'timestamp': Timestamp.fromDate(timestamp),
+      'bmr': _bmr,
+      'bmi': _bmi,
+    };
+
+    await historyRef.add(historyData);
+    debugPrint('Added to weight_history: $historyData');
+
+    // Check for new achievements after weight update
+    await _checkAndTriggerAchievements();
+  } catch (e) {
+    debugPrint('Error saving weight update: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save: $e'),
+          backgroundColor: AppColors.orange,
+        ),
+      );
+    }
+  }
 }
 
- // Add this to your home dashboard greeting section
-// Replace the _buildTopGreeting widget with this updated version
+// Add this handleSave method for weight updates
+Future<void> handleSave() async {
+  final wt = double.tryParse(_weightController.text);
+  if (wt == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please enter a valid weight')),
+    );
+    return;
+  }
 
-// Replace the _buildTopGreeting() method in your HomeContent widget with this:
+  setState(() {
+    _currentWeight = wt;
+    _calculateHealthMetrics();
+  });
 
-Widget _buildTopGreeting() {
-  final theme = Provider.of<ThemeManager>(context);
-  return Padding(
-    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-    child: Row(
-      children: [
-        Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.accentBlue, AppColors.accentCyan],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.accentBlue.withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 6),
-              )
-            ],
-          ),
-          child: Icon(Icons.self_improvement, color: Colors.white, size: 28),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _greeting(),
-                style: TextStyle(fontSize: 14, color: theme.secondaryText),
+  await _saveWeightUpdateWithAchievementCheck(wt, null);
+  
+  // Check for new achievements after saving
+  await _checkAndTriggerAchievements();
+
+  if (!_goalCompleted && _hasReachedGoal()) {
+    _markGoalCompleted();
+  }
+}
+  Widget _buildTopGreeting() {
+    final theme = Provider.of<ThemeManager>(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Row(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.accentBlue, AppColors.accentCyan],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              const SizedBox(height: 4),
-              _loadingUser 
-                ? Text(
-                    'Loading...',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: theme.primaryText,
-                    ),
-                  ) 
-                : Text(
-                    _username,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: theme.primaryText,
-                    ),
-                  ),
-            ],
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.accentBlue.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 6),
+                )
+              ],
+            ),
+            child: Icon(Icons.self_improvement, color: Colors.white, size: 28),
           ),
-        ),
-        // Notification Bell with Better Error Handling
-        // Replace the notification bell section in _buildTopGreeting() with this enhanced version:
-
-// Enhanced Notification Bell with Red Circle Indicator
-StreamBuilder<int>(
-  stream: NotificationService().getUnreadCount(),
-  initialData: 0,
-  builder: (context, snapshot) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return Container(
-        decoration: BoxDecoration(
-          color: theme.cardColor,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: theme.shadowColor,
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                AppColors.accentBlue.withOpacity(0.5),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-    
-    if (snapshot.hasError) {
-      debugPrint('Notification stream error: ${snapshot.error}');
-      return Container(
-        decoration: BoxDecoration(
-          color: theme.cardColor,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: theme.shadowColor,
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              NotificationService().initialize();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Retrying notification service...'),
-                  backgroundColor: AppColors.accentBlue,
-                  duration: const Duration(seconds: 2),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _greeting(),
+                  style: TextStyle(fontSize: 14, color: theme.secondaryText),
                 ),
-              );
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Icon(
-                Icons.notifications_off,
-                color: AppColors.orange,
-                size: 24,
-              ),
+                const SizedBox(height: 4),
+                _loadingUser 
+                  ? Text(
+                      'Loading...',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: theme.primaryText,
+                      ),
+                    ) 
+                  : Text(
+                      _username,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: theme.primaryText,
+                      ),
+                    ),
+              ],
             ),
           ),
-        ),
-      );
-    }
-    
-    final unreadCount = snapshot.data ?? 0;
-    final hasUnread = unreadCount > 0;
-    
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        // Main notification button with animated background
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: hasUnread 
-                    ? AppColors.orange.withOpacity(0.3)
-                    : theme.shadowColor,
-                blurRadius: hasUnread ? 12 : 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-            border: hasUnread 
-                ? Border.all(
-                    color: AppColors.orange.withOpacity(0.3),
-                    width: 1.5,
-                  )
-                : null,
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const NotificationCenter(),
+          // Notification Bell
+          StreamBuilder<int>(
+            stream: _notificationService.getUnreadCount(), // Use instance instead of creating new one
+            initialData: 0,
+            builder: (context, snapshot) {
+              // Show icon immediately, don't wait for stream
+              final unreadCount = snapshot.data ?? 0;
+              final hasUnread = unreadCount > 0;
+              
+              // Only show error state if there's an actual error
+              if (snapshot.hasError) {
+                debugPrint('Notification stream error: ${snapshot.error}');
+                return Container(
+                  decoration: BoxDecoration(
+                    color: theme.cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.shadowColor,
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const NotificationCenter(),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Icon(
+                          Icons.notifications_off,
+                          color: AppColors.orange,
+                          size: 24,
+                        ),
+                      ),
+                    ),
                   ),
                 );
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (child, animation) {
-                    return ScaleTransition(
-                      scale: animation,
-                      child: child,
-                    );
-                  },
-                  child: Icon(
-                    hasUnread
-                        ? Icons.notifications_active
-                        : Icons.notifications_outlined,
-                    key: ValueKey(hasUnread),
-                    color: hasUnread
-                        ? AppColors.orange
-                        : theme.primaryText,
-                    size: 24,
+              }
+              
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // Main notification button with animated background
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    decoration: BoxDecoration(
+                      color: theme.cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: hasUnread 
+                              ? AppColors.orange.withOpacity(0.3)
+                              : theme.shadowColor,
+                          blurRadius: hasUnread ? 12 : 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                      border: hasUnread 
+                          ? Border.all(
+                              color: AppColors.orange.withOpacity(0.3),
+                              width: 1.5,
+                            )
+                          : null,
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const NotificationCenter(),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            transitionBuilder: (child, animation) {
+                              return ScaleTransition(
+                                scale: animation,
+                                child: child,
+                              );
+                            },
+                            child: Icon(
+                              hasUnread
+                                  ? Icons.notifications_active
+                                  : Icons.notifications_outlined,
+                              key: ValueKey(hasUnread),
+                              color: hasUnread
+                                  ? AppColors.orange
+                                  : theme.primaryText,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        
-        // Enhanced badge with red circle
-        if (hasUnread)
-          Positioned(
-            right: -6,
-            top: -6,
-            child: Container(
-              padding: const EdgeInsets.all(5),
-              constraints: const BoxConstraints(
-                minWidth: 22,
-                minHeight: 22,
-              ),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.red.shade600,
-                    Colors.red.shade700,
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: theme.primaryBackground,
-                  width: 2.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.red.withOpacity(0.6),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
+                  
+                  // Enhanced badge with red circle
+                  if (hasUnread)
+                    Positioned(
+                      right: -6,
+                      top: -6,
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        constraints: const BoxConstraints(
+                          minWidth: 22,
+                          minHeight: 22,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.red.shade600,
+                              Colors.red.shade700,
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: theme.primaryBackground,
+                            width: 2.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.6),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            unreadCount > 99 ? '99+' : unreadCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
-              ),
-              child: Center(
-                child: Text(
-                  unreadCount > 99 ? '99+' : unreadCount.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: theme.cardColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.local_fire_department, color: AppColors.orange),
+                const SizedBox(width: 6),
+                Text(
+                  '${_bmr.round()} kcal',
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    height: 1,
+                    color: theme.primaryText,
                   ),
                 ),
-              ),
+              ],
             ),
           ),
-      ],
+        ],
+      ),
     );
-  },
-),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.local_fire_department, color: AppColors.orange),
-              const SizedBox(width: 6),
-              Text(
-                '${_bmr.round()} kcal',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: theme.primaryText,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
+  }
 
   Widget _buildBmrBmiCard() {
     final theme = Provider.of<ThemeManager>(context);
@@ -1464,62 +1686,65 @@ StreamBuilder<int>(
     final isGain = _goalType == 'gain';
     final isGoalReached = _hasReachedGoal();
 
-        // handleSave will update weight + height, then check for goal completion
-    void handleSave() async {
-      final wt = double.tryParse(_weightController.text);
-      if (wt == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a valid weight')),
-        );
-        return;
-      }
+    // handleSave will update weight + height, then check for goal completion
+    // In your _buildWeightBatteryCard method, replace the existing handleSave with:
+void handleSave() async {
+  final wt = double.tryParse(_weightController.text);
+  if (wt == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please enter a valid weight')),
+    );
+    return;
+  }
 
-      final ht = double.tryParse(_heightController.text);
-      if (ht != null && ht > 0) _heightCm = ht;
+  final ht = double.tryParse(_heightController.text);
+  if (ht != null && ht > 0) _heightCm = ht;
 
-      // Store previous state for comparison
-      final previousWeight = _currentWeight;
-      
-      setState(() {
-        _currentWeight = wt;
-        _calculateHealthMetrics();
-      });
+  // Store previous state for comparison
+  final previousWeight = _currentWeight;
+  
+  setState(() {
+    _currentWeight = wt;
+    _calculateHealthMetrics();
+  });
 
-      // Only update startWeight if this is the VERY FIRST progress entry
-      // (when current weight was previously equal to start weight)
-      if (previousWeight == _startWeight && wt != _startWeight) {
-        final user = _auth.currentUser;
-        if (user != null) {
-          await _firestore.collection('user_info').doc(user.uid).set({
-            'startWeight': _startWeight
-          }, SetOptions(merge: true));
-        }
-      }
-
-      await _saveWeightUpdate(wt, ht);
-
-      // Refresh progress data
-      await Future.delayed(const Duration(milliseconds: 300));
-      await _fetchProgressData();
-
-      _weightController.clear();
-      _heightController.clear();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Weight updated: ${wt.toStringAsFixed(1)} kg'),
-            backgroundColor: AppColors.accentBlue,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-
-      // Only check for goal completion if we haven't already completed it
-      if (!_goalCompleted && _hasReachedGoal()) {
-        _markGoalCompleted();
-      }
+  // Only update startWeight if this is the VERY FIRST progress entry
+  // (when current weight was previously equal to start weight)
+  if (previousWeight == _startWeight && wt != _startWeight) {
+    final user = _auth.currentUser;
+    if (user != null) {
+      await _firestore.collection('user_info').doc(user.uid).set({
+        'startWeight': _startWeight
+      }, SetOptions(merge: true));
     }
+  }
+
+  // Use the new method with achievement check
+  await _saveWeightUpdateWithAchievementCheck(wt, ht);
+
+  // Refresh progress data
+  await Future.delayed(const Duration(milliseconds: 300));
+  await _fetchProgressData();
+
+  _weightController.clear();
+  _heightController.clear();
+
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Weight updated: ${wt.toStringAsFixed(1)} kg'),
+        backgroundColor: AppColors.accentBlue,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  // Only check for goal completion if we haven't already completed it
+  if (!_goalCompleted && _hasReachedGoal()) {
+    _markGoalCompleted();
+  }
+}
+
     // Build the goal display / editor area
     Widget _buildGoalSection() {
       // Only show the new goal input if the goal is completed (not just reached, but marked completed)
@@ -2010,51 +2235,9 @@ StreamBuilder<int>(
     );
   }
 
+  // Keep the old method for backward compatibility
   Future<void> _saveWeightUpdate(double weight, double? height) async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) {
-        debugPrint('No user logged in');
-        return;
-      }
-
-      final timestamp = DateTime.now();
-
-      Map<String, dynamic> updateData = {
-        'weight': weight.toString(),
-        'lastWeightUpdate': Timestamp.fromDate(timestamp),
-      };
-
-      if (height != null) {
-        updateData['height'] = height.toString();
-      }
-
-      await _firestore.collection('user_info').doc(user.uid).update(updateData);
-      debugPrint('Main document updated successfully');
-
-      final historyRef = _firestore.collection('user_info').doc(user.uid).collection('weight_history');
-
-      final historyData = {
-        'weight': weight.toString(),
-        'height': height?.toString() ?? _heightCm.toString(),
-        'timestamp': Timestamp.fromDate(timestamp),
-        'bmr': _bmr,
-        'bmi': _bmi,
-      };
-
-      await historyRef.add(historyData);
-      debugPrint('Added to weight_history: $historyData');
-    } catch (e) {
-      debugPrint('Error saving weight update: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save: $e'),
-            backgroundColor: AppColors.orange,
-          ),
-        );
-      }
-    }
+    await _saveWeightUpdateWithAchievementCheck(weight, height);
   }
 
   Widget _buildGraphCard() {

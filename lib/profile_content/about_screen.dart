@@ -3,9 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme.dart';
 import '../constants/app_colors.dart';
+import 'settings_screen.dart'; // Import to access LegalDocuments and LegalDocumentScreen
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
+
+  void _showLegalDocument(BuildContext context, String title, String content, ThemeManager theme) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LegalDocumentScreen(
+          title: title,
+          content: content,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,12 +149,6 @@ class AboutScreen extends StatelessWidget {
                     title: "Developed By",
                     content: "FitWise Development Team",
                   ),
-                  _buildInfoCard(
-                    theme: theme,
-                    icon: Icons.security,
-                    title: "License",
-                    content: "Licensed under MIT License",
-                  ),
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(20),
@@ -161,7 +168,7 @@ class AboutScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Connect With Us",
+                          "Contact Us",
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -172,9 +179,27 @@ class AboutScreen extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            _buildSocialButton(theme, Icons.web, "Website", () {}),
-                            _buildSocialButton(theme, Icons.facebook, "Facebook", () {}),
-                            _buildSocialButton(theme, Icons.mail, "Email", () {}),
+                            _buildContactButton(
+                              context: context,
+                              theme: theme,
+                              icon: Icons.phone,
+                              label: "Call",
+                              contactInfo: "09473405892",
+                            ),
+                            _buildContactButton(
+                              context: context,
+                              theme: theme,
+                              icon: Icons.mail,
+                              label: "Email",
+                              contactInfo: "glydel.solis13@gmail.com",
+                            ),
+                            _buildContactButton(
+                              context: context,
+                              theme: theme,
+                              icon: Icons.facebook,
+                              label: "Facebook",
+                              contactInfo: "Glydel Solis",
+                            ),
                           ],
                         ),
                       ],
@@ -191,7 +216,68 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          backgroundColor: theme.cardColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          title: Text(
+                            "Legal Documents",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: theme.primaryText,
+                            ),
+                          ),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                title: Text(
+                                  "Privacy Policy",
+                                  style: TextStyle(color: theme.primaryText),
+                                ),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  _showLegalDocument(
+                                    context,
+                                    "Privacy Policy",
+                                    LegalDocuments.privacyPolicy,
+                                    theme,
+                                  );
+                                },
+                              ),
+                              ListTile(
+                                title: Text(
+                                  "Terms of Service",
+                                  style: TextStyle(color: theme.primaryText),
+                                ),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  _showLegalDocument(
+                                    context,
+                                    "Terms of Service",
+                                    LegalDocuments.termsOfService,
+                                    theme,
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: Text(
+                                "Close",
+                                style: TextStyle(color: AppColors.accentBlue),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                     child: Text(
                       "Privacy Policy  •  Terms of Service",
                       style: TextStyle(
@@ -209,7 +295,7 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  static Widget _buildInfoCard({
+  Widget _buildInfoCard({
     required ThemeManager theme,
     required IconData icon,
     required String title,
@@ -269,14 +355,17 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  static Widget _buildSocialButton(
-    ThemeManager theme,
-    IconData icon,
-    String label,
-    VoidCallback onTap,
-  ) {
+  Widget _buildContactButton({
+    required BuildContext context,
+    required ThemeManager theme,
+    required IconData icon,
+    required String label,
+    required String contactInfo,
+  }) {
     return InkWell(
-      onTap: onTap,
+      onTap: () {
+        _handleContactTap(context, label, contactInfo);
+      },
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -300,5 +389,34 @@ class AboutScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _handleContactTap(BuildContext context, String type, String info) {
+    switch (type) {
+      case "Call":
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Call: $info'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        break;
+      case "Email":
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Email: $info'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        break;
+      case "Facebook":
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Facebook: $info'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        break;
+    }
   }
 }

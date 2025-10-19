@@ -61,11 +61,12 @@ class HelpSupportScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "We're here to assist you 24/7",
+                  "We're here to assist you with any questions",
                   style: TextStyle(
                     fontSize: 14,
                     color: theme.cardColor.withOpacity(0.9),
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -84,7 +85,7 @@ class HelpSupportScreen extends StatelessWidget {
             theme: theme,
             icon: Icons.email_outlined,
             title: "Email Support",
-            subtitle: "support@fitwise.com",
+            subtitle: "glydel.solis13@gmail.com",
             color: AppColors.accentBlue,
             onTap: () {},
           ),
@@ -92,16 +93,8 @@ class HelpSupportScreen extends StatelessWidget {
             theme: theme,
             icon: Icons.phone_outlined,
             title: "Phone Support",
-            subtitle: "+63 912 345 6789",
+            subtitle: "09473405892",
             color: AppColors.green,
-            onTap: () {},
-          ),
-          _buildContactCard(
-            theme: theme,
-            icon: Icons.chat_bubble_outline,
-            title: "Live Chat",
-            subtitle: "Chat with our support team",
-            color: AppColors.orange,
             onTap: () {},
           ),
           const SizedBox(height: 24),
@@ -117,22 +110,27 @@ class HelpSupportScreen extends StatelessWidget {
           _buildFAQCard(
             theme: theme,
             question: "How do I track my workouts?",
-            answer: "Go to the workout section and tap 'Start Workout' to begin tracking.",
+            answer: "Navigate to the Workout section and tap 'Start Workout' to begin tracking your exercise session.",
           ),
           _buildFAQCard(
             theme: theme,
             question: "Can I customize my workout plan?",
-            answer: "Yes! Navigate to Plans and create your own custom workout routine.",
+            answer: "Yes! Go to the Plans section where you can create and customize your own workout routines according to your preferences.",
           ),
           _buildFAQCard(
             theme: theme,
-            question: "How do I sync with other apps?",
-            answer: "Go to Settings > Integrations to connect with other fitness apps.",
+            question: "How do I see my progress?",
+            answer: "Visit your Home Dashboard to view your BMI and BMR statistics displayed in an easy-to-read line graph that tracks your fitness journey over time.",
+          ),
+          _buildFAQCard(
+            theme: theme,
+            question: "How do I log my foods?",
+            answer: "In the Calorie Log tab, press the 'Add Food' button to select from recommended foods or create your own custom food entries to track your nutrition.",
           ),
           _buildFAQCard(
             theme: theme,
             question: "What if I forget my password?",
-            answer: "Use the 'Forgot Password' option on the login screen to reset it.",
+            answer: "Use the 'Forgot Password' option on the login screen to reset your password securely via email.",
           ),
         ],
       ),
@@ -185,14 +183,9 @@ class HelpSupportScreen extends StatelessWidget {
             color: theme.secondaryText,
           ),
         ),
-        trailing: Icon(
-          Icons.arrow_forward_ios,
-          color: theme.secondaryText,
-          size: 16,
-        ),
         onTap: onTap,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
   }
@@ -217,7 +210,7 @@ class HelpSupportScreen extends StatelessWidget {
         ],
       ),
       child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         title: Text(
           question,

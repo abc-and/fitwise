@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../providers/theme.dart';
 import '../constants/app_colors.dart';
 import '../helpers/profile_connector.dart'; 
 
@@ -21,9 +23,6 @@ class _ProfilePageState extends State<ProfilePage> {
   String _username = 'User Name';
   String _email = 'user@fitwise.com';
   String _character = '🧑'; // Default character
-  int _totalWorkouts = 0;
-  int _daysStreak = 0;
-  double _weightLost = 0.0;
   bool _loading = true;
 
   @override
@@ -54,31 +53,6 @@ class _ProfilePageState extends State<ProfilePage> {
         }
       }
 
-      // Fetch user info for statistics
-      final infoDoc = await _firestore.collection('user_info').doc(user.uid).get();
-      if (infoDoc.exists) {
-        final data = infoDoc.data();
-        if (data != null) {
-          // Calculate weight lost
-          final currentWeight = _parseWeight(data['weight']);
-          final startWeight = data.containsKey('startWeight') 
-              ? double.tryParse(data['startWeight'].toString()) ?? currentWeight
-              : currentWeight;
-          _weightLost = (startWeight - currentWeight).abs();
-        }
-      }
-
-      // Fetch workout statistics
-      final workoutsQuery = await _firestore
-          .collection('user_workouts')
-          .doc(user.uid)
-          .collection('workouts')
-          .get();
-      _totalWorkouts = workoutsQuery.docs.length;
-
-      // Calculate streak (simplified - count consecutive days with workouts)
-      _daysStreak = await _calculateStreak(user.uid);
-
     } catch (e) {
       debugPrint('Error fetching profile data: $e');
     } finally {
@@ -88,66 +62,27 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  double _parseWeight(dynamic weightStr) {
-    String str = weightStr.toString().toLowerCase();
-    double value = double.tryParse(str.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 70.0;
-    if (str.contains('lb')) {
-      value = value * 0.453592;
-    }
-    return value;
-  }
-
-  Future<int> _calculateStreak(String userId) async {
-    try {
-      final now = DateTime.now();
-      int streak = 0;
-      
-      for (int i = 0; i < 365; i++) {
-        final checkDate = now.subtract(Duration(days: i));
-        final startOfDay = DateTime(checkDate.year, checkDate.month, checkDate.day);
-        final endOfDay = startOfDay.add(const Duration(days: 1));
-
-        final workoutsOnDay = await _firestore
-            .collection('user_workouts')
-            .doc(userId)
-            .collection('workouts')
-            .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-            .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
-            .limit(1)
-            .get();
-
-        if (workoutsOnDay.docs.isEmpty) {
-          break;
-        }
-        streak++;
-      }
-      
-      return streak;
-    } catch (e) {
-      debugPrint('Error calculating streak: $e');
-      return 0;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final theme = Provider.of<ThemeManager>(context);
+    
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: theme.primaryBackground,
       body: _loading
           ? Center(child: CircularProgressIndicator(color: AppColors.accentBlue))
           : SingleChildScrollView(
               child: Column(
                 children: [
-                  _buildHeader(),
+                  _buildHeader(theme),
                   const SizedBox(height: 24),
-                  _buildMenuItems(),
+                  _buildMenuItems(theme),
                 ],
               ),
             ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(ThemeManager theme) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -182,12 +117,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.white,
+                    color: theme.cardColor,
                     width: 4,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
+                      color: theme.shadowColor,
                       blurRadius: 15,
                       offset: const Offset(0, 5),
                     ),
@@ -196,9 +131,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Container(
                   width: 120,
                   height: 120,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white,
+                    color: theme.cardColor,
                   ),
                   child: Center(
                     child: Text(
@@ -211,51 +146,19 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 16),
               Text(
                 _username,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: theme.cardColor,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 _email,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
-                  color: Colors.white70,
+                  color: theme.cardColor.withOpacity(0.7),
                 ),
-              ),
-              const SizedBox(height: 20),
-              // Stats Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildStatItem(
-                    _totalWorkouts.toString(),
-                    "Workouts",
-                    Icons.fitness_center,
-                  ),
-                  Container(
-                    height: 40,
-                    width: 1,
-                    color: Colors.white.withOpacity(0.3),
-                  ),
-                  _buildStatItem(
-                    _daysStreak.toString(),
-                    "Days Streak",
-                    Icons.local_fire_department,
-                  ),
-                  Container(
-                    height: 40,
-                    width: 1,
-                    color: Colors.white.withOpacity(0.3),
-                  ),
-                  _buildStatItem(
-                    "${_weightLost.toStringAsFixed(1)}kg",
-                    "Progress",
-                    Icons.trending_down,
-                  ),
-                ],
               ),
             ],
           ),
@@ -264,41 +167,13 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildStatItem(String value, String label, IconData icon) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          color: Colors.white,
-          size: 24,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.white70,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMenuItems() {
+  Widget _buildMenuItems(ThemeManager theme) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
           _buildMenuCard(
+            theme,
             icon: Icons.person_outline,
             title: "Edit Profile",
             subtitle: "Update your personal information",
@@ -316,6 +191,7 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
           _buildMenuCard(
+            theme,
             icon: Icons.notifications_outlined,
             title: "Notifications",
             subtitle: "Manage your notification preferences",
@@ -330,6 +206,7 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
           _buildMenuCard(
+            theme,
             icon: Icons.bar_chart,
             title: "Statistics",
             subtitle: "View your fitness progress",
@@ -344,6 +221,7 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
           _buildMenuCard(
+            theme,
             icon: Icons.settings_outlined,
             title: "Settings",
             subtitle: "App preferences and configuration",
@@ -358,6 +236,7 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
           _buildMenuCard(
+            theme,
             icon: Icons.help_outline,
             title: "Help & Support",
             subtitle: "Get help and contact support",
@@ -372,6 +251,7 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
           _buildMenuCard(
+            theme,
             icon: Icons.info_outline,
             title: "About",
             subtitle: "App version and information",
@@ -386,12 +266,12 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
           const SizedBox(height: 16),
-          _buildLogoutButton(),
+          _buildLogoutButton(theme),
           const SizedBox(height: 32),
           Text(
             "FitWise v1.0.0",
             style: TextStyle(
-              color: AppColors.textSecondary,
+              color: theme.secondaryText,
               fontSize: 12,
             ),
           ),
@@ -401,7 +281,8 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildMenuCard({
+  Widget _buildMenuCard(
+    ThemeManager theme, {
     required IconData icon,
     required String title,
     required String subtitle,
@@ -411,11 +292,11 @@ class _ProfilePageState extends State<ProfilePage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.secondary,
+        color: theme.secondaryBackground,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: theme.shadowColor,
             spreadRadius: 1,
             blurRadius: 8,
             offset: const Offset(0, 3),
@@ -450,18 +331,18 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          color: theme.primaryText,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         subtitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.textSecondary,
+                          color: theme.secondaryText,
                         ),
                       ),
                     ],
@@ -469,7 +350,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 Icon(
                   Icons.chevron_right,
-                  color: AppColors.textSecondary,
+                  color: theme.secondaryText,
                   size: 24,
                 ),
               ],
@@ -480,7 +361,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildLogoutButton() {
+  Widget _buildLogoutButton(ThemeManager theme) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -502,7 +383,7 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _showLogoutDialog(context),
+          onTap: () => _showLogoutDialog(context, theme),
           borderRadius: BorderRadius.circular(20),
           child: const Padding(
             padding: EdgeInsets.symmetric(vertical: 18),
@@ -531,12 +412,12 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  void _showLogoutDialog(BuildContext context) {
+  void _showLogoutDialog(BuildContext context, ThemeManager theme) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          backgroundColor: AppColors.secondary,
+          backgroundColor: theme.secondaryBackground,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -548,34 +429,34 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: AppColors.red.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.logout,
                   color: AppColors.red,
                   size: 24,
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 "Logout",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: theme.primaryText,
                 ),
               ),
             ],
           ),
-          content: const Text(
+          content: Text(
             "Are you sure you want to logout from FitWise?",
             style: TextStyle(
               fontSize: 16,
-              color: AppColors.textSecondary,
+              color: theme.secondaryText,
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.textSecondary,
+                foregroundColor: theme.secondaryText,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
                   vertical: 12,

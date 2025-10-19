@@ -18,10 +18,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   bool _workoutReminders = true;
-  bool _progressUpdates = true;
   bool _achievements = true;
   bool _motivationalQuotes = false;
-  bool _emailNotifications = true;
   bool _pushNotifications = true;
   bool _loading = true;
 
@@ -50,10 +48,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         if (data != null) {
           setState(() {
             _workoutReminders = data['workoutReminders'] ?? true;
-            _progressUpdates = data['progressUpdates'] ?? true;
             _achievements = data['achievements'] ?? true;
             _motivationalQuotes = data['motivationalQuotes'] ?? false;
-            _emailNotifications = data['emailNotifications'] ?? true;
             _pushNotifications = data['pushNotifications'] ?? true;
           });
         }
@@ -74,10 +70,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
       await _firestore.collection('user_settings').doc(user.uid).set({
         'workoutReminders': _workoutReminders,
-        'progressUpdates': _progressUpdates,
         'achievements': _achievements,
         'motivationalQuotes': _motivationalQuotes,
-        'emailNotifications': _emailNotifications,
         'pushNotifications': _pushNotifications,
       }, SetOptions(merge: true));
     } catch (e) {
@@ -124,16 +118,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
                 _buildSwitchTile(
                   theme,
-                  "Progress Updates",
-                  "Weekly summary of your fitness progress",
-                  _progressUpdates,
-                  (val) {
-                    setState(() => _progressUpdates = val);
-                    _saveNotificationSettings();
-                  },
-                ),
-                _buildSwitchTile(
-                  theme,
                   "Achievements",
                   "Celebrate your milestones and achievements",
                   _achievements,
@@ -154,16 +138,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
                 const SizedBox(height: 24),
                 _buildSectionHeader(theme, "Delivery Methods", Icons.send),
-                _buildSwitchTile(
-                  theme,
-                  "Email Notifications",
-                  "Receive notifications via email",
-                  _emailNotifications,
-                  (val) {
-                    setState(() => _emailNotifications = val);
-                    _saveNotificationSettings();
-                  },
-                ),
                 _buildSwitchTile(
                   theme,
                   "Push Notifications",

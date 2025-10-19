@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 // Assuming these files exist in your project as per your imports
 import 'dashboard.dart'; 
 import 'route_helper.dart';
-import 'constants/app_colors.dart';
+import '../providers/theme.dart';
+import '../constants/app_colors.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -37,7 +39,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
     "targetWeightGain": null,
     "targetDuration": null,
   };
-
 
   // Text Controllers for input fields
   final TextEditingController _heightController = TextEditingController();
@@ -147,7 +148,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
         final data = doc.data();
         if (data != null) {
           setState(() {
-
             // Load text fields
             _heightController.text = data["height"] ?? "";
             _weightController.text = data["weight"] ?? "";
@@ -253,16 +253,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   // Syncs all TextEditingController values into the _userData map
   void _syncTextControllersToUserData() {
-  _userData["height"] = _heightController.text.trim();
-  _userData["heightUnit"] = _heightUnit;
-  _userData["weight"] = _weightController.text.trim();
-  _userData["weightUnit"] = _weightUnit;
-  _userData["age"] = _ageController.text.trim();
-  _userData["targetWeightLoss"] = _targetWeightLossController.text.trim();
-  _userData["targetWeightGain"] = _targetWeightGainController.text.trim();
-  _userData["targetWeightUnit"] = _targetWeightUnit;
-  // Never set goalWeight in onboarding
-  _userData.remove("goalWeight");
+    _userData["height"] = _heightController.text.trim();
+    _userData["heightUnit"] = _heightUnit;
+    _userData["weight"] = _weightController.text.trim();
+    _userData["weightUnit"] = _weightUnit;
+    _userData["age"] = _ageController.text.trim();
+    _userData["targetWeightLoss"] = _targetWeightLossController.text.trim();
+    _userData["targetWeightGain"] = _targetWeightGainController.text.trim();
+    _userData["targetWeightUnit"] = _targetWeightUnit;
+    // Never set goalWeight in onboarding
+    _userData.remove("goalWeight");
   }
 
   // Validate all required fields
@@ -333,7 +333,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return null; // All validations passed
   }
 
- // Final step: Saves data to Firebase and navigates to Dashboard
+  // Final step: Saves data to Firebase and navigates to Dashboard
   Future<void> _finishOnboarding() async {
     // Validate all fields first
     final validationError = _validateAllFields();
@@ -499,19 +499,19 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   // Widget to build the header for each step
-  Widget _buildStepHeader(String title, String subtitle, IconData icon) {
+  Widget _buildStepHeader(ThemeManager theme, String title, String subtitle, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.secondary],
+          colors: [theme.primaryBackground, theme.secondaryBackground],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: theme.shadowColor,
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -522,14 +522,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.textPrimary.withOpacity(0.25),
+              color: theme.primaryText.withOpacity(0.25),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.textDark.withOpacity(0.3),
+                color: theme.primaryText.withOpacity(0.3),
                 width: 2,
               ),
             ),
-            child: Icon(icon, color: AppColors.textPrimary, size: 36),
+            child: Icon(icon, color: theme.primaryText, size: 36),
           ),
           const SizedBox(width: 18),
           Expanded(
@@ -538,10 +538,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: theme.primaryText,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -550,7 +550,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   subtitle,
                   style: TextStyle(
                     fontSize: 15,
-                    color: AppColors.textSecondary.withOpacity(0.9),
+                    color: theme.secondaryText.withOpacity(0.9),
                     fontWeight: FontWeight.w400,
                   ),
                 ),
@@ -564,6 +564,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   // Widget to build a standardized text field
   Widget _buildTextField({
+    required ThemeManager theme,
     required TextEditingController controller,
     required String label,
     required String hint,
@@ -572,12 +573,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.lightGray.withOpacity(0.5)),
+        border: Border.all(color: theme.borderColor),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.08),
+            color: theme.shadowColor,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -586,19 +587,19 @@ class _OnboardingPageState extends State<OnboardingPage> {
       child: TextField(
         controller: controller,
         style: TextStyle(
-              color: AppColors.textDark,
+          color: theme.primaryText,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(
-            color: AppColors.secondary,
+            color: theme.secondaryText,
             fontWeight: FontWeight.w500,
           ),
           hintText: hint,
           hintStyle: TextStyle(
-            color: AppColors.mediumGray.withOpacity(0.6),
+            color: theme.tertiaryText,
             fontSize: 14,
           ),
           border: InputBorder.none,
@@ -612,6 +613,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   // Widget to build a standardized dropdown field
   Widget _buildDropdown<T>({
+    required ThemeManager theme,
     required String label,
     required T? value,
     required List<T> items,
@@ -620,12 +622,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.lightGray.withOpacity(0.5)),
+        border: Border.all(color: theme.borderColor),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.08),
+            color: theme.shadowColor,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -639,7 +641,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   child: Text(
                     item.toString(),
                     style: TextStyle(
-                          color: AppColors.textDark,
+                      color: theme.primaryText,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -647,26 +649,26 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 ))
             .toList(),
         onChanged: onChanged,
-        dropdownColor: Colors.white,
+        dropdownColor: theme.cardColor,
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(
-            color: AppColors.secondary,
+            color: theme.secondaryText,
             fontWeight: FontWeight.w500,
           ),
           prefixIcon: icon != null
-              ? Icon(icon, color: AppColors.surface, size: 24)
+              ? Icon(icon, color: theme.secondaryText, size: 24)
               : null,
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         ),
-        icon: Icon(Icons.arrow_drop_down, color: AppColors.surface, size: 28),
+        icon: Icon(Icons.arrow_drop_down, color: theme.secondaryText, size: 28),
       ),
     );
   }
 
   // Builds all the individual pages/steps of the onboarding
-  List<Widget> _buildPages() {
+  List<Widget> _buildPages(ThemeManager theme) {
     return [
       // STEP 1: Basic Info
       SingleChildScrollView(
@@ -676,19 +678,19 @@ class _OnboardingPageState extends State<OnboardingPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildStepHeader(
+                theme,
                 "Basic Info",
                 "Tell us about yourself",
                 Icons.person_outline,
               ),
               const SizedBox(height: 28),
 
-              // Height field
-
               // Height field and unit dropdown in a Row
               Row(
                 children: [
                   Expanded(
                     child: _buildTextField(
+                      theme: theme,
                       controller: _heightController,
                       label: "Height",
                       hint: _heightUnit == "cm" ? "e.g., 170" : "e.g., 1.70",
@@ -700,12 +702,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   Container(
                     width: 90,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: theme.cardColor,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.lightGray.withOpacity(0.5)),
+                      border: Border.all(color: theme.borderColor),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.08),
+                          color: theme.shadowColor,
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -720,7 +722,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                 child: Text(
                                   item,
                                   style: TextStyle(
-                                    color: AppColors.textDark,
+                                    color: theme.primaryText,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -737,21 +739,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 18),
                       ),
-                      icon: Icon(Icons.arrow_drop_down, color: AppColors.surface, size: 28),
-                      dropdownColor: Colors.white,
+                      icon: Icon(Icons.arrow_drop_down, color: theme.secondaryText, size: 28),
+                      dropdownColor: theme.cardColor,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 18),
 
-              // Weight field
-
               // Weight field and unit dropdown in a Row
               Row(
                 children: [
                   Expanded(
                     child: _buildTextField(
+                      theme: theme,
                       controller: _weightController,
                       label: "Weight",
                       hint: _weightUnit == "kg" ? "e.g., 65" : "e.g., 143",
@@ -763,12 +764,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   Container(
                     width: 90,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: theme.cardColor,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.lightGray.withOpacity(0.5)),
+                      border: Border.all(color: theme.borderColor),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.08),
+                          color: theme.shadowColor,
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -783,7 +784,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                 child: Text(
                                   item,
                                   style: TextStyle(
-                                    color: AppColors.textDark,
+                                    color: theme.primaryText,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -800,14 +801,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 18),
                       ),
-                      icon: Icon(Icons.arrow_drop_down, color: AppColors.surface, size: 28),
-                      dropdownColor: Colors.white,
+                      icon: Icon(Icons.arrow_drop_down, color: theme.secondaryText, size: 28),
+                      dropdownColor: theme.cardColor,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 18),
               _buildTextField(
+                theme: theme,
                 controller: _ageController,
                 label: "Age (years)",
                 hint: "Enter your age",
@@ -816,6 +818,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               const SizedBox(height: 18),
               _buildDropdown<String>(
+                theme: theme,
                 label: "Sex",
                 value: _sex,
                 items: _sexOptions,
@@ -845,12 +848,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildStepHeader(
+                theme,
                 "Medical Info",
                 "Help us understand your health",
                 Icons.medical_services_outlined,
               ),
               const SizedBox(height: 28),
               _buildDropdown<String>(
+                theme: theme,
                 label: "Allergies",
                 value: _allergies,
                 items: _allergyOptions,
@@ -862,6 +867,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               const SizedBox(height: 18),
               _buildDropdown<String>(
+                theme: theme,
                 label: "Other Conditions",
                 value: _otherConditions,
                 items: _conditionOptions,
@@ -884,12 +890,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildStepHeader(
+                theme,
                 "Diet Info",
                 "Your dietary preferences",
                 Icons.restaurant_menu,
               ),
               const SizedBox(height: 28),
               _buildDropdown<String>(
+                theme: theme,
                 label: "Type of Diet",
                 value: _dietType,
                 items: _dietTypeOptions,
@@ -901,6 +909,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               const SizedBox(height: 18),
               _buildDropdown<String>(
+                theme: theme,
                 label: "Dietary Restrictions",
                 value: _dietaryRestrictions,
                 items: _dietRestrictionOptions,
@@ -923,12 +932,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildStepHeader(
+                theme,
                 "Lifestyle",
                 "Your daily activity",
                 Icons.directions_run,
               ),
               const SizedBox(height: 28),
               _buildDropdown<String>(
+                theme: theme,
                 label: "Activity Level",
                 value: _activityLevel,
                 items: _activityOptions,
@@ -947,14 +958,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     gradient: LinearGradient(
                       colors: [
                         AppColors.accentBlue.withOpacity(0.15),
-                        AppColors.primary.withOpacity(0.1),
+                        theme.primaryBackground.withOpacity(0.1),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.surface.withOpacity(0.3),
+                      color: theme.borderColor.withOpacity(0.3),
                       width: 1.5,
                     ),
                   ),
@@ -968,7 +979,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         ),
                         child: Icon(
                           Icons.info_outline,
-                          color: AppColors.textPrimary,
+                          color: theme.primaryText,
                           size: 22,
                         ),
                       ),
@@ -977,7 +988,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         child: Text(
                           _activityDescriptions[_activityLevel] ?? "",
                           style: TextStyle(
-                            color: AppColors.textDark,
+                            color: theme.primaryText,
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
                             height: 1.4,
@@ -991,6 +1002,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               // Conditional: Only show reproductive status for females
               if (_sex == "Female") ...[
                 _buildDropdown<String>(
+                  theme: theme,
                   label: "Reproductive Status",
                   value: _reproductiveStatus,
                   items: _reproductiveOptions,
@@ -1037,7 +1049,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         child: Text(
                           "Reproductive status is only applicable for female users.",
                           style: TextStyle(
-                            color: AppColors.textDark,
+                            color: theme.primaryText,
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
                             height: 1.4,
@@ -1061,12 +1073,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildStepHeader(
+                theme,
                 "Goals",
                 "What do you want to achieve?",
                 Icons.flag_outlined,
               ),
               const SizedBox(height: 28),
               _buildDropdown<String>(
+                theme: theme,
                 label: "Target Goal",
                 value: _targetGoal,
                 items: _goalOptions,
@@ -1088,13 +1102,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               const SizedBox(height: 18),
 
-
               // Conditional: Show target weight loss/gain with unit dropdown
               if (_targetGoal == "Weight Loss") ...[
                 Row(
                   children: [
                     Expanded(
                       child: _buildTextField(
+                        theme: theme,
                         controller: _targetWeightLossController,
                         label: "Target Weight Loss",
                         hint: _targetWeightUnit == "kg" ? "e.g., 5" : "e.g., 10",
@@ -1113,7 +1127,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                   child: Text(
                                     item,
                                     style: TextStyle(
-                                      color: AppColors.textDark,
+                                      color: theme.primaryText,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -1130,8 +1144,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 18),
                         ),
-                        icon: Icon(Icons.arrow_drop_down, color: AppColors.surface, size: 28),
-                        dropdownColor: Colors.white,
+                        icon: Icon(Icons.arrow_drop_down, color: theme.secondaryText, size: 28),
+                        dropdownColor: theme.cardColor,
                       ),
                     ),
                   ],
@@ -1144,6 +1158,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   children: [
                     Expanded(
                       child: _buildTextField(
+                        theme: theme,
                         controller: _targetWeightGainController,
                         label: "Target Weight Gain",
                         hint: _targetWeightUnit == "kg" ? "e.g., 3" : "e.g., 6",
@@ -1162,7 +1177,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                   child: Text(
                                     item,
                                     style: TextStyle(
-                                      color: AppColors.textDark,
+                                      color: theme.primaryText,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -1179,8 +1194,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 18),
                         ),
-                        icon: Icon(Icons.arrow_drop_down, color: AppColors.surface, size: 28),
-                        dropdownColor: Colors.white,
+                        icon: Icon(Icons.arrow_drop_down, color: theme.secondaryText, size: 28),
+                        dropdownColor: theme.cardColor,
                       ),
                     ),
                   ],
@@ -1189,6 +1204,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ],
 
               _buildDropdown<String>(
+                theme: theme,
                 label: "Target Duration",
                 value: _targetDuration,
                 items: _durationOptions,
@@ -1207,35 +1223,35 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   gradient: LinearGradient(
                     colors: [
                       AppColors.accentBlue.withOpacity(0.15),
-                      AppColors.primary.withOpacity(0.1),
+                      theme.primaryBackground.withOpacity(0.1),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AppColors.surface.withOpacity(0.4),
+                    color: theme.borderColor.withOpacity(0.4),
                     width: 1.5,
                   ),
                 ),
                 child: TextFormField(
                   readOnly: true,
                   style: TextStyle(
-                    color: AppColors.textDark,
+                    color: theme.primaryText,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
                   decoration: InputDecoration(
                     labelText: "Target Date (MM/DD/YYYY)",
                     labelStyle: TextStyle(
-                      color: AppColors.secondary,
+                      color: theme.secondaryText,
                       fontWeight: FontWeight.w500,
                     ),
                     hintText: "Select a duration to compute date",
                     hintStyle: TextStyle(
-                      color: AppColors.mediumGray.withOpacity(0.6),
+                      color: theme.tertiaryText,
                     ),
-                    prefixIcon: Icon(Icons.event, color: AppColors.surface, size: 24),
+                    prefixIcon: Icon(Icons.event, color: theme.secondaryText, size: 24),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                   ),
@@ -1253,18 +1269,19 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = _buildPages();
+    final theme = Provider.of<ThemeManager>(context);
+    final pages = _buildPages(theme);
 
     return Scaffold(
-      backgroundColor: AppColors.lightGray.withOpacity(0.3),
+      backgroundColor: theme.primaryBackground,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
+        backgroundColor: theme.primaryBackground,
         elevation: 0,
         title: Text(
           "Step ${_currentPage + 1} of ${pages.length}",
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: theme.primaryText,
             fontSize: 18,
             letterSpacing: 0.5,
           ),
@@ -1274,7 +1291,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [AppColors.primary, AppColors.secondary],
+              colors: [theme.primaryBackground, theme.secondaryBackground],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -1300,11 +1317,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 child: Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: theme.cardColor,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: theme.shadowColor,
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -1314,13 +1331,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                        valueColor: AlwaysStoppedAnimation<Color>(theme.primaryText),
                       ),
                       const SizedBox(height: 16),
                       Text(
                         "Saving your information...",
                         style: TextStyle(
-                          color: AppColors.textDark,
+                          color: theme.primaryText,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1334,10 +1351,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardColor,
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.15),
+              color: theme.shadowColor,
               blurRadius: 12,
               offset: const Offset(0, -3),
             ),
@@ -1362,14 +1379,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       borderRadius: BorderRadius.circular(6),
                       gradient: _currentPage == index
                           ? LinearGradient(
-                              colors: [AppColors.primary, AppColors.surface],
+                              colors: [theme.primaryBackground, theme.secondaryBackground],
                             )
                           : null,
-                      color: _currentPage != index ? AppColors.lightGray : null,
+                      color: _currentPage != index ? theme.borderColor : null,
                       boxShadow: _currentPage == index
                           ? [
                               BoxShadow(
-                                color: AppColors.primary.withOpacity(0.4),
+                                color: theme.shadowColor,
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
@@ -1394,7 +1411,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         },
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 18),
-                          side: BorderSide(color: AppColors.primary, width: 2),
+                          side: BorderSide(color: theme.primaryText, width: 2),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -1402,7 +1419,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         child: Text(
                           "Back",
                           style: TextStyle(
-                            color: AppColors.primary,
+                            color: theme.primaryText,
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
@@ -1414,14 +1431,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [AppColors.primary, AppColors.surface],
+                          colors: [theme.primaryBackground, theme.secondaryBackground],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.4),
+                            color: theme.shadowColor,
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -1449,10 +1466,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         ),
                         child: Text(
                           _currentPage < pages.length - 1 ? "Next" : "Finish",
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
-                            color: Colors.white,
+                            color: theme.primaryText,
                             letterSpacing: 0.5,
                           ),
                         ),

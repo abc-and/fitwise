@@ -11,15 +11,24 @@ class NotificationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // FIXED: Use BehaviorSubject-like pattern with proper lifecycle
   StreamController<int>? _unreadCountController;
   StreamSubscription<QuerySnapshot>? _notificationSubscription;
   bool _isDisposed = false;
 
+  // Hardcoded motivational quotes for each day of the week
+  final Map<int, String> _dailyQuotes = {
+    0: "Monday Motivation: You're stronger than you think. Start your week with determination!",
+    1: "Tuesday Triumph: Every step forward counts. Keep pushing towards your goals!",
+    2: "Wednesday Wisdom: You're halfway there! Stay consistent and believe in yourself.",
+    3: "Thursday Thunder: Your dedication is paying off. Don't stop now!",
+    4: "Friday Fire: You've made it through the week! Celebrate your progress and keep the momentum.",
+    5: "Saturday Strength: Rest and recovery are part of your journey. Honor your body today.",
+    6: "Sunday Soul: Prepare your mind and spirit for the week ahead. You've got this!",
+  };
+
   Future<void> initialize() async {
     debugPrint('NotificationService: Initializing...');
     
-    // Don't reinitialize if already disposed
     if (_isDisposed) {
       debugPrint('NotificationService: Cannot initialize - service is disposed');
       return;
@@ -39,13 +48,9 @@ class NotificationService {
 
       debugPrint('NotificationService: Setting up listener for user ${user.uid}');
 
-      // Cancel existing subscription if any
       await _notificationSubscription?.cancel();
-
-      // Create stream controller if it doesn't exist
       _unreadCountController ??= StreamController<int>.broadcast();
 
-      // Listen to notifications collection
       _notificationSubscription = _firestore
           .collection('notifications')
           .doc(user.uid)
@@ -69,7 +74,6 @@ class NotificationService {
     }
   }
 
-  // FIXED: Safe stream operations
   void _safeAddToStream(int value) {
     if (!_isDisposed && _unreadCountController != null && !_unreadCountController!.isClosed) {
       _unreadCountController!.add(value);
@@ -82,19 +86,24 @@ class NotificationService {
     }
   }
 
-  Stream<int> getUnreadCount() {
-    debugPrint('NotificationService: getUnreadCount() called');
-    
-    // Create stream controller if it doesn't exist
-    _unreadCountController ??= StreamController<int>.broadcast();
-    
-    // Ensure listener is set up
-    if (_notificationSubscription == null && !_isDisposed) {
-      _setupNotificationListener();
-    }
-    
-    return _unreadCountController!.stream;
+ Stream<int> getUnreadCount() {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    return Stream.value(0); // Return empty stream instead of null
   }
+  
+  return FirebaseFirestore.instance
+      .collection('notifications')
+      .doc(user.uid)
+      .collection('user_notifications')
+      .where('read', isEqualTo: false)
+      .snapshots()
+      .map((snapshot) => snapshot.docs.length)
+      .handleError((error) {
+        debugPrint('Error in getUnreadCount stream: $error');
+        return 0;
+      });
+}
 
   Future<void> sendLocalNotification({
     required String title,
@@ -102,7 +111,6 @@ class NotificationService {
     required String type,
   }) async {
     try {
-      // Don't proceed if disposed
       if (_isDisposed) {
         debugPrint('NotificationService: Cannot send notification - service is disposed');
         return;
@@ -125,7 +133,6 @@ class NotificationService {
         'createdAt': DateTime.now().toIso8601String(),
       };
 
-      // Add to Firestore
       await _firestore
           .collection('notifications')
           .doc(user.uid)
@@ -135,13 +142,16 @@ class NotificationService {
       debugPrint('NotificationService: Notification sent successfully');
     } catch (e) {
       debugPrint('NotificationService: Error sending notification: $e');
-      // Don't rethrow to prevent app crashes
     }
   }
 
-  Future<void> sendAchievement(String message) async {
+  // UPDATED: Simple achievement method with just message (backward compatible)
+  Future<void> sendAchievement({
+    required String title,
+    required String message,
+  }) async {
     await sendLocalNotification(
-      title: '🎉 Achievement Unlocked!',
+      title: title,
       body: message,
       type: 'achievement',
     );
@@ -153,6 +163,26 @@ class NotificationService {
       body: message,
       type: 'progress',
     );
+  }
+
+  Future<void> sendDailyMotivationalQuote() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      final dayOfWeek = DateTime.now().weekday - 1;
+      final quote = _dailyQuotes[dayOfWeek] ?? 'Keep pushing towards your goals!';
+
+      await sendLocalNotification(
+        title: '💪 Daily Motivation',
+        body: quote,
+        type: 'motivational_quote',
+      );
+
+      debugPrint('NotificationService: Sent motivational quote for day $dayOfWeek');
+    } catch (e) {
+      debugPrint('NotificationService: Error sending motivational quote: $e');
+    }
   }
 
   Future<void> markAsRead(String notificationId) async {
@@ -244,7 +274,6 @@ class NotificationService {
     }
   }
 
-  // FIXED: Proper disposal with state management
   void dispose() {
     if (_isDisposed) return;
     

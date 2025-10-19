@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'constants/app_colors.dart';
+import '../providers/theme.dart';
+import '../constants/app_colors.dart';
 import 'login_page.dart';
 import 'route_helper.dart';
 
@@ -19,7 +21,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? AppColors.red : AppColors.primary,
+        backgroundColor: isError ? AppColors.red : AppColors.accentBlue,
         duration: const Duration(seconds: 3),
       ),
     );
@@ -63,26 +65,28 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Provider.of<ThemeManager>(context);
+    
     return Scaffold(
-      backgroundColor: AppColors.accentBlue,
+      backgroundColor: theme.primaryBackground,
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 80),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Text(
+            Text(
               "FitWise",
               style: TextStyle(
                 fontSize: 38,
                 fontWeight: FontWeight.bold,
-                color: AppColors.primary,
+                color: theme.primaryText,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               "Reset your password",
               style: TextStyle(
-                color: AppColors.mediumGray,
+                color: theme.secondaryText,
                 fontSize: 16,
               ),
             ),
@@ -92,14 +96,29 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
             TextField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
+              style: TextStyle(
+                color: theme.primaryText,
+              ),
               decoration: InputDecoration(
                 labelText: 'Email',
-                prefixIcon: const Icon(Icons.email_outlined),
+                labelStyle: TextStyle(
+                  color: theme.secondaryText,
+                ),
+                prefixIcon: Icon(Icons.email_outlined, color: theme.secondaryText),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: theme.borderColor),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: theme.borderColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: AppColors.accentBlue, width: 2),
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: theme.cardColor,
               ),
             ),
             const SizedBox(height: 30),
@@ -108,7 +127,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 55),
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.accentBlue,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -116,20 +135,20 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
               ),
               onPressed: _isLoading ? null : _resetPassword,
               child: _isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       height: 24,
                       width: 24,
                       child: CircularProgressIndicator(
-                        color: Colors.white,
+                        color: theme.cardColor,
                         strokeWidth: 3,
                       ),
                     )
-                  : const Text(
+                  : Text(
                       'Send Reset Link',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: theme.cardColor,
                       ),
                     ),
             ),
@@ -139,7 +158,12 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text("Remembered your password? "),
+                Text(
+                  "Remembered your password? ",
+                  style: TextStyle(
+                    color: theme.secondaryText,
+                  ),
+                ),
                 GestureDetector(
                   onTap: () {
                     Navigator.pushReplacement(
@@ -147,10 +171,10 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                       createRouteRight(const LoginPage()),
                     );
                   },
-                  child: const Text(
+                  child: Text(
                     "Login",
                     style: TextStyle(
-                      color: AppColors.primary,
+                      color: AppColors.accentBlue,
                       fontWeight: FontWeight.bold,
                       decoration: TextDecoration.underline,
                     ),
