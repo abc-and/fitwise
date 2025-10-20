@@ -3403,7 +3403,9 @@ class _FoodItemCardState extends State<FoodItemCard> with SingleTickerProviderSt
   }
 
   void _showFoodDetails() {
-    final theme = Provider.of<ThemeManager>(context);
+    // Get the theme BEFORE building the dialog to avoid context issues
+    final theme = Provider.of<ThemeManager>(context, listen: false);
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -3631,31 +3633,37 @@ class _FoodItemCardState extends State<FoodItemCard> with SingleTickerProviderSt
                       
                       const SizedBox(height: 8),
                       
-                      // View details button
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'View Details',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
+                      // View details button - NOW CLICKABLE
+                      GestureDetector(
+                        onTap: _showFoodDetails,
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              color: Colors.white,
-                              size: 12,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'View Details',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.arrow_forward_ios,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ],

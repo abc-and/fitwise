@@ -1143,11 +1143,14 @@ class _AddFoodBottomSheetState extends State<_AddFoodBottomSheet>
   late TabController _tabController;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _calorieController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
+  List<FoodRecommendation> _filteredFoods = allFoods;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _searchController.addListener(_filterFoods);
   }
 
   @override
@@ -1155,7 +1158,22 @@ class _AddFoodBottomSheetState extends State<_AddFoodBottomSheet>
     _tabController.dispose();
     _nameController.dispose();
     _calorieController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  void _filterFoods() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredFoods = allFoods;
+      } else {
+        _filteredFoods = allFoods.where((food) {
+          return food.name.toLowerCase().contains(query) ||
+                 food.desc.toLowerCase().contains(query);
+        }).toList();
+      }
+    });
   }
 
   @override
@@ -1211,81 +1229,137 @@ class _AddFoodBottomSheetState extends State<_AddFoodBottomSheet>
   }
 
   Widget _buildRecommendedTab(ThemeManager theme) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: allFoods.length,
-      itemBuilder: (context, index) {
-        final food = allFoods[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: theme.borderColor.withOpacity(0.3)),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
+    return Column(
+      children: [
+        // Search Bar
+        Padding(
+          padding: const EdgeInsets.all(20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: theme.borderColor.withOpacity(0.2),
               borderRadius: BorderRadius.circular(16),
-              onTap: () => widget.onAddRecommended(food),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [AppColors.accentCyan, AppColors.accentPurple],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        food.icon,
-                        color: Colors.white,
-                        size: 26,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            food.name,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: theme.primaryText,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            food.desc,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: theme.secondaryText,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      '${food.kcal} kcal',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.accentBlue,
-                      ),
-                    ),
-                  ],
-                ),
+            ),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search for foods...',
+                hintStyle: TextStyle(color: theme.tertiaryText),
+                prefixIcon: Icon(Icons.search, color: AppColors.accentBlue),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               ),
             ),
           ),
-        );
-      },
+        ),
+        Expanded(
+          child: _filteredFoods.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.search_off,
+                        size: 60,
+                        color: theme.borderColor,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No foods found',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: theme.secondaryText,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Try a different search term',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.tertiaryText,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: _filteredFoods.length,
+                  itemBuilder: (context, index) {
+                    final food = _filteredFoods[index];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: theme.cardColor,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: theme.borderColor.withOpacity(0.3)),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () => widget.onAddRecommended(food),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 50,
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [AppColors.accentCyan, AppColors.accentPurple],
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    food.icon,
+                                    color: Colors.white,
+                                    size: 26,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        food.name,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: theme.primaryText,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        food.desc,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: theme.secondaryText,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  '${food.kcal} kcal',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.accentBlue,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 
