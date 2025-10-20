@@ -7,18 +7,12 @@ import 'login_page.dart';
 import 'exercise_page.dart';
 import 'workout_streak_page.dart';
 import 'constants/app_colors.dart';
-import '../models/food_recommendation.dart';
 import '../providers/food_recommendation_service.dart';
 import 'profile_page.dart'; 
 import 'calorie_log_page.dart';
 import 'notification/notification_service.dart';
 import 'notification/notification_center.dart';
 import '../providers/quote_scheduler.dart'; 
-
-// Controls whether the new goal input is shown after clicking 'Update Goal'
-bool _showNewGoalInput = false;
-bool _showGoalOptions = false; // Add this new state variable
-String _selectedNewGoalType = 'lose';
 
 Route createRouteLeft(Widget page) {
   return PageRouteBuilder(
@@ -109,87 +103,84 @@ class HealthCalculator {
   }
 }
 
-  // Achievement definitions with thresholds
-  class AchievementDefinition {
-    final String id;
-    final String title;
-    final String description;
-    final IconData icon;
-    final double threshold; // Weight loss/gain threshold in kg
-    final String type; // 'weight_loss', 'weight_gain', 'bmi_milestone', 'consistency'
+// Achievement definitions with thresholds
+class AchievementDefinition {
+  final String id;
+  final String title;
+  final String description;
+  final IconData icon;
+  final double threshold; // Weight loss/gain threshold in kg
+  final String type; // 'weight_loss', 'weight_gain', 'bmi_milestone', 'consistency'
 
-    AchievementDefinition({
-      required this.id,
-      required this.title,
-      required this.description,
-      required this.icon,
-      required this.threshold,
-      required this.type,
-    });
-  }
+  AchievementDefinition({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.threshold,
+    required this.type,
+  });
+}
 
-    // Achievement system
-  Set<String> _unlockedAchievements = {};
-
-  // List of achievements to check against
-  final List<AchievementDefinition> _achievements = [
-    AchievementDefinition(
-      id: 'first_step',
-      title: 'First Step',
-      description: 'You\'ve started your fitness journey!',
-      icon: Icons.directions_walk,
-      threshold: 0.1,
-      type: 'weight_loss',
-    ),
-    AchievementDefinition(
-      id: 'halfway_there',
-      title: '🎯 Halfway There',
-      description: 'You\'ve reached 50% of your goal!',
-      icon: Icons.trending_down,
-      threshold: 0.5,
-      type: 'weight_loss',
-    ),
-    AchievementDefinition(
-      id: 'five_kg_milestone',
-      title: '💪 5kg Milestone',
-      description: 'Incredible! You\'ve lost 5kg!',
-      icon: Icons.emoji_events,
-      threshold: 5.0,
-      type: 'weight_loss',
-    ),
-    AchievementDefinition(
-      id: 'ten_kg_milestone',
-      title: '🏆 10kg Milestone',
-      description: 'Outstanding dedication! 10kg down!',
-      icon: Icons.emoji_events,
-      threshold: 10.0,
-      type: 'weight_loss',
-    ),
-    AchievementDefinition(
-      id: 'bmi_improvement',
-      title: 'Health Improved',
-      description: 'Your BMI has moved to a healthier category!',
-      icon: Icons.favorite,
-      threshold: 0.0, // Checked separately
-      type: 'bmi_milestone',
-    ),
-    AchievementDefinition(
-      id: 'goal_reached',
-      title: '⭐ Goal Achieved',
-      description: 'You\'ve reached your fitness goal!',
-      icon: Icons.star,
-      threshold: 1.0,
-      type: 'consistency',
-    ),
-    AchievementDefinition(
-      id: 'weight_gain_milestone',
-      title: 'Strong Start',
-      description: 'Great progress! You\'ve gained 5kg of muscle!',
-      icon: Icons.fitness_center,
-      threshold: 5.0,
-      type: 'weight_gain',
-    ),
-  ];
+// List of achievements to check against
+final List<AchievementDefinition> _achievements = [
+  AchievementDefinition(
+    id: 'first_step',
+    title: 'First Step',
+    description: 'You\'ve started your fitness journey!',
+    icon: Icons.directions_walk,
+    threshold: 0.1,
+    type: 'weight_loss',
+  ),
+  AchievementDefinition(
+    id: 'halfway_there',
+    title: '🎯 Halfway There',
+    description: 'You\'ve reached 50% of your goal!',
+    icon: Icons.trending_down,
+    threshold: 0.5,
+    type: 'weight_loss',
+  ),
+  AchievementDefinition(
+    id: 'five_kg_milestone',
+    title: '💪 5kg Milestone',
+    description: 'Incredible! You\'ve lost 5kg!',
+    icon: Icons.emoji_events,
+    threshold: 5.0,
+    type: 'weight_loss',
+  ),
+  AchievementDefinition(
+    id: 'ten_kg_milestone',
+    title: '🏆 10kg Milestone',
+    description: 'Outstanding dedication! 10kg down!',
+    icon: Icons.emoji_events,
+    threshold: 10.0,
+    type: 'weight_loss',
+  ),
+  AchievementDefinition(
+    id: 'bmi_improvement',
+    title: 'Health Improved',
+    description: 'Your BMI has moved to a healthier category!',
+    icon: Icons.favorite,
+    threshold: 0.0, // Checked separately
+    type: 'bmi_milestone',
+  ),
+  AchievementDefinition(
+    id: 'goal_reached',
+    title: '⭐ Goal Achieved',
+    description: 'You\'ve reached your fitness goal!',
+    icon: Icons.star,
+    threshold: 1.0,
+    type: 'consistency',
+  ),
+  AchievementDefinition(
+    id: 'weight_gain_milestone',
+    title: 'Strong Start',
+    description: 'Great progress! You\'ve gained 5kg of muscle!',
+    icon: Icons.fitness_center,
+    threshold: 5.0,
+    type: 'weight_gain',
+  ),
+];
 
 // --- Main Dashboard Implementation ---
 class HomeDashboard extends StatefulWidget {
@@ -363,6 +354,9 @@ class _HomeContentState extends State<HomeContent> {
   // Add the new state variables
   bool _showNewGoalInput = false;
   bool _showGoalOptions = false;
+
+  // Achievement system
+  Set<String> _unlockedAchievements = {};
 
   // Helper to determine if user reached the goal by value (independent of firestore flag)
   bool _hasReachedGoal() {
@@ -851,27 +845,20 @@ class _HomeContentState extends State<HomeContent> {
     super.initState();
     _initializeServices();
     _fetchUserData(); 
-     _scheduleMotivationalQuotes(); // Add this line
+    _scheduleMotivationalQuotes();
   }
 
   Future<void> _scheduleMotivationalQuotes() async {
-  // Only for Option A (Android AlarmManager)
-  final quoteScheduler = QuoteScheduler();
-  
-  try {
-    // Schedule quotes for 8:00 AM daily
-    // Adjust time as needed
-    await quoteScheduler.scheduleDailyQuote(hour: 8, minute: 0);
-  } catch (e) {
-    debugPrint('Error setting up quote scheduler: $e');
+    final quoteScheduler = QuoteScheduler();
+    try {
+      await quoteScheduler.scheduleDailyQuote(hour: 8, minute: 0);
+    } catch (e) {
+      debugPrint('Error setting up quote scheduler: $e');
+    }
   }
-}
 
   Future<void> _initializeServices() async {
-    // Initialize notification service first
     await _notificationService.initialize();
-    
-    // Then fetch user data
     await _fetchUserData();
   }
 
@@ -1087,7 +1074,7 @@ class _HomeContentState extends State<HomeContent> {
         final bmr = data['bmr'] != null 
             ? (data['bmr'] is double ? data['bmr'] : double.tryParse(data['bmr'].toString()) ?? _bmr)
             : HealthCalculator.calculateBMR(
-                weightKg: weight,
+                              weightKg: weight,
                 heightCm: height,
                 age: _age,
                 sex: _sex,
@@ -1762,6 +1749,7 @@ Future<void> handleSave() async {
     ),
   );
 }
+
 Widget _buildGoalSection() {
   final theme = Provider.of<ThemeManager>(context);
   final isWeightGoal = _goalType == 'lose' || _goalType == 'gain';
@@ -1926,7 +1914,7 @@ Widget _buildGoalSection() {
                   decoration: BoxDecoration(
                     color: AppColors.accentBlue.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(10),
-                  ),
+                ),
                   child: Icon(Icons.balance, color: AppColors.accentBlue, size: 20),
                 ),
                 const SizedBox(width: 10),
@@ -2699,7 +2687,7 @@ Widget _buildGoalInputForm() {
   }
 }
 
-// --- Interactive Progress Graph Widget ---
+// --- Interactive Progress Graph Widget with Touch Support ---
 class _ProgressGraph extends StatefulWidget {
   final List<Map<String, dynamic>> data;
 
@@ -2711,7 +2699,10 @@ class _ProgressGraph extends StatefulWidget {
 
 class _ProgressGraphState extends State<_ProgressGraph> {
   int? _hoveredIndex;
+  int? _tappedIndex;
   Offset _hoverPosition = Offset.zero;
+  Offset _tapPosition = Offset.zero;
+  bool _showTooltip = false;
 
   @override
   Widget build(BuildContext context) {
@@ -2722,31 +2713,56 @@ class _ProgressGraphState extends State<_ProgressGraph> {
       );
     }
 
-    return MouseRegion(
-      onHover: (event) {
+    return GestureDetector(
+      onTapDown: (details) {
         final box = context.findRenderObject() as RenderBox?;
         if (box != null) {
-          final localPosition = box.globalToLocal(event.position);
-          _updateHoveredPoint(localPosition, box.size);
+          final localPosition = box.globalToLocal(details.globalPosition);
+          _updateTappedPoint(localPosition, box.size);
         }
       },
-      onExit: (event) {
+      onTapCancel: () {
         setState(() {
-          _hoveredIndex = null;
+          _showTooltip = false;
+          _tappedIndex = null;
         });
       },
-      child: Stack(
-        children: [
-          CustomPaint(
-            painter: _GraphPainter(
-              data: widget.data,
-              hoveredIndex: _hoveredIndex,
+      onTap: () {
+        // Keep tooltip visible after tap
+        setState(() {
+          _showTooltip = true;
+        });
+      },
+      child: MouseRegion(
+        onHover: (event) {
+          final box = context.findRenderObject() as RenderBox?;
+          if (box != null) {
+            final localPosition = box.globalToLocal(event.position);
+            _updateHoveredPoint(localPosition, box.size);
+          }
+        },
+        onExit: (event) {
+          if (!_showTooltip) { // Only clear hover if we're not showing a tapped tooltip
+            setState(() {
+              _hoveredIndex = null;
+            });
+          }
+        },
+        child: Stack(
+          children: [
+            CustomPaint(
+              painter: _GraphPainter(
+                data: widget.data,
+                hoveredIndex: _hoveredIndex,
+                tappedIndex: _tappedIndex,
+              ),
+              child: Container(),
             ),
-            child: Container(),
-          ),
-          if (_hoveredIndex != null && _hoveredIndex! < widget.data.length)
-            _buildHoverTooltip(),
-        ],
+            if ((_hoveredIndex != null && _hoveredIndex! < widget.data.length) || 
+                (_showTooltip && _tappedIndex != null && _tappedIndex! < widget.data.length))
+              _buildTooltip(),
+          ],
+        ),
       ),
     );
   }
@@ -2776,53 +2792,115 @@ class _ProgressGraphState extends State<_ProgressGraph> {
     }
   }
 
-  Widget _buildHoverTooltip() {
+  void _updateTappedPoint(Offset localPosition, Size size) {
+    final padding = 50.0;
+    final graphWidth = size.width - padding * 2;
+    
+    double closestDistance = double.infinity;
+    int? newTappedIndex;
+
+    for (int i = 0; i < widget.data.length; i++) {
+      final x = padding + (graphWidth * i / (widget.data.length > 1 ? widget.data.length - 1 : 1));
+      final pointDistance = (localPosition.dx - x).abs();
+      
+      if (pointDistance < 25 && pointDistance < closestDistance) { // Slightly larger tap area
+        closestDistance = pointDistance;
+        newTappedIndex = i;
+      }
+    }
+
+    setState(() {
+      _tappedIndex = newTappedIndex;
+      _tapPosition = localPosition;
+      _hoveredIndex = null; // Clear hover when tapping
+    });
+  }
+
+  Widget _buildTooltip() {
     final theme = Provider.of<ThemeManager>(context);
-    if (_hoveredIndex == null || _hoveredIndex! >= widget.data.length) {
+    final displayIndex = _tappedIndex ?? _hoveredIndex;
+    
+    if (displayIndex == null || displayIndex >= widget.data.length) {
       return const SizedBox();
     }
 
-    final pointData = widget.data[_hoveredIndex!];
+    final pointData = widget.data[displayIndex];
     final bmr = pointData['bmr'] as double;
     final bmi = pointData['bmi'] as double;
+    final position = _tappedIndex != null ? _tapPosition : _hoverPosition;
 
     return Positioned(
-      left: _hoverPosition.dx - 80,
-      top: _hoverPosition.dy - 80,
-      child: Container(
-        width: 140,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: theme.cardColor,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: theme.shadowColor,
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-          border: Border.all(color: theme.borderColor.withOpacity(0.3)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildTooltipRow('BMR', '${bmr.round()} kcal', Icons.local_fire_department, color: AppColors.accentCyan),
-            const SizedBox(height: 6),
-            _buildTooltipRow('BMI', bmi.toStringAsFixed(1), Icons.monitor_weight, color: _getBMIColor(bmi)),
-            const SizedBox(height: 4),
-            Text(
-              'Category: ${HealthCalculator.getBMICategory(bmi)}',
-              style: TextStyle(
-                fontSize: 10,
-                color: _getBMIColor(bmi),
-                fontWeight: FontWeight.w600,
+      left: position.dx - 70,
+      top: position.dy - 100,
+      child: GestureDetector(
+        onTap: () {
+          // Allow tapping anywhere to dismiss the tooltip
+          setState(() {
+            _showTooltip = false;
+            _tappedIndex = null;
+            _hoveredIndex = null;
+          });
+        },
+        child: Container(
+          width: 150,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: theme.shadowColor,
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
-            ),
-          ],
+            ],
+            border: Border.all(color: theme.borderColor.withOpacity(0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Date header
+              Text(
+                _formatDate(pointData['date'] as DateTime),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: theme.primaryText,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildTooltipRow('BMR', '${bmr.round()} kcal', Icons.local_fire_department, color: AppColors.accentCyan),
+              const SizedBox(height: 6),
+              _buildTooltipRow('BMI', bmi.toStringAsFixed(1), Icons.monitor_weight, color: _getBMIColor(bmi)),
+              const SizedBox(height: 4),
+              Text(
+                'Category: ${HealthCalculator.getBMICategory(bmi)}',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: _getBMIColor(bmi),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (_tappedIndex != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Tap anywhere to close',
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: theme.tertiaryText,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.month}/${date.day}/${date.year}';
   }
 
   Widget _buildTooltipRow(String label, String value, IconData icon, {Color color = AppColors.accentCyan}) {
@@ -2831,12 +2909,12 @@ class _ProgressGraphState extends State<_ProgressGraph> {
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          Icon(icon, size: 12, color: color),
+          Icon(icon, size: 14, color: color),
           const SizedBox(width: 6),
           Text(
             '$label: ',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
               color: theme.primaryText,
             ),
@@ -2844,7 +2922,7 @@ class _ProgressGraphState extends State<_ProgressGraph> {
           Text(
             value,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
               color: color,
             ),
@@ -2862,12 +2940,13 @@ class _ProgressGraphState extends State<_ProgressGraph> {
   }
 }
 
-// --- Updated Graph Painter ---
+// --- Updated Graph Painter with Touch Support ---
 class _GraphPainter extends CustomPainter {
   final List<Map<String, dynamic>> data;
   final int? hoveredIndex;
+  final int? tappedIndex;
 
-  _GraphPainter({required this.data, this.hoveredIndex});
+  _GraphPainter({required this.data, this.hoveredIndex, this.tappedIndex});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -2983,7 +3062,7 @@ class _GraphPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
     canvas.drawPath(bmiPath, bmiPaint);
 
-    // Draw points and highlight hovered point
+    // Draw points and highlight hovered/tapped point
     for (int i = 0; i < data.length; i++) {
       double x = padding + (graphWidth * i / (data.length > 1 ? data.length - 1 : 1));
       
@@ -2995,38 +3074,40 @@ class _GraphPainter extends CustomPainter {
       double normalizedBMI = (data[i]['bmi'] - minBMI) / (maxBMI - minBMI);
       double bmiY = padding + graphHeight - (normalizedBMI * graphHeight);
 
-      // Highlight hovered point
-      if (i == hoveredIndex) {
+      final isHighlighted = i == hoveredIndex || i == tappedIndex;
+
+      // Highlight hovered/tapped point
+      if (isHighlighted) {
         final highlightPaint = Paint()
-          ..color = AppColors.accentBlue.withOpacity(0.3)
+          ..color = (i == tappedIndex ? AppColors.orange : AppColors.accentBlue).withOpacity(0.3)
           ..style = PaintingStyle.fill;
-        canvas.drawCircle(Offset(x, bmrY), 12, highlightPaint);
-        canvas.drawCircle(Offset(x, bmiY), 12, highlightPaint);
+        canvas.drawCircle(Offset(x, bmrY), 14, highlightPaint);
+        canvas.drawCircle(Offset(x, bmiY), 14, highlightPaint);
       }
 
       // BMR point with border
       final bmrPointBorderPaint = Paint()
         ..color = Colors.white
         ..style = PaintingStyle.stroke
-        ..strokeWidth = i == hoveredIndex ? 3 : 2;
+        ..strokeWidth = isHighlighted ? 3 : 2;
       final bmrPointPaint = Paint()
-        ..color = i == hoveredIndex ? AppColors.accentCyan : AppColors.accentCyan.withOpacity(0.8)
+        ..color = isHighlighted ? AppColors.accentCyan : AppColors.accentCyan.withOpacity(0.8)
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(Offset(x, bmrY), i == hoveredIndex ? 8 : 5, bmrPointBorderPaint);
-      canvas.drawCircle(Offset(x, bmrY), i == hoveredIndex ? 7 : 4, bmrPointPaint);
+      canvas.drawCircle(Offset(x, bmrY), isHighlighted ? 8 : 5, bmrPointBorderPaint);
+      canvas.drawCircle(Offset(x, bmrY), isHighlighted ? 7 : 4, bmrPointPaint);
 
       // BMI point with border
       final bmiPointBorderPaint = Paint()
         ..color = Colors.white
         ..style = PaintingStyle.stroke
-        ..strokeWidth = i == hoveredIndex ? 3 : 2;
+        ..strokeWidth = isHighlighted ? 3 : 2;
       final bmiPointPaint = Paint()
-        ..color = i == hoveredIndex ? AppColors.accentBlue : AppColors.accentBlue.withOpacity(0.8)
+        ..color = isHighlighted ? AppColors.accentBlue : AppColors.accentBlue.withOpacity(0.8)
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(Offset(x, bmiY), i == hoveredIndex ? 8 : 5, bmiPointBorderPaint);
-      canvas.drawCircle(Offset(x, bmiY), i == hoveredIndex ? 7 : 4, bmiPointPaint);
+      canvas.drawCircle(Offset(x, bmiY), isHighlighted ? 8 : 5, bmiPointBorderPaint);
+      canvas.drawCircle(Offset(x, bmiY), isHighlighted ? 7 : 4, bmiPointPaint);
     }
 
     // Draw axes labels with simple text rendering
@@ -3061,9 +3142,9 @@ class _GraphPainter extends CustomPainter {
           '${date.month}/${date.day}', 
           Offset(x - 10, size.height - padding + 12), 
           textStyle.copyWith(
-            color: i == hoveredIndex ? AppColors.accentBlue : Colors.black87,
-            fontSize: i == hoveredIndex ? 11 : 9,
-            fontWeight: i == hoveredIndex ? FontWeight.bold : FontWeight.normal,
+            color: (i == hoveredIndex || i == tappedIndex) ? AppColors.accentBlue : Colors.black87,
+            fontSize: (i == hoveredIndex || i == tappedIndex) ? 11 : 9,
+            fontWeight: (i == hoveredIndex || i == tappedIndex) ? FontWeight.bold : FontWeight.normal,
           )
         );
       }
@@ -3083,7 +3164,9 @@ class _GraphPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _GraphPainter oldDelegate) {
-    return data != oldDelegate.data || hoveredIndex != oldDelegate.hoveredIndex;
+    return data != oldDelegate.data || 
+           hoveredIndex != oldDelegate.hoveredIndex || 
+           tappedIndex != oldDelegate.tappedIndex;
   }
 }
 
