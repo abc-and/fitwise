@@ -178,22 +178,26 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
     }
   }
 
-  void _cleanupCurrentState() {
-    debugPrint('🧹 Cleaning up current state');
-    _cleanupTimerAndAnimation();
-    
-    if (_videoPlayerController != null) {
-      _videoPlayerController!.pause();
-      _videoPlayerController!.dispose();
-      _videoPlayerController = null;
-    }
-    
-    _isVideoInitialized = false;
-    _hasVideoError = false;
-    _isInitialized = false;
-    
-    _audioPlayer.stop();
+// Also update the _cleanupCurrentState method
+void _cleanupCurrentState() {
+  debugPrint('🧹 Cleaning up current state');
+  _cleanupTimerAndAnimation();
+  
+  // Reset alarm flag
+  _alarmPlayedForCurrentSet = false;
+  
+  if (_videoPlayerController != null) {
+    _videoPlayerController!.pause();
+    _videoPlayerController!.dispose();
+    _videoPlayerController = null;
   }
+  
+  _isVideoInitialized = false;
+  _hasVideoError = false;
+  _isInitialized = false;
+  
+  _audioPlayer.stop();
+}
 
   void _initAnimationController(int duration) {
     if (_controllerInitialized) {
@@ -236,28 +240,31 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
     _startTimer();
   }
 
-  void _startNextSet() {
-    _cleanupTimerAndAnimation();
-    
-    setState(() {
-      _isRestPeriod = false;
-      _isFinalRestPeriod = false;
-      remainingTime = widget.exercise.duration;
-      isRunning = false;
-    });
+// Update the _startNextSet method to reset alarm flag
+void _startNextSet() {
+  _cleanupTimerAndAnimation();
+  
+  // Reset alarm flag for new set
+  _alarmPlayedForCurrentSet = false;
+  
+  setState(() {
+    _isRestPeriod = false;
+    _isFinalRestPeriod = false;
+    remainingTime = widget.exercise.duration;
+    isRunning = false;
+  });
 
-    debugPrint('💪 Starting Set $_currentSet/$_totalSets');
+  debugPrint('💪 Starting Set $_currentSet/$_totalSets');
 
-    _initAnimationController(widget.exercise.duration);
+  _initAnimationController(widget.exercise.duration);
 
-    // Unmute video for exercise (unless user muted it)
-    if (_isVideoInitialized && !_hasVideoError && _videoPlayerController != null) {
-      _videoPlayerController!.setVolume(_isVideoMuted ? 0.0 : 1.0);
-      _videoPlayerController!.seekTo(Duration.zero);
-      _videoPlayerController!.play();
-    }
+  // Unmute video for exercise (unless user muted it)
+  if (_isVideoInitialized && !_hasVideoError && _videoPlayerController != null) {
+    _videoPlayerController!.setVolume(_isVideoMuted ? 0.0 : 1.0);
+    _videoPlayerController!.seekTo(Duration.zero);
+    _videoPlayerController!.play();
   }
-
+}
   void _completeExercise() {
     _cleanupTimerAndAnimation();
     
@@ -369,45 +376,71 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
     }
   }
 
-  void _startTimer() {
-    if (isRunning || _exerciseCompleted) return;
+// Add this variable to track if alarm has been played for the current set
+bool _alarmPlayedForCurrentSet = false;
 
-    int fullDuration = _isRestPeriod ? _cooldownDuration : widget.exercise.duration;
-    double initialValue = remainingTime / fullDuration;
-    
-    try {
-      if (_controllerInitialized) {
-        _controller.reset();
-        _controller.value = initialValue;
-        _controller.reverse(from: initialValue);
-      }
+// Modify the _startTimer method to include alarm logic
+void _startTimer() {
+  if (isRunning || _exerciseCompleted) return;
 
-      // Always play video and set volume based on mute setting
-      if (_isVideoInitialized && !_hasVideoError && _videoPlayerController != null) {
-        _videoPlayerController!.setVolume(_isVideoMuted ? 0.0 : 1.0);
-        _videoPlayerController!.play();
-      }
-
-      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (remainingTime > 0) {
-          setState(() => remainingTime--);
-          
-          if (_controllerInitialized) {
-            double progress = remainingTime / fullDuration;
-            _controller.value = progress;
-          }
-        } else {
-          timer.cancel();
-          _handleTimerCompletion();
-        }
-      });
-
-      setState(() => isRunning = true);
-    } catch (e) {
-      debugPrint("❌ Error starting timer: $e");
-      _initAnimationController(_isRestPeriod ? _cooldownDuration : widget.exercise.duration);
-    }
+  int fullDuration = _isRestPeriod ? _cooldownDuration : widget.exercise.duration;
+  double initialValue = remainingTime / fullDuration;
+  
+  // Reset alarm flag when starting a new timer
+  if (!_isRestPeriod) {
+    _alarmPlayedForCurrentSet = false;
   }
+  
+  try {
+    if (_controllerInitialized) {
+      _controller.reset();
+      _controller.value = initialValue;
+      _controller.reverse(from: initialValue);
+    }
+
+    // Always play video and set volume based on mute setting
+    if (_isVideoInitialized && !_hasVideoError && _videoPlayerController != null) {
+      _videoPlayerController!.setVolume(_isVideoMuted ? 0.0 : 1.0);
+      _videoPlayerController!.play();
+    }
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (remainingTime > 0) {
+        setState(() => remainingTime--);
+        
+        // Play alarm in last 3 seconds of exercise (not during rest)
+        if (!_isRestPeriod && remainingTime <= 3 && remainingTime > 0 && !_alarmPlayedForCurrentSet) {
+          _playAlarmSound();
+          _alarmPlayedForCurrentSet = true;
+        }
+        
+        if (_controllerInitialized) {
+          double progress = remainingTime / fullDuration;
+          _controller.value = progress;
+        }
+      } else {
+        timer.cancel();
+        _handleTimerCompletion();
+      }
+    });
+
+    setState(() => isRunning = true);
+  } catch (e) {
+    debugPrint("❌ Error starting timer: $e");
+    _initAnimationController(_isRestPeriod ? _cooldownDuration : widget.exercise.duration);
+  }
+}
+
+// Add this method to play the alarm sound
+Future<void> _playAlarmSound() async {
+  try {
+    debugPrint("🔊 Playing alarm sound - 3 seconds remaining!");
+    await _audioPlayer.stop(); // Stop any currently playing sound
+    await _audioPlayer.play(AssetSource("sounds/alarm.mp3"));
+  } catch (e) {
+    debugPrint("❌ Error playing alarm sound: $e");
+  }
+}
 
   void startTimer() {
     _startTimer();
@@ -428,25 +461,29 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
     setState(() => isRunning = false);
   }
 
-  void resetTimer() {
-    _cleanupTimerAndAnimation();
-    _audioPlayer.stop();
-    
-    if (_isVideoInitialized && !_hasVideoError && _videoPlayerController != null) {
-      _videoPlayerController!.seekTo(Duration.zero);
-      _videoPlayerController!.pause();
-      _videoPlayerController!.setVolume(_isVideoMuted ? 0.0 : 1.0);
-    }
-    
-    int initialDuration = _isRestPeriod ? _cooldownDuration : widget.exercise.duration;
-    
-    _initAnimationController(initialDuration);
-
-    setState(() {
-      remainingTime = initialDuration;
-      isRunning = false;
-    });
+// Also update the resetTimer method to reset the alarm flag
+void resetTimer() {
+  _cleanupTimerAndAnimation();
+  _audioPlayer.stop();
+  
+  // Reset alarm flag
+  _alarmPlayedForCurrentSet = false;
+  
+  if (_isVideoInitialized && !_hasVideoError && _videoPlayerController != null) {
+    _videoPlayerController!.seekTo(Duration.zero);
+    _videoPlayerController!.pause();
+    _videoPlayerController!.setVolume(_isVideoMuted ? 0.0 : 1.0);
   }
+  
+  int initialDuration = _isRestPeriod ? _cooldownDuration : widget.exercise.duration;
+  
+  _initAnimationController(initialDuration);
+
+  setState(() {
+    remainingTime = initialDuration;
+    isRunning = false;
+  });
+}
 
   void _moveToNextExercise() {
     debugPrint('🚀 Move to next exercise called');
@@ -945,90 +982,124 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen>
     );
   }
 
-  Widget _buildExerciseTimer(ThemeManager theme) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          "EXERCISE TIMER",
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: theme.primaryText,
-          ),
+// In the _buildExerciseTimer method, modify the timer display to show alarm state
+Widget _buildExerciseTimer(ThemeManager theme) {
+  final bool showAlarmWarning = !_isRestPeriod && remainingTime <= 3 && remainingTime > 0;
+  
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text(
+        "EXERCISE TIMER",
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: theme.primaryText,
         ),
-        const SizedBox(height: 20),
-        Text(
-          "Set $_currentSet/$_totalSets: Perform ${widget.exercise.reps} reps",
-          style: TextStyle(
-            fontSize: 14,
-            color: theme.secondaryText,
+      ),
+      const SizedBox(height: 20),
+      
+      // Add alarm warning indicator
+      if (showAlarmWarning)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.orange.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.orange),
           ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 24),
-        SizedBox(
-          height: 220,
-          width: 220,
-          child: Stack(
-            alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(
-                height: 220,
-                width: 220,
-                child: CircularProgressIndicator(
-                  value: 1.0,
-                  strokeWidth: 12,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    theme.borderColor,
-                  ),
+              Icon(Icons.warning, color: AppColors.orange, size: 16),
+              const SizedBox(width: 8),
+              Text(
+                "Almost done!",
+                style: TextStyle(
+                  color: AppColors.orange,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
                 ),
-              ),
-              AnimatedBuilder(
-                animation: _controller,
-                builder: (context, child) {
-                  return SizedBox(
-                    height: 220,
-                    width: 220,
-                    child: CircularProgressIndicator(
-                      value: _controller.value,
-                      strokeWidth: 12,
-                      backgroundColor: Colors.transparent,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppColors.accentBlue,
-                      ),
-                      strokeCap: StrokeCap.round,
-                    ),
-                  );
-                },
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "$remainingTime",
-                    style: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.accentBlue,
-                    ),
-                  ),
-                  Text(
-                    "seconds",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: theme.secondaryText,
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
         ),
-      ],
-    );
-  }
+      
+      if (showAlarmWarning) const SizedBox(height: 12),
+      
+      Text(
+        "Set $_currentSet/$_totalSets: Perform ${widget.exercise.reps} reps",
+        style: TextStyle(
+          fontSize: 14,
+          color: theme.secondaryText,
+        ),
+        textAlign: TextAlign.center,
+      ),
+      const SizedBox(height: 24),
+      SizedBox(
+        height: 220,
+        width: 220,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox(
+              height: 220,
+              width: 220,
+              child: CircularProgressIndicator(
+                value: 1.0,
+                strokeWidth: 12,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  theme.borderColor,
+                ),
+              ),
+            ),
+            AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                return SizedBox(
+                  height: 220,
+                  width: 220,
+                  child: CircularProgressIndicator(
+                    value: _controller.value,
+                    strokeWidth: 12,
+                    backgroundColor: Colors.transparent,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      // Change color to orange when in last 3 seconds
+                      showAlarmWarning ? AppColors.orange : AppColors.accentBlue,
+                    ),
+                    strokeCap: StrokeCap.round,
+                  ),
+                );
+              },
+            ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "$remainingTime",
+                  style: TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                    // Change color to orange when in last 3 seconds
+                    color: showAlarmWarning ? AppColors.orange : AppColors.accentBlue,
+                  ),
+                ),
+                Text(
+                  "seconds",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: theme.secondaryText,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
 
   Widget _buildCompletionScreen(ThemeManager theme) {
     final bool isPartOfWorkout = widget.onComplete != null;

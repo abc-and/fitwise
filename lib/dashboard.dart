@@ -17,6 +17,8 @@ import '../providers/quote_scheduler.dart';
 
 // Controls whether the new goal input is shown after clicking 'Update Goal'
 bool _showNewGoalInput = false;
+bool _showGoalOptions = false; // Add this new state variable
+String _selectedNewGoalType = 'lose';
 
 Route createRouteLeft(Widget page) {
   return PageRouteBuilder(
@@ -357,6 +359,10 @@ class _HomeContentState extends State<HomeContent> {
   
   // Battery
   bool _goalCompleted = false;
+
+  // Add the new state variables
+  bool _showNewGoalInput = false;
+  bool _showGoalOptions = false;
 
   // Helper to determine if user reached the goal by value (independent of firestore flag)
   bool _hasReachedGoal() {
@@ -805,6 +811,8 @@ class _HomeContentState extends State<HomeContent> {
       _goalType = newType;
       _startWeight = _currentWeight;
       _goalCompleted = false;
+      _showNewGoalInput = false;
+      _showGoalOptions = false;
     });
 
     if (user != null) {
@@ -1147,20 +1155,19 @@ class _HomeContentState extends State<HomeContent> {
     return 'Good Evening';
   }
 
-  double _batteryPercent() {
+double _batteryPercent() {
+  // For weight loss and gain, use the original calculation
+  if (_goalType == 'lose' || _goalType == 'gain') {
     final isGain = _goalType == 'gain';
     
-    // Handle edge cases first
     if (_startWeight == _goalWeight) return 0.0;
     if (_currentWeight == _startWeight) return 0.0;
     
-    // Check if goal is reached
     final bool isGoalReached = (isGain && _currentWeight >= _goalWeight) || 
                             (!isGain && _currentWeight <= _goalWeight);
     
     if (isGoalReached) return 1.0;
     
-    // Calculate progress
     double progress;
     if (isGain) {
       progress = (_currentWeight - _startWeight) / (_goalWeight - _startWeight);
@@ -1168,12 +1175,13 @@ class _HomeContentState extends State<HomeContent> {
       progress = (_startWeight - _currentWeight) / (_startWeight - _goalWeight);
     }
     
-    // Handle invalid calculations
-    if (progress.isNaN || progress.isInfinite) return 0.0;
-    
-    // Clamp between 0 and 1
     return progress.clamp(0.0, 1.0);
   }
+  
+  // For all other goals (muscle building, endurance, general fitness, maintenance)
+  // Show 100% battery since these are ongoing/maintenance goals
+  return 1.0;
+}
 
   // Method to check and trigger achievements
   Future<void> _checkAndTriggerAchievements() async {
@@ -1333,6 +1341,7 @@ Future<void> handleSave() async {
     _markGoalCompleted();
   }
 }
+
   Widget _buildTopGreeting() {
     final theme = Provider.of<ThemeManager>(context);
     return Padding(
@@ -1680,560 +1689,678 @@ Future<void> handleSave() async {
   }
 
   Widget _buildWeightBatteryCard() {
-    final theme = Provider.of<ThemeManager>(context);
-    final pct = _batteryPercent();
-    final pctRounded = (pct * 100).round();
-    final isGain = _goalType == 'gain';
-    final isGoalReached = _hasReachedGoal();
+  final theme = Provider.of<ThemeManager>(context);
+  final pct = _batteryPercent();
+  final pctRounded = (pct * 100).round();
+  final isWeightGoal = _goalType == 'lose' || _goalType == 'gain';
 
-    // handleSave will update weight + height, then check for goal completion
-    // In your _buildWeightBatteryCard method, replace the existing handleSave with:
-void handleSave() async {
-  final wt = double.tryParse(_weightController.text);
-  if (wt == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please enter a valid weight')),
-    );
-    return;
-  }
+  return _cardWrapper(
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            Text(
+              isWeightGoal ? (_goalType == 'gain' ? 'Gain Goal' : 'Lose Goal') : 'Active Goal',
+              style: TextStyle(fontSize: 12, color: theme.secondaryText),
+            ),
+            const SizedBox(height: 8),
+            VerticalBattery(
+              percent: pct,
+              width: 48,
+              height: 160,
+              fillColor: isWeightGoal ? AppColors.accentBlue : AppColors.green,
+              backgroundColor: theme.borderColor.withOpacity(0.15),
+              borderColor: theme.primaryText.withOpacity(0.18),
+              showPercentage: false,
+            ),
+            const SizedBox(height: 8),
+            Text('$pctRounded%', style: TextStyle(fontWeight: FontWeight.bold, color: theme.primaryText)),
+          ],
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                isWeightGoal ? 'Weight Progress' : 'Fitness Progress',
+                style: TextStyle(fontWeight: FontWeight.bold, color: theme.primaryText),
+              ),
+              const SizedBox(height: 6),
+              Text('Current: ${_currentWeight.toStringAsFixed(1)} kg', style: TextStyle(fontSize: 14, color: theme.primaryText)),
+              const SizedBox(height: 4),
 
-  final ht = double.tryParse(_heightController.text);
-  if (ht != null && ht > 0) _heightCm = ht;
+              // Goal section (display or editable after completion)
+              _buildGoalSection(),
 
-  // Store previous state for comparison
-  final previousWeight = _currentWeight;
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: pct, 
+                  minHeight: 10, 
+                  backgroundColor: theme.borderColor, 
+                  color: isWeightGoal ? AppColors.accentBlue : AppColors.green,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Only show weight update for weight-related goals
+              if (isWeightGoal && !_goalCompleted)
+                _WeightActionButton(
+                  weightController: _weightController,
+                  isGain: _goalType == 'gain',
+                  currentWeight: _currentWeight,
+                  onSave: handleSave,
+                  isGoalReached: _hasReachedGoal(),
+                ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+Widget _buildGoalSection() {
+  final theme = Provider.of<ThemeManager>(context);
+  final isWeightGoal = _goalType == 'lose' || _goalType == 'gain';
   
-  setState(() {
-    _currentWeight = wt;
-    _calculateHealthMetrics();
-  });
-
-  // Only update startWeight if this is the VERY FIRST progress entry
-  // (when current weight was previously equal to start weight)
-  if (previousWeight == _startWeight && wt != _startWeight) {
-    final user = _auth.currentUser;
-    if (user != null) {
-      await _firestore.collection('user_info').doc(user.uid).set({
-        'startWeight': _startWeight
-      }, SetOptions(merge: true));
+  // For all non-weight goals, show the maintaining UI
+  if (!isWeightGoal) {
+    String goalTitle;
+    String goalDescription;
+    IconData goalIcon;
+    
+    switch (_goalType) {
+      case 'muscle building':
+        goalTitle = 'Building Muscle';
+        goalDescription = 'You are focusing on muscle building and strength training.';
+        goalIcon = Icons.fitness_center;
+        break;
+      case 'endurance & stamina':
+        goalTitle = 'Endurance Training';
+        goalDescription = 'You are working on improving your cardiovascular endurance and stamina.';
+        goalIcon = Icons.directions_run;
+        break;
+      case 'general fitness':
+        goalTitle = 'General Fitness';
+        goalDescription = 'You are maintaining overall health and fitness.';
+        goalIcon = Icons.self_improvement;
+        break;
+      case 'maintenance':
+      default:
+        goalTitle = 'Maintaining Weight';
+        goalDescription = 'You are maintaining your weight at ${_currentWeight.toStringAsFixed(1)} kg.';
+        goalIcon = Icons.balance;
+        break;
     }
-  }
-
-  // Use the new method with achievement check
-  await _saveWeightUpdateWithAchievementCheck(wt, ht);
-
-  // Refresh progress data
-  await Future.delayed(const Duration(milliseconds: 300));
-  await _fetchProgressData();
-
-  _weightController.clear();
-  _heightController.clear();
-
-  if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Weight updated: ${wt.toStringAsFixed(1)} kg'),
-        backgroundColor: AppColors.accentBlue,
-        duration: const Duration(seconds: 2),
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.accentBlue.withOpacity(0.15),
+            AppColors.accentCyan.withOpacity(0.1),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.accentBlue.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.accentBlue.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(goalIcon, color: AppColors.accentBlue, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                goalTitle,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: theme.primaryText,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            goalDescription,
+            style: TextStyle(
+              color: theme.secondaryText,
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+          // UPDATE GOAL BUTTON - This shows the two options
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                debugPrint('Update Goal button pressed!');
+                setState(() {
+                  // Show the two options (New Goal and Maintain)
+                  _showNewGoalInput = false;
+                  _showGoalOptions = true;
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accentBlue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.edit, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Update Goal',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // SHOW THE TWO OPTIONS WHEN _showGoalOptions IS TRUE
+          if (_showGoalOptions) ...[
+            const SizedBox(height: 16),
+            _buildGoalOptions(),
+          ],
+          
+          // SHOW GOAL INPUT FORM IF NEW GOAL WAS SELECTED
+          if (_showNewGoalInput) ...[
+            const SizedBox(height: 20),
+            _buildGoalInputForm(),
+          ],
+        ],
       ),
     );
   }
 
-  // Only check for goal completion if we haven't already completed it
-  if (!_goalCompleted && _hasReachedGoal()) {
-    _markGoalCompleted();
-  }
-}
-
-    // Build the goal display / editor area
-    Widget _buildGoalSection() {
-      // Only show the new goal input if the goal is completed (not just reached, but marked completed)
-      if (_goalCompleted) {
-        if (_goalType == 'maintain') {
-          // If already maintaining, just show info and update option
-          return Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.accentBlue.withOpacity(0.15),
-                  AppColors.accentCyan.withOpacity(0.1),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.accentBlue.withOpacity(0.3)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  // Only show the new goal input if the goal is completed (not just reached, but marked completed)
+  if (_goalCompleted) {
+    if (_goalType == 'maintain') {
+      // If already maintaining, just show info and update option
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.accentBlue.withOpacity(0.15),
+              AppColors.accentCyan.withOpacity(0.1),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.accentBlue.withOpacity(0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentBlue.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.balance, color: AppColors.accentBlue, size: 20),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Maintaining Weight',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: theme.primaryText,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'You are maintaining your weight at ${_goalWeight.toStringAsFixed(1)} kg.',
+              style: TextStyle(
+                color: theme.secondaryText,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 14),
+            // UPDATE GOAL BUTTON
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  debugPrint('Update Goal button pressed!');
+                  setState(() {
+                    // Show the two options (New Goal and Maintain)
+                    _showNewGoalInput = false;
+                    _showGoalOptions = true;
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.accentBlue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.accentBlue.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(Icons.balance, color: AppColors.accentBlue, size: 20),
-                    ),
-                    const SizedBox(width: 10),
+                    Icon(Icons.edit, size: 20),
+                    SizedBox(width: 8),
                     Text(
-                      'Maintaining Weight',
+                      'Update Goal',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // SHOW THE TWO OPTIONS WHEN _showGoalOptions IS TRUE
+            if (_showGoalOptions) ...[
+              const SizedBox(height: 16),
+              _buildGoalOptions(),
+            ],
+            
+            // SHOW GOAL INPUT FORM IF NEW GOAL WAS SELECTED
+            if (_showNewGoalInput) ...[
+              const SizedBox(height: 20),
+              _buildGoalInputForm(),
+            ],
+          ],
+        ),
+      );
+    }
+    
+    // For completed weight goals, show the two options directly
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.green.withOpacity(0.1),
+            AppColors.accentCyan.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.green.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.green.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.green, AppColors.accentCyan],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.green.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.emoji_events, color: Colors.white, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Goal Achieved! 🎉',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                         color: theme.primaryText,
                       ),
                     ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'What\'s next for you?',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: theme.tertiaryText,
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  'You are maintaining your weight at ${_goalWeight.toStringAsFixed(1)} kg.',
-                  style: TextStyle(
-                    color: theme.secondaryText,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _showNewGoalInput = true;
-                        _goalType = 'lose';
-                      });
-                    },
-                    icon: const Icon(Icons.edit, size: 18),
-                    label: const Text('Update Goal'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accentBlue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      elevation: 0,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-        // Not maintaining: show both options
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.green.withOpacity(0.1),
-                AppColors.accentCyan.withOpacity(0.05),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.green.withOpacity(0.3)),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.green.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppColors.green, AppColors.accentCyan],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.green.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(Icons.emoji_events, color: Colors.white, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Goal Achieved! 🎉',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: theme.primaryText,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'What\'s next for you?',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: theme.tertiaryText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            _showNewGoalInput = true;
-                            _goalType = 'lose';
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [AppColors.accentBlue, AppColors.accentPurple],
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.accentBlue.withOpacity(0.3),
-                                blurRadius: 6,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            children: [
-                              const Icon(Icons.flag, color: Colors.white, size: 24),
-                              const SizedBox(height: 6),
-                              Text(
-                                'New Goal',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () async {
-                          setState(() {
-                            _goalType = 'maintain';
-                            _goalWeight = _currentWeight; // Set goal to current weight for maintenance
-                            _startWeight = _currentWeight; // Reset start weight
-                            _showNewGoalInput = false;
-                          });
-                          final user = _auth.currentUser;
-                          if (user != null) {
-                            await _firestore.collection('user_info').doc(user.uid).set({
-                              'goalType': 'maintain',
-                              'goalWeight': _currentWeight, // Store current weight as goal
-                              'startWeight': _currentWeight,
-                              'goalCompleted': false,
-                              'targetWeightLoss': '', // Clear previous targets
-                              'targetWeightGain': '',
-                            }, SetOptions(merge: true));
-                          }
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          decoration: BoxDecoration(
-                            color: theme.cardColor,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppColors.accentBlue.withOpacity(0.4),
-                              width: 2,
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(Icons.balance, color: AppColors.accentBlue, size: 24),
-                              const SizedBox(height: 6),
-                              Text(
-                                'Maintain',
-                                style: TextStyle(
-                                  color: AppColors.accentBlue,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              if (_showNewGoalInput) ...[
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: theme.cardColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: theme.borderColor.withOpacity(0.3)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.edit_note, size: 20, color: theme.primaryText),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Set New Goal',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: theme.primaryText,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: theme.borderColor.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: theme.borderColor.withOpacity(0.2)),
-                        ),
-                        child: DropdownButton<String>(
-                          value: _selectedNewGoalType,
-                          isExpanded: true,
-                          underline: const SizedBox(),
-                          icon: Icon(Icons.arrow_drop_down, color: theme.primaryText),
-                          style: TextStyle(
-                            color: theme.primaryText,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          items: const [
-                            DropdownMenuItem(
-                              value: 'lose',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.arrow_downward, size: 16, color: AppColors.orange),
-                                  SizedBox(width: 8),
-                                  Text('Lose Weight'),
-                                ],
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 'gain',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.arrow_upward, size: 16, color: AppColors.green),
-                                  SizedBox(width: 8),
-                                  Text('Gain Weight'),
-                                ],
-                              ),
-                            ),
-                          ],
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() {
-                                _selectedNewGoalType = val;
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _newGoalController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: theme.primaryText),
-                        decoration: InputDecoration(
-                          hintText: "Enter weight in kg",
-                          hintStyle: TextStyle(color: theme.tertiaryText.withOpacity(0.6)),
-                          prefixIcon: Icon(Icons.scale, color: theme.primaryText, size: 20),
-                          suffixText: 'kg',
-                          suffixStyle: TextStyle(
-                            color: theme.tertiaryText,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          filled: true,
-                          fillColor: theme.borderColor.withOpacity(0.2),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: theme.borderColor.withOpacity(0.3)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: theme.borderColor.withOpacity(0.3)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: AppColors.accentBlue, width: 2),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                final parsed = double.tryParse(_newGoalController.text);
-                                if (parsed == null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Please enter a valid number'),
-                                      backgroundColor: AppColors.orange,
-                                    ),
-                                  );
-                                  return;
-                                }
-                                // Call with the correct parameters - parsed is the target weight, not delta
-                                _updateGoalWeightAndType(parsed, _selectedNewGoalType);
-                                _newGoalController.clear();
-                                FocusScope.of(context).unfocus();
-                                setState(() {
-                                  _showNewGoalInput = false;
-                                });
-                              },
-                              icon: const Icon(Icons.check_circle, size: 18),
-                              label: const Text('Save Goal'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.accentBlue,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                elevation: 2,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            onPressed: () {
-                              _newGoalController.clear();
-                              setState(() {
-                                _showNewGoalInput = false;
-                              });
-                            },
-                            icon: Icon(Icons.close, color: AppColors.orange),
-                            style: IconButton.styleFrom(
-                              backgroundColor: theme.borderColor.withOpacity(0.3),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        );
-      }
-
-      // Normal display: show the current goal text
-      return Text(
-        'Goal: ${_goalWeight.toStringAsFixed(1)} kg (${_goalType.toUpperCase()})',
-        style: TextStyle(color: theme.secondaryText),
-      );
-    }
-
-    return _cardWrapper(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
-            children: [
-              Text(
-                isGain ? 'Gain Goal' : 'Lose Goal',
-                style: TextStyle(fontSize: 12, color: theme.secondaryText),
-              ),
-              const SizedBox(height: 8),
-              VerticalBattery(
-                percent: pct,
-                width: 48,
-                height: 160,
-                fillColor: AppColors.accentBlue,
-                backgroundColor: theme.borderColor.withOpacity(0.15),
-                borderColor: theme.primaryText.withOpacity(0.18),
-                showPercentage: false,
-              ),
-              const SizedBox(height: 8),
-              Text('$pctRounded%', style: TextStyle(fontWeight: FontWeight.bold, color: theme.primaryText)),
-            ],
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Weight Progress', style: TextStyle(fontWeight: FontWeight.bold, color: theme.primaryText)),
-                const SizedBox(height: 6),
-                Text('Current: ${_currentWeight.toStringAsFixed(1)} kg', style: TextStyle(fontSize: 14, color: theme.primaryText)),
-                const SizedBox(height: 4),
-
-                // Goal section (display or editable after completion)
-                _buildGoalSection(),
-
-                const SizedBox(height: 10),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(value: pct, minHeight: 10, backgroundColor: theme.borderColor, color: AppColors.accentBlue),
-                ),
-                const SizedBox(height: 10),
-
-                // Show the weight/height update UI and toggle only if goal is not yet completed.
-                if (!_goalCompleted)
-                  _WeightActionButton(
-                    weightController: _weightController,
-                    isGain: isGain,
-                    currentWeight: _currentWeight,
-                    onSave: handleSave,
-                    isGoalReached: isGoalReached,
-                  ),
-              ],
-            ),
-          ),
+          const SizedBox(height: 16),
+          _buildGoalOptions(),
+          
+          // SHOW GOAL INPUT FORM IF NEW GOAL WAS SELECTED
+          if (_showNewGoalInput) ...[
+            const SizedBox(height: 20),
+            _buildGoalInputForm(),
+          ],
         ],
       ),
     );
   }
+
+  // Normal display: show the current goal text
+  return Text(
+    'Goal: ${_goalWeight.toStringAsFixed(1)} kg (${_goalType.toUpperCase()})',
+    style: TextStyle(color: theme.secondaryText),
+  );
+}
+
+// NEW METHOD: Build the two goal options (New Goal and Maintain)
+Widget _buildGoalOptions() {
+  final theme = Provider.of<ThemeManager>(context);
+  
+  return Row(
+    children: [
+      // NEW GOAL BUTTON
+      Expanded(
+        child: ElevatedButton(
+          onPressed: () {
+            setState(() {
+              _showGoalOptions = false;
+              _showNewGoalInput = true;
+              _selectedNewGoalType = 'lose'; // Default to lose weight
+            });
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.accentBlue,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 3,
+          ),
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.flag, size: 24),
+              SizedBox(height: 6),
+              Text(
+                'New Goal',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      const SizedBox(width: 12),
+      // MAINTAIN BUTTON
+      Expanded(
+        child: ElevatedButton(
+          onPressed: () async {
+            setState(() {
+              _goalType = 'maintain';
+              _goalWeight = _currentWeight;
+              _startWeight = _currentWeight;
+              _showNewGoalInput = false;
+              _showGoalOptions = false;
+              _goalCompleted = false;
+            });
+            final user = _auth.currentUser;
+            if (user != null) {
+              await _firestore.collection('user_info').doc(user.uid).set({
+                'goalType': 'maintain',
+                'goalWeight': _currentWeight,
+                'startWeight': _currentWeight,
+                'goalCompleted': false,
+                'targetWeightLoss': '',
+                'targetWeightGain': '',
+              }, SetOptions(merge: true));
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: theme.cardColor,
+            foregroundColor: AppColors.accentBlue,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: AppColors.accentBlue.withOpacity(0.4),
+                width: 2,
+              ),
+            ),
+            elevation: 0,
+          ),
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.balance, size: 24),
+              SizedBox(height: 6),
+              Text(
+                'Maintain',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+// NEW METHOD: Build the goal input form
+Widget _buildGoalInputForm() {
+  final theme = Provider.of<ThemeManager>(context);
+  
+  return Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: theme.cardColor,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: theme.borderColor.withOpacity(0.3)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.edit_note, size: 20, color: theme.primaryText),
+            const SizedBox(width: 8),
+            Text(
+              'Set New Goal',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: theme.primaryText,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: theme.borderColor.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: theme.borderColor.withOpacity(0.2)),
+          ),
+          child: DropdownButton<String>(
+            value: _selectedNewGoalType,
+            isExpanded: true,
+            underline: const SizedBox(),
+            icon: Icon(Icons.arrow_drop_down, color: theme.primaryText),
+            style: TextStyle(
+              color: theme.primaryText,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+            items: const [
+              DropdownMenuItem(
+                value: 'lose',
+                child: Row(
+                  children: [
+                    Icon(Icons.arrow_downward, size: 16, color: AppColors.orange),
+                    SizedBox(width: 8),
+                    Text('Lose Weight'),
+                  ],
+                ),
+              ),
+              DropdownMenuItem(
+                value: 'gain',
+                child: Row(
+                  children: [
+                    Icon(Icons.arrow_upward, size: 16, color: AppColors.green),
+                    SizedBox(width: 8),
+                    Text('Gain Weight'),
+                  ],
+                ),
+              ),
+            ],
+            onChanged: (val) {
+              if (val != null) {
+                setState(() {
+                  _selectedNewGoalType = val;
+                });
+              }
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _newGoalController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: theme.primaryText),
+          decoration: InputDecoration(
+            hintText: "Enter weight in kg",
+            hintStyle: TextStyle(color: theme.tertiaryText.withOpacity(0.6)),
+            prefixIcon: Icon(Icons.scale, color: theme.primaryText, size: 20),
+            suffixText: 'kg',
+            suffixStyle: TextStyle(
+              color: theme.tertiaryText,
+              fontWeight: FontWeight.bold,
+            ),
+            filled: true,
+            fillColor: theme.borderColor.withOpacity(0.2),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: theme.borderColor.withOpacity(0.3)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: theme.borderColor.withOpacity(0.3)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: AppColors.accentBlue, width: 2),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  final parsed = double.tryParse(_newGoalController.text);
+                  if (parsed == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please enter a valid number'),
+                        backgroundColor: AppColors.orange,
+                      ),
+                    );
+                    return;
+                  }
+                  _updateGoalWeightAndType(parsed, _selectedNewGoalType);
+                  _newGoalController.clear();
+                  FocusScope.of(context).unfocus();
+                  setState(() {
+                    _showNewGoalInput = false;
+                    _showGoalOptions = false;
+                  });
+                },
+                icon: const Icon(Icons.check_circle, size: 18),
+                label: const Text('Save Goal'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.accentBlue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  elevation: 2,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: () {
+                _newGoalController.clear();
+                setState(() {
+                  _showNewGoalInput = false;
+                  _showGoalOptions = false;
+                });
+              },
+              icon: Icon(Icons.close, color: AppColors.orange),
+              style: IconButton.styleFrom(
+                backgroundColor: theme.borderColor.withOpacity(0.3),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
 
   // Keep the old method for backward compatibility
   Future<void> _saveWeightUpdate(double weight, double? height) async {

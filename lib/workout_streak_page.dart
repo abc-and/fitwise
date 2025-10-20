@@ -107,44 +107,59 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
   }
 
   // Check and update streak based on current date
-  WorkoutStreak _checkAndUpdateStreak(WorkoutStreak streak) {
-    final now = _getPhilippineNow();
-    final lastWorkout = streak.lastWorkout;
-    
-    // If never worked out, return as is
-    if (lastWorkout == DateTime(1970)) return streak;
-    
-    final daysSinceLastWorkout = now.difference(lastWorkout).inDays;
-    debugPrint('WorkoutStreakPage: Days since last workout: $daysSinceLastWorkout');
-    
-    // If streak is already 0, no need to check
-    if (streak.currentStreak == 0) return streak;
-    
-    // If worked out today or yesterday, streak continues
-    if (daysSinceLastWorkout == 0 || daysSinceLastWorkout == 1) {
-      return streak;
-    }
-    
-    // If 2 or more days have passed, streak is broken
-    if (daysSinceLastWorkout >= 2) {
-      debugPrint('WorkoutStreakPage: Streak broken! Resetting current streak to 0');
-      
-      // Show non-invasive message
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showStreakBrokenSnackbar();
-      });
-      
-      // Reset current streak but keep best streak
-      return WorkoutStreak(
-        currentStreak: 0,
-        bestStreak: streak.bestStreak,
-        lastWorkout: streak.lastWorkout,
-        workoutDates: streak.workoutDates,
-      );
-    }
-    
+WorkoutStreak _checkAndUpdateStreak(WorkoutStreak streak) {
+  final now = _getPhilippineNow();
+  final lastWorkout = streak.lastWorkout;
+  
+  // If never worked out, return as is
+  if (lastWorkout == DateTime(1970)) return streak;
+  
+  // NORMALIZE DATES - Compare only calendar days, not exact times
+  final normalizedNow = DateTime(now.year, now.month, now.day);
+  final normalizedLastWorkout = DateTime(lastWorkout.year, lastWorkout.month, lastWorkout.day);
+  
+  final daysSinceLastWorkout = normalizedNow.difference(normalizedLastWorkout).inDays;
+  
+  debugPrint('WorkoutStreakPage: Raw last workout: $lastWorkout');
+  debugPrint('WorkoutStreakPage: Normalized last workout: $normalizedLastWorkout');
+  debugPrint('WorkoutStreakPage: Normalized now: $normalizedNow');
+  debugPrint('WorkoutStreakPage: Calendar days since last workout: $daysSinceLastWorkout');
+  
+  // If streak is already 0, no need to check
+  if (streak.currentStreak == 0) return streak;
+  
+  // If worked out today, streak continues
+  if (daysSinceLastWorkout == 0) {
+    debugPrint('WorkoutStreakPage: Worked out today - streak continues');
     return streak;
   }
+  
+  // If 1 calendar day has passed (yesterday), streak continues until end of today
+  if (daysSinceLastWorkout == 1) {
+    debugPrint('WorkoutStreakPage: Last workout was yesterday - streak continues until end of today');
+    return streak;
+  }
+  
+  // If 2 or more calendar days have passed, streak is broken
+  if (daysSinceLastWorkout >= 2) {
+    debugPrint('WorkoutStreakPage: Streak broken! $daysSinceLastWorkout calendar days since last workout');
+    
+    // Show non-invasive message
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showStreakBrokenSnackbar();
+    });
+    
+    // Reset current streak but keep best streak
+    return WorkoutStreak(
+      currentStreak: 0,
+      bestStreak: math.max(streak.bestStreak, streak.currentStreak),
+      lastWorkout: streak.lastWorkout,
+      workoutDates: streak.workoutDates,
+    );
+  }
+  
+  return streak;
+}
 
   // Show non-invasive snackbar for broken streak
   void _showStreakBrokenSnackbar() {
@@ -276,11 +291,11 @@ class _WorkoutStreakPageState extends State<WorkoutStreakPage>
     _badgeController.forward();
   }
 
-  bool _isSameDay(DateTime date1, DateTime date2) {
-    return date1.year == date2.year &&
-        date1.month == date2.month &&
-        date1.day == date2.day;
-  }
+bool _isSameDay(DateTime date1, DateTime date2) {
+  final normalized1 = DateTime(date1.year, date1.month, date1.day);
+  final normalized2 = DateTime(date2.year, date2.month, date2.day);
+  return normalized1 == normalized2;
+}
 
   String _getGrammaticalDays(int days) {
     return days == 1 ? '$days day' : '$days days';

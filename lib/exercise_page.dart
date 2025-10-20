@@ -19,35 +19,36 @@ class ExercisePage extends StatefulWidget {
 class _ExercisePageState extends State<ExercisePage> {
   // --- all 25 exercises ---
   final List<Exercise> allExercises = [
-    Exercise(name: "Burpee", type: "Cardio", duration: 30, sets: 3, reps: 15, difficulty: "Hard", gifUrl: "https://i.pinimg.com/originals/f4/b0/f3/f4b0f3e8d89b0a6d7f3b5b5e5f5f5f5f.gif"),
-    Exercise(name: "Push Up", type: "Strength", duration: 20, sets: 3, reps: 12, difficulty: "Medium", gifUrl: "https://i.pinimg.com/originals/18/27/be/1827be8d4f5f3c8f7d3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Squat", type: "Legs", duration: 25, sets: 3, reps: 20, difficulty: "Easy", gifUrl: "https://i.pinimg.com/originals/b4/3f/7f/b43f7f9b0f3c8d7f3f3f3f3f3f3f3f3f3f3f3f.gif"),
-    Exercise(name: "Plank", type: "Core", duration: 40, sets: 2, reps: 1, difficulty: "Hard", gifUrl: "https://i.pinimg.com/originals/1e/5c/c8/1e5cc8f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Jumping Jack", type: "Cardio", duration: 20, sets: 2, reps: 20, difficulty: "Easy", gifUrl: "https://i.pinimg.com/originals/85/1e/17/851e17c6f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Lunge", type: "Legs", duration: 25, sets: 3, reps: 15, difficulty: "Medium", gifUrl: "https://i.pinimg.com/originals/9e/3f/7d/9e3f7df3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Mountain Climber", type: "Cardio", duration: 30, sets: 3, reps: 20, difficulty: "Medium", gifUrl: "https://i.pinimg.com/originals/6c/8a/1d/6c8a1df3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.gif"),
-    Exercise(name: "Bicep Curl", type: "Strength", duration: 20, sets: 3, reps: 12, difficulty: "Easy", gifUrl: "https://i.pinimg.com/originals/4d/2e/1f/4d2e1ff3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Russian Twist", type: "Core", duration: 30, sets: 3, reps: 20, difficulty: "Medium", gifUrl: "https://i.pinimg.com/originals/7a/2c/5e/7a2c5ef3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "High Knee", type: "Cardio", duration: 25, sets: 3, reps: 30, difficulty: "Easy", gifUrl: "https://i.pinimg.com/originals/3b/4d/8f/3b4d8ff3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Diamond Push Up", type: "Strength", duration: 25, sets: 3, reps: 10, difficulty: "Hard", gifUrl: "https://i.pinimg.com/originals/5c/7e/2a/5c7e2af3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Bulgarian Squat", type: "Legs", duration: 30, sets: 3, reps: 12, difficulty: "Hard", gifUrl: "https://i.pinimg.com/originals/8d/5f/3c/8d5f3cf3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.gif"),
-    Exercise(name: "Bicycle Crunch", type: "Core", duration: 30, sets: 3, reps: 20, difficulty: "Medium", gifUrl: "https://i.pinimg.com/originals/2f/6a/4b/2f6a4bf3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Box Jump", type: "Legs", duration: 30, sets: 3, reps: 10, difficulty: "Hard", gifUrl: "https://i.pinimg.com/originals/9a/1d/7e/9a1d7ef3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f.gif"),
-    Exercise(name: "Dip", type: "Strength", duration: 25, sets: 3, reps: 12, difficulty: "Medium", gifUrl: "https://i.pinimg.com/originals/4e/8c/1f/4e8c1ff3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Jump Rope", type: "Cardio", duration: 45, sets: 3, reps: 50, difficulty: "Easy", gifUrl: "https://i.pinimg.com/originals/6f/3a/9d/6f3a9df3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Leg Raise", type: "Core", duration: 25, sets: 3, reps: 15, difficulty: "Medium", gifUrl: "https://i.pinimg.com/originals/1c/5d/8e/1c5d8ef3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Calf Raise", type: "Legs", duration: 20, sets: 4, reps: 20, difficulty: "Easy", gifUrl: "https://i.pinimg.com/originals/7b/4e/2f/7b4e2ff3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Shoulder Press", type: "Strength", duration: 25, sets: 3, reps: 12, difficulty: "Medium", gifUrl: "https://i.pinimg.com/originals/3d/6c/1a/3d6c1af3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Sprint Interval", type: "Cardio", duration: 20, sets: 5, reps: 1, difficulty: "Hard", gifUrl: "https://i.pinimg.com/originals/5e/7f/3b/5e7f3bf3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Side Plank", type: "Core", duration: 30, sets: 3, reps: 2, difficulty: "Medium", gifUrl: "https://i.pinimg.com/originals/8f/2d/6a/8f2d6af3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Wall Sit", type: "Legs", duration: 45, sets: 3, reps: 1, difficulty: "Medium", gifUrl: "https://i.pinimg.com/originals/2a/9e/4c/2a9e4cf3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Curl Ups", type: "Strength", duration: 25, sets: 3, reps: 8, difficulty: "Hard", gifUrl: "https://i.pinimg.com/originals/6d/1f/8b/6d1f8bf3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
-    Exercise(name: "Butt Kick", type: "Cardio", duration: 25, sets: 3, reps: 30, difficulty: "Easy", gifUrl: "https://i.pinimg.com/originals/4f/7c/3d/4f7c3df3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3.gif"),
+    Exercise(name: "Burpee", type: "Cardio", duration: 30, sets: 3, reps: 15, difficulty: "Hard"),
+    Exercise(name: "Push Up", type: "Strength", duration: 20, sets: 3, reps: 12, difficulty: "Medium"),
+    Exercise(name: "Squat", type: "Legs", duration: 25, sets: 3, reps: 20, difficulty: "Easy"),
+    Exercise(name: "Plank", type: "Core", duration: 40, sets: 2, reps: 1, difficulty: "Hard"),
+    Exercise(name: "Jumping Jack", type: "Cardio", duration: 20, sets: 2, reps: 20, difficulty: "Easy"),
+    Exercise(name: "Lunge", type: "Legs", duration: 25, sets: 3, reps: 15, difficulty: "Medium"),
+    Exercise(name: "Mountain Climber", type: "Cardio", duration: 30, sets: 3, reps: 20, difficulty: "Medium"),
+    Exercise(name: "Bicep Curl", type: "Strength", duration: 20, sets: 3, reps: 12, difficulty: "Easy"),
+    Exercise(name: "Russian Twist", type: "Core", duration: 30, sets: 3, reps: 20, difficulty: "Medium"),
+    Exercise(name: "High Knee", type: "Cardio", duration: 25, sets: 3, reps: 30, difficulty: "Easy"),
+    Exercise(name: "Diamond Push Up", type: "Strength", duration: 25, sets: 3, reps: 10, difficulty: "Hard"),
+    Exercise(name: "Bulgarian Squat", type: "Legs", duration: 30, sets: 3, reps: 12, difficulty: "Hard"),
+    Exercise(name: "Bicycle Crunch", type: "Core", duration: 30, sets: 3, reps: 20, difficulty: "Medium"),
+    Exercise(name: "Box Jump", type: "Legs", duration: 30, sets: 3, reps: 10, difficulty: "Hard"),
+    Exercise(name: "Dip", type: "Strength", duration: 25, sets: 3, reps: 12, difficulty: "Medium"),
+    Exercise(name: "Jump Rope", type: "Cardio", duration: 45, sets: 3, reps: 50, difficulty: "Easy"),
+    Exercise(name: "Leg Raise", type: "Core", duration: 25, sets: 3, reps: 15, difficulty: "Medium"),
+    Exercise(name: "Calf Raise", type: "Legs", duration: 20, sets: 4, reps: 20, difficulty: "Easy"),
+    Exercise(name: "Shoulder Press", type: "Strength", duration: 25, sets: 3, reps: 12, difficulty: "Medium"),
+    Exercise(name: "Sprint Interval", type: "Cardio", duration: 20, sets: 5, reps: 1, difficulty: "Hard"),
+    Exercise(name: "Side Plank", type: "Core", duration: 30, sets: 3, reps: 2, difficulty: "Medium"),
+    Exercise(name: "Wall Sit", type: "Legs", duration: 45, sets: 3, reps: 1, difficulty: "Medium"),
+    Exercise(name: "Curl Ups", type: "Strength", duration: 25, sets: 3, reps: 8, difficulty: "Hard"),
+    Exercise(name: "Butt Kick", type: "Cardio", duration: 25, sets: 3, reps: 30, difficulty: "Easy"),
   ];
 
   bool loadingUser = true;
   Map<String, dynamic>? userInfo;
   List<Exercise> recommended = [];
+  List<Exercise> customExercises = [];
   String selectedFilter = "All";
   bool workoutCompleted = false;
 
@@ -63,7 +64,71 @@ class _ExercisePageState extends State<ExercisePage> {
     super.initState();
     _loadUserInfoAndPrepareRecommendations();
     _checkIfWorkoutCompletedToday();
+    _loadCustomExercises();
   }
+
+        Future<void> _loadCustomExercises() async {
+          try {
+            final user = FirebaseAuth.instance.currentUser;
+            if (user == null) return;
+
+            final doc = await FirebaseFirestore.instance  
+                .collection('user_custom_exercises')
+                .doc(user.uid)
+                .get();
+
+            if (doc.exists && doc.data() != null) {
+              final exercisesData = doc.data()!['exercises'] as List<dynamic>? ?? [];
+              setState(() {
+                customExercises = exercisesData.map((data) {
+                  return Exercise.fromMap(Map<String, dynamic>.from(data as Map<dynamic, dynamic>));
+                }).toList();
+              });
+            }
+          } catch (e) {
+            debugPrint("Error loading custom exercises: $e");
+          }
+        }
+
+        Future<void> _saveCustomExercises() async {
+          try {
+            final user = FirebaseAuth.instance.currentUser;
+            if (user == null) return;
+
+            await FirebaseFirestore.instance
+                .collection('user_custom_exercises')
+                .doc(user.uid)
+                .set({
+                  'exercises': customExercises.map((ex) => ex.toMap()).toList(),
+                  'lastUpdated': DateTime.now().toIso8601String(),
+                });
+          } catch (e) {
+            debugPrint("Error saving custom exercises: $e");
+          }
+        }
+
+        void _addCustomExercise(Exercise exercise) {
+          setState(() {
+            customExercises.add(exercise);
+          });
+          _saveCustomExercises();
+        }
+
+        void _removeCustomExercise(int index) {
+          setState(() {
+            customExercises.removeAt(index);
+          });
+          _saveCustomExercises();
+        }
+
+        void _updateCustomExerciseSets(int index, int newSets) {
+          setState(() {
+            customExercises[index] = customExercises[index].copyWith(sets: newSets);
+          });
+          _saveCustomExercises();
+        }
+
+
 
   Future<void> _loadUserInfoAndPrepareRecommendations() async {
     try {
@@ -109,7 +174,18 @@ class _ExercisePageState extends State<ExercisePage> {
 
       if (doc.exists) {
         final data = doc.data()!;
-        final lastWorkout = DateTime.parse(data['lastWorkout']);
+        DateTime lastWorkout;
+        
+        // Handle both Timestamp and String formats
+        if (data['lastWorkout'] is Timestamp) {
+          lastWorkout = (data['lastWorkout'] as Timestamp).toDate();
+        } else if (data['lastWorkout'] is String) {
+          lastWorkout = DateTime.parse(data['lastWorkout'] as String);
+        } else {
+          debugPrint('❌ Unknown lastWorkout format: ${data['lastWorkout']}');
+          return;
+        }
+        
         final today = DateTime.now();
         
         if (_isSameDay(today, lastWorkout)) {
@@ -123,7 +199,6 @@ class _ExercisePageState extends State<ExercisePage> {
       debugPrint('❌ Error checking workout status: $e');
     }
   }
-
   List<Exercise> _computePoolFromUserInfo(Map<String, dynamic> info) {
     final int age = (info['age'] is int) ? info['age'] as int : int.tryParse('${info['age']}') ?? 30;
     final String sex = (info['sex'] ?? '').toString().toLowerCase();
@@ -233,12 +308,96 @@ class _ExercisePageState extends State<ExercisePage> {
   }
 
   List<Exercise> _getFilteredRecommendedExercises() {
+    List<Exercise> combined = [...recommended, ...customExercises];
+    
     if (selectedFilter == "All") {
-      return recommended;
+      return combined;
     }
-    return recommended
+    return combined
         .where((e) => e.type == selectedFilter)
         .toList();
+  }
+
+  // Check if exercise is suitable for user
+  List<String> _getExerciseWarnings(Exercise exercise) {
+    if (userInfo == null) return [];
+
+    List<String> warnings = [];
+    final int age = (userInfo!['age'] is int) ? userInfo!['age'] as int : int.tryParse('${userInfo!['age']}') ?? 30;
+    final String activityLevel = (userInfo!['activityLevel'] ?? '').toString().toLowerCase();
+    final String reproductiveStatus = (userInfo!['reproductiveStatus'] ?? '').toString().toLowerCase();
+    final String otherConditions = (userInfo!['otherConditions'] ?? '').toString().toLowerCase();
+
+    // Age restrictions
+    if (age >= 50 && exercise.difficulty.toLowerCase() == "hard") {
+      warnings.add("Not recommended for age 50+");
+    }
+
+    // Activity level restrictions
+    final Set<String> allowed = {};
+    switch (activityLevel) {
+      case "sedentary":
+        allowed.addAll(["easy"]);
+        break;
+      case "lightly active":
+        allowed.addAll(["easy", "medium"]);
+        break;
+      case "moderately active":
+        allowed.addAll(["medium"]);
+        break;
+      case "very active":
+        allowed.addAll(["medium", "hard"]);
+        break;
+      case "extra active":
+        allowed.addAll(["easy", "medium", "hard"]);
+        break;
+      default:
+        allowed.addAll(["easy", "medium", "hard"]);
+    }
+
+    if (!allowed.contains(exercise.difficulty.toLowerCase())) {
+      warnings.add("May be too difficult for your activity level");
+    }
+
+    // Pregnancy restrictions
+    final bool isPregnant = reproductiveStatus.contains("pregnant") || reproductiveStatus.contains("expecting") || reproductiveStatus.contains("pregnancy");
+    if (isPregnant) {
+      final blockedForPregnancy = {
+        "burpee", "plank", "box jump", "mountain climber", "jump rope", "sprint interval", "bicycle crunch", "high knee", "butt kick"
+      };
+      if (blockedForPregnancy.contains(exercise.name.toLowerCase())) {
+        warnings.add("Not recommended during pregnancy");
+      }
+    }
+
+    // Health condition restrictions
+    final cond = otherConditions;
+    if (cond.contains("hypertension") || cond.contains("high blood pressure") || cond.contains("heart")) {
+      final blocked = {"burpee", "sprint interval", "jump rope", "high knee", "box jump"};
+      if (blocked.contains(exercise.name.toLowerCase())) {
+        warnings.add("Not recommended with heart conditions");
+      }
+    }
+    if (cond.contains("knee") || cond.contains("arthritis")) {
+      final blocked = {"squat", "lunge", "bulgarian squat", "box jump"};
+      if (blocked.contains(exercise.name.toLowerCase())) {
+        warnings.add("Not recommended with knee issues");
+      }
+    }
+    if (cond.contains("back") || cond.contains("lower back") || cond.contains("sciatica")) {
+      final blocked = {"plank", "russian twist", "leg raise", "bicycle crunch"};
+      if (blocked.contains(exercise.name.toLowerCase())) {
+        warnings.add("Not recommended with back issues");
+      }
+    }
+    if (cond.contains("asthma") || cond.contains("low stamina")) {
+      final blocked = {"sprint interval", "burpee", "jump rope"};
+      if (blocked.contains(exercise.name.toLowerCase())) {
+        warnings.add("Not recommended with breathing issues");
+      }
+    }
+
+    return warnings;
   }
 
   // Callback function to update workout completion status
@@ -254,94 +413,105 @@ class _ExercisePageState extends State<ExercisePage> {
   }
 
   // Automatically log streak to Firebase
-  Future<void> _logStreakAutomatically() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+    Future<void> _logStreakAutomatically() async {
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) return;
 
-      final today = DateTime.now();
-      final userDoc = FirebaseFirestore.instance.collection('streaks').doc(user.uid);
-      
-      final doc = await userDoc.get();
-      
-      int newStreak = 1;
-      int newBestStreak = 1;
-      bool isNewRecord = false;
-      bool hitMilestone = false;
-      int milestoneValue = 0;
-      
-      if (doc.exists) {
-        final data = doc.data()!;
-        final lastWorkout = DateTime.parse(data['lastWorkout']);
-        final currentStreak = data['currentStreak'] ?? 0;
-        final bestStreak = data['bestStreak'] ?? 0;
-        final workoutDates = List<String>.from(data['workoutDates'] ?? []);
+        final today = DateTime.now();
+        final userDoc = FirebaseFirestore.instance.collection('streaks').doc(user.uid);
         
-        // Check if already logged today
-        if (_isSameDay(today, lastWorkout)) {
-          debugPrint('Streak already logged for today');
-          return;
+        final doc = await userDoc.get();
+        
+        int newStreak = 1;
+        int newBestStreak = 1;
+        bool isNewRecord = false;
+        bool hitMilestone = false;
+        int milestoneValue = 0;
+        
+        if (doc.exists) {
+          final data = doc.data()!;
+          
+          // Handle both Timestamp and String formats for lastWorkout
+          DateTime lastWorkout;
+          if (data['lastWorkout'] is Timestamp) {
+            lastWorkout = (data['lastWorkout'] as Timestamp).toDate();
+          } else if (data['lastWorkout'] is String) {
+            lastWorkout = DateTime.parse(data['lastWorkout'] as String);
+          } else {
+            // If no valid lastWorkout, treat as first workout
+            lastWorkout = DateTime.now().subtract(const Duration(days: 2));
+          }
+          
+          final currentStreak = data['currentStreak'] ?? 0;
+          final bestStreak = data['bestStreak'] ?? 0;
+          final workoutDates = List<String>.from(data['workoutDates'] ?? []);
+          
+          // Check if already logged today
+          if (_isSameDay(today, lastWorkout)) {
+            debugPrint('Streak already logged for today');
+            return;
+          }
+          
+          newStreak = _isConsecutiveDay(today, lastWorkout) ? currentStreak + 1 : 1;
+          newBestStreak = newStreak > bestStreak ? newStreak : bestStreak;
+          isNewRecord = newStreak > bestStreak;
+          
+          final milestones = [3, 5, 7, 10, 15, 20, 30, 50, 75, 100, 150, 200, 365];
+          if (milestones.contains(newStreak)) {
+            hitMilestone = true;
+            milestoneValue = newStreak;
+          }
+          
+          workoutDates.add(today.toIso8601String());
+          
+          await userDoc.update({
+            'currentStreak': newStreak,
+            'bestStreak': newBestStreak,
+            'lastWorkout': today.toIso8601String(), // Store as string for consistency
+            'workoutDates': workoutDates,
+          });
+          
+          debugPrint('✅ Workout streak automatically logged - New streak: $newStreak, Best: $newBestStreak');
+        } else {
+          // First workout
+          await userDoc.set({
+            'currentStreak': 1,
+            'bestStreak': 1,
+            'lastWorkout': today.toIso8601String(), // Store as string
+            'workoutDates': [today.toIso8601String()],
+          });
+          
+          debugPrint('✅ First workout streak automatically logged');
         }
         
-        newStreak = _isConsecutiveDay(today, lastWorkout) ? currentStreak + 1 : 1;
-        newBestStreak = newStreak > bestStreak ? newStreak : bestStreak;
-        isNewRecord = newStreak > bestStreak;
-        
-        final milestones = [3, 5, 7, 10, 15, 20, 30, 50, 75, 100, 150, 200, 365];
-        if (milestones.contains(newStreak)) {
-          hitMilestone = true;
-          milestoneValue = newStreak;
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("🔥 Streak updated! $newStreak days in a row!"),
+              backgroundColor: AppColors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 3),
+            ),
+          );
         }
         
-        workoutDates.add(today.toIso8601String());
-        
-        await userDoc.update({
-          'currentStreak': newStreak,
-          'bestStreak': newBestStreak,
-          'lastWorkout': today.toIso8601String(),
-          'workoutDates': workoutDates,
-        });
-        
-        debugPrint('✅ Workout streak automatically logged - New streak: $newStreak, Best: $newBestStreak');
-      } else {
-        // First workout
-        await userDoc.set({
-          'currentStreak': 1,
-          'bestStreak': 1,
-          'lastWorkout': today.toIso8601String(),
-          'workoutDates': [today.toIso8601String()],
-        });
-        
-        debugPrint('✅ First workout streak automatically logged');
-      }
-      
-      // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("🔥 Streak updated! $newStreak days in a row!"),
-            backgroundColor: AppColors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-      
-    } catch (e) {
-      debugPrint("❌ Error automatically logging streak: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Failed to update streak: $e"),
-            backgroundColor: AppColors.orange,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
+      } catch (e) {
+        debugPrint("❌ Error automatically logging streak: $e");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Failed to update streak: $e"),
+              backgroundColor: AppColors.orange,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
       }
     }
-  }
 
   // Helper methods for date comparison
   bool _isSameDay(DateTime date1, DateTime date2) {
@@ -353,6 +523,24 @@ class _ExercisePageState extends State<ExercisePage> {
   bool _isConsecutiveDay(DateTime today, DateTime lastWorkout) {
     final yesterday = today.subtract(const Duration(days: 1));
     return _isSameDay(lastWorkout, yesterday) || _isSameDay(lastWorkout, today);
+  }
+
+  // Show custom exercise dialog
+  void _showCustomExerciseDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CustomExerciseDialog(
+        allExercises: allExercises,
+        customExercises: customExercises,
+        userInfo: userInfo,
+        onAddExercise: _addCustomExercise,
+        onRemoveExercise: _removeCustomExercise,
+        onUpdateSets: _updateCustomExerciseSets,
+        getExerciseWarnings: _getExerciseWarnings,
+      ),
+    );
   }
 
   @override
@@ -496,7 +684,13 @@ class _ExercisePageState extends State<ExercisePage> {
                           width: 1,
                           color: theme.borderColor.withOpacity(0.3),
                         ),
-                        _buildCompactStat("Types", "4", Icons.category, AppColors.accentPurple),
+                        _buildCompactStat("Custom", "${customExercises.length}", Icons.edit, AppColors.accentPurple),
+                        Container(
+                          height: 40,
+                          width: 1,
+                          color: theme.borderColor.withOpacity(0.3),
+                        ),
+                        _buildCompactStat("Types", "4", Icons.category, AppColors.accentBlue),
                       ],
                     ),
                   ),
@@ -639,10 +833,10 @@ class _ExercisePageState extends State<ExercisePage> {
                           child: ElevatedButton(
                             onPressed: workoutCompleted 
                               ? null 
-                              : recommended.isEmpty ? null : () {
+                              : filteredExercises.isEmpty ? null : () {
                                   Navigator.of(context).push(MaterialPageRoute(
                                     builder: (_) => WorkoutRunner(
-                                      exercises: recommended,
+                                      exercises: filteredExercises,
                                       onWorkoutCompleted: _onWorkoutCompleted,
                                     )
                                   ));
@@ -679,7 +873,7 @@ class _ExercisePageState extends State<ExercisePage> {
                   Row(
                     children: [
                       Text(
-                        "Recommended Exercises",
+                        "Your Exercises",
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -712,24 +906,35 @@ class _ExercisePageState extends State<ExercisePage> {
           ),
 
           // Exercises List
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final ex = filteredExercises[index];
-                final style = typeStyles[ex.type] ?? {};
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                  child: _buildMasculineExerciseTile(ex, style, theme, themeData),
-                );
-              },
-              childCount: filteredExercises.length,
-            ),
+         SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              final ex = filteredExercises[index];
+              final style = typeStyles[ex.type] ?? {};
+              final bool isCustom = index >= recommended.length;
+              // FIX: Apply warnings to ALL exercises, not just custom ones
+              final warnings = _getExerciseWarnings(ex);
+              
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                child: _buildMasculineExerciseTile(ex, style, theme, themeData, isCustom: isCustom, warnings: warnings),
+              );
+            },
+            childCount: filteredExercises.length,
           ),
+        ),
 
           const SliverToBoxAdapter(
             child: SizedBox(height: 20),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showCustomExerciseDialog,
+        backgroundColor: AppColors.accentBlue,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: const Icon(Icons.add, size: 24),
       ),
     );
   }
@@ -824,7 +1029,7 @@ class _ExercisePageState extends State<ExercisePage> {
     );
   }
 
-  Widget _buildMasculineExerciseTile(Exercise ex, Map<String, dynamic> style, ThemeManager theme, ThemeData themeData) {
+  Widget _buildMasculineExerciseTile(Exercise ex, Map<String, dynamic> style, ThemeManager theme, ThemeData themeData, {bool isCustom = false, List<String> warnings = const []}) {
     return Container(
       decoration: BoxDecoration(
         color: theme.cardColor,
@@ -836,7 +1041,9 @@ class _ExercisePageState extends State<ExercisePage> {
             offset: const Offset(0, 3),
           ),
         ],
-        border: Border.all(color: theme.borderColor.withOpacity(0.1)),
+        border: Border.all(
+          color: warnings.isNotEmpty ? AppColors.orange.withOpacity(0.3) : theme.borderColor.withOpacity(0.1),
+        ),
       ),
       child: Material(
         color: Colors.transparent,
@@ -850,7 +1057,7 @@ class _ExercisePageState extends State<ExercisePage> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Exercise Image/Icon with compact design
+                // Exercise Icon with compact design
                 Container(
                   width: 60,
                   height: 60,
@@ -865,23 +1072,7 @@ class _ExercisePageState extends State<ExercisePage> {
                       end: Alignment.bottomRight,
                     ),
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Stack(
-                      children: [
-                        if (ex.gifUrl != null)
-                          Image.network(
-                            ex.gifUrl!,
-                            fit: BoxFit.cover,
-                            width: 60,
-                            height: 60,
-                            errorBuilder: (c, e, st) => _buildExerciseIcon(style, themeData),
-                          )
-                        else
-                          _buildExerciseIcon(style, themeData),
-                      ],
-                    ),
-                  ),
+                  child: _buildExerciseIcon(style, themeData),
                 ),
 
                 const SizedBox(width: 12),
@@ -894,13 +1085,34 @@ class _ExercisePageState extends State<ExercisePage> {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              ex.name,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: themeData.colorScheme.onSurface,
-                              ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  ex.name,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: themeData.colorScheme.onSurface,
+                                  ),
+                                ),
+                                if (isCustom)
+                                  Container(
+                                    margin: const EdgeInsets.only(left: 6),
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.accentBlue.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      "CUSTOM",
+                                      style: TextStyle(
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.accentBlue,
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                           Container(
@@ -954,6 +1166,35 @@ class _ExercisePageState extends State<ExercisePage> {
                           _buildExerciseStat(Icons.repeat, "${ex.sets}×${ex.reps}", themeData),
                         ],
                       ),
+                      if (warnings.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 4,
+                          children: warnings.map((warning) => Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.orange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: AppColors.orange.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.warning_amber_rounded, size: 10, color: AppColors.orange),
+                                const SizedBox(width: 2),
+                                Text(
+                                  warning,
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    color: AppColors.orange,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )).toList(),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -1022,6 +1263,1356 @@ class _ExercisePageState extends State<ExercisePage> {
   }
 }
 
+/// ---------------------- Custom Exercise Dialog ----------------------
+/// ---------------------- Custom Exercise Dialog ----------------------
+class CustomExerciseDialog extends StatefulWidget {
+  final List<Exercise> allExercises;
+  final List<Exercise> customExercises;
+  final Map<String, dynamic>? userInfo;
+  final Function(Exercise) onAddExercise;
+  final Function(int) onRemoveExercise;
+  final Function(int, int) onUpdateSets;
+  final List<String> Function(Exercise) getExerciseWarnings;
+
+  const CustomExerciseDialog({
+    super.key,
+    required this.allExercises,
+    required this.customExercises,
+    required this.userInfo,
+    required this.onAddExercise,
+    required this.onRemoveExercise,
+    required this.onUpdateSets,
+    required this.getExerciseWarnings,
+  });
+
+  @override
+  State<CustomExerciseDialog> createState() => _CustomExerciseDialogState();
+}
+
+class _CustomExerciseDialogState extends State<CustomExerciseDialog> with SingleTickerProviderStateMixin {
+  late List<Exercise> availableExercises;
+  final Map<Exercise, int> exerciseSets = {};
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _updateAvailableExercises();
+    
+    // Initialize sets for custom exercises
+    for (var ex in widget.customExercises) {
+      exerciseSets[ex] = ex.sets;
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _updateAvailableExercises() {
+    setState(() {
+      availableExercises = widget.allExercises.where((ex) => 
+        !widget.customExercises.any((customEx) => customEx.name == ex.name) &&
+        ex.name.toLowerCase().contains(_searchQuery.toLowerCase())
+      ).toList();
+    });
+  }
+
+  void _addExerciseWithConfirmation(Exercise exercise) {
+    final warnings = widget.getExerciseWarnings(exercise);
+    
+    if (warnings.isNotEmpty) {
+      // Show confirmation dialog for non-recommended exercises
+      _showExerciseWarningDialog(exercise, warnings);
+    } else {
+      // Add directly if no warnings
+      _addExercise(exercise);
+    }
+  }
+
+  void _showExerciseWarningDialog(Exercise exercise, List<String> warnings) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.orange.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.warning_amber_rounded, color: AppColors.orange, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                "Exercise Not Recommended",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.orange.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: _getTypeColor(exercise.type).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      _getTypeIcon(exercise.type),
+                      color: _getTypeColor(exercise.type),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          exercise.name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "${exercise.type} • ${exercise.difficulty}",
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              "This exercise may not be suitable for you:",
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...warnings.map((warning) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: AppColors.orange),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      warning,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.orange.withOpacity(0.2)),
+              ),
+              child: Text(
+                "Are you sure you want to add this exercise?",
+                style: TextStyle(
+                  color: AppColors.orange,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _addExercise(exercise);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.orange,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text("Add Anyway"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addExercise(Exercise exercise) {
+    widget.onAddExercise(exercise);
+    setState(() {
+      exerciseSets[exercise] = exercise.sets;
+    });
+    _updateAvailableExercises();
+    
+    // Show success feedback
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: AppColors.green, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '${exercise.name} added to custom exercises',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Theme.of(context).cardColor,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: AppColors.green.withOpacity(0.3)),
+        ),
+      ),
+    );
+  }
+
+  void _removeExerciseWithConfirmation(int index) {
+    final exercise = widget.customExercises[index];
+    final warnings = widget.getExerciseWarnings(exercise);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.orange.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.delete_outline, color: AppColors.orange, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              "Remove Exercise?",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Are you sure you want to remove ${exercise.name} from your custom exercises?",
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+              ),
+            ),
+            if (warnings.isEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.green.withOpacity(0.2)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: AppColors.green, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        "This exercise is suitable for your profile",
+                        style: TextStyle(
+                          color: AppColors.green,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            child: const Text("Keep"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _removeExercise(index);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.orange,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text("Remove"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _removeExercise(int index) {
+    final exercise = widget.customExercises[index];
+    widget.onRemoveExercise(index);
+    setState(() {
+      exerciseSets.remove(exercise);
+    });
+    _updateAvailableExercises();
+    
+    // Show feedback
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.delete, color: AppColors.orange, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '${exercise.name} removed',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Theme.of(context).cardColor,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: AppColors.orange.withOpacity(0.3)),
+        ),
+      ),
+    );
+  }
+
+  void _updateSets(int index, int newSets) {
+    widget.onUpdateSets(index, newSets);
+    setState(() {
+      exerciseSets[widget.customExercises[index]] = newSets;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Provider.of<ThemeManager>(context);
+    final themeData = Theme.of(context);
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return Container(
+      margin: const EdgeInsets.all(8), // Minimal margin for almost full screen
+      height: screenHeight * 0.95, // 95% of screen height
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 30,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // COMPACT Header
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.accentBlue.withOpacity(0.95),
+                  AppColors.accentPurple.withOpacity(0.9),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            child: Column(
+              children: [
+                // Title Row - More Compact
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.edit, color: Colors.white, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Custom Workout Builder",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            "Build your perfect workout routine",
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close, color: Colors.white, size: 20),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Stats Row
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildStatItem("Available", "${availableExercises.length}", Icons.explore),
+                      _buildStatItem("Custom", "${widget.customExercises.length}", Icons.my_library_add),
+                      _buildStatItem("Total", "${widget.allExercises.length}", Icons.library_books),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Container(
+              height: 44,
+              decoration: BoxDecoration(
+                color: theme.surfaceColor,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.shadowColor.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                    _updateAvailableExercises();
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: "Search exercises...",
+                  hintStyle: TextStyle(
+                    color: themeData.colorScheme.onSurface.withOpacity(0.5),
+                    fontSize: 15,
+                  ),
+                  prefixIcon: Icon(Icons.search, color: AppColors.accentBlue, size: 20),
+                  suffixIcon: _searchQuery.isNotEmpty ? IconButton(
+                    icon: Icon(Icons.clear, color: AppColors.orange, size: 18),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {
+                        _searchQuery = '';
+                        _updateAvailableExercises();
+                      });
+                    },
+                  ) : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+              ),
+            ),
+          ),
+
+          // Tabs
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              height: 44,
+              decoration: BoxDecoration(
+                color: theme.surfaceColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: theme.borderColor.withOpacity(0.2)),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                indicator: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.accentBlue, AppColors.accentPurple],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.accentBlue.withOpacity(0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                labelStyle: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+                unselectedLabelStyle: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
+                labelColor: Colors.white,
+                unselectedLabelColor: themeData.colorScheme.onSurface.withOpacity(0.6),
+                tabs: const [
+               Tab(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0), // Added padding
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.explore, size: 18),
+                    SizedBox(width: 8),
+                    Text("Available Exercises"),
+                  ],
+                ),
+              ),
+            ),
+            Tab(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0), // Added padding
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.my_library_add, size: 18),
+                    SizedBox(width: 8),
+                    Text("My Exercises"),
+                  ],
+                ),
+              ),
+            ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // Tab Content - Takes most of the space
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                // Available Exercises Tab
+                _buildAvailableExercisesTab(theme, themeData),
+
+                // Your Exercises Tab
+                _buildCustomExercisesTab(theme, themeData),
+              ],
+            ),
+          ),
+
+          // Footer
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: theme.borderColor.withOpacity(0.2)),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Workout Summary",
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: themeData.colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "${widget.customExercises.length} custom exercises • ${widget.customExercises.fold(0, (sum, ex) => sum + ex.sets)} total sets",
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.accentBlue,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accentBlue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                    shadowColor: AppColors.accentBlue.withOpacity(0.3),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check, size: 18),
+                      SizedBox(width: 6),
+                      Text(
+                        "Done",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, IconData icon) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: Colors.white, size: 14),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.white.withOpacity(0.8),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAvailableExercisesTab(ThemeManager theme, ThemeData themeData) {
+    if (availableExercises.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _searchQuery.isEmpty ? Icons.fitness_center : Icons.search_off,
+              size: 80,
+              color: themeData.colorScheme.onSurface.withOpacity(0.3),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              _searchQuery.isEmpty ? "All Exercises Added!" : "No Exercises Found",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: themeData.colorScheme.onSurface.withOpacity(0.5),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _searchQuery.isEmpty 
+                  ? "You've added all available exercises to your custom workout"
+                  : "Try searching for something else",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: themeData.colorScheme.onSurface.withOpacity(0.4),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: availableExercises.length,
+      itemBuilder: (context, index) {
+        final exercise = availableExercises[index];
+        final warnings = widget.getExerciseWarnings(exercise);
+        
+        return _buildExerciseTile(exercise, warnings, theme, themeData);
+      },
+    );
+  }
+
+  Widget _buildExerciseTile(Exercise exercise, List<String> warnings, ThemeManager theme, ThemeData themeData) {
+    final typeColor = _getTypeColor(exercise.type);
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: theme.surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: theme.shadowColor.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(
+          color: warnings.isNotEmpty ? AppColors.orange.withOpacity(0.3) : theme.borderColor.withOpacity(0.15),
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _addExerciseWithConfirmation(exercise),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Exercise Icon
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        typeColor.withOpacity(0.2),
+                        typeColor.withOpacity(0.1),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    _getTypeIcon(exercise.type),
+                    color: typeColor,
+                    size: 24,
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                // Exercise Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              exercise.name,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: themeData.colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                          _buildDifficultyBadge(exercise.difficulty),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          _buildExerciseTypeChip(exercise.type, typeColor),
+                          const SizedBox(width: 8),
+                          _buildExerciseStat(Icons.timer_outlined, "${exercise.duration}s"),
+                          const SizedBox(width: 8),
+                          _buildExerciseStat(Icons.repeat, "${exercise.sets}×${exercise.reps}"),
+                        ],
+                      ),
+                      if (warnings.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.orange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.orange.withOpacity(0.2)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.warning_amber_rounded, size: 14, color: AppColors.orange),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  "Not recommended for your profile",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.orange,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                // Add Button
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: warnings.isEmpty 
+                      ? LinearGradient(
+                          colors: [AppColors.accentBlue, AppColors.accentPurple],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : LinearGradient(
+                          colors: [AppColors.orange, Colors.orange.shade600],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (warnings.isEmpty ? AppColors.accentBlue : AppColors.orange).withOpacity(0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    onPressed: () => _addExerciseWithConfirmation(exercise),
+                    icon: Icon(
+                      warnings.isEmpty ? Icons.add : Icons.warning_amber_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    padding: const EdgeInsets.all(10),
+                    tooltip: warnings.isEmpty ? 'Add exercise' : 'Exercise has warnings',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomExercisesTab(ThemeManager theme, ThemeData themeData) {
+    if (widget.customExercises.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: AppColors.accentBlue.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.fitness_center, size: 50, color: AppColors.accentBlue.withOpacity(0.5)),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              "No Custom Exercises",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: themeData.colorScheme.onSurface.withOpacity(0.6),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              "Add exercises from the Available tab\nto build your custom workout",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: themeData.colorScheme.onSurface.withOpacity(0.4),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                _tabController.animateTo(0);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accentBlue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.explore, size: 16),
+                  SizedBox(width: 6),
+                  Text("Browse Exercises"),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: widget.customExercises.length,
+      itemBuilder: (context, index) {
+        final exercise = widget.customExercises[index];
+        final currentSets = exerciseSets[exercise] ?? exercise.sets;
+        final warnings = widget.getExerciseWarnings(exercise);
+        
+        return _buildCustomExerciseTile(exercise, index, currentSets, warnings, theme, themeData);
+      },
+    );
+  }
+
+  Widget _buildCustomExerciseTile(Exercise exercise, int index, int currentSets, List<String> warnings, ThemeManager theme, ThemeData themeData) {
+    final typeColor = _getTypeColor(exercise.type);
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: theme.surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: theme.shadowColor.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(
+          color: warnings.isNotEmpty ? AppColors.orange.withOpacity(0.3) : AppColors.accentBlue.withOpacity(0.2),
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Drag Handle
+              Container(
+                width: 4,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: typeColor.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Exercise Icon
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: typeColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  _getTypeIcon(exercise.type),
+                  color: typeColor,
+                  size: 20,
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // Exercise Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            exercise.name,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: themeData.colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        _buildDifficultyBadge(exercise.difficulty),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        _buildExerciseTypeChip(exercise.type, typeColor),
+                        const SizedBox(width: 8),
+                        _buildExerciseStat(Icons.timer_outlined, "${exercise.duration}s"),
+                      ],
+                    ),
+                    if (warnings.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.info_outline, size: 12, color: AppColors.orange),
+                            const SizedBox(width: 4),
+                            Text(
+                              "Not recommended",
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppColors.orange,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // Sets Selector and Remove Button
+              Column(
+                children: [
+                  // Sets Selector
+                  Container(
+                    decoration: BoxDecoration(
+                      color: theme.cardColor,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: theme.borderColor.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        // Decrease Button
+                        Container(
+                          decoration: BoxDecoration(
+                            color: currentSets > 1 ? AppColors.accentBlue.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(10),
+                              bottomLeft: Radius.circular(10),
+                            ),
+                          ),
+                          child: IconButton(
+                            onPressed: currentSets > 1 ? () => _updateSets(index, currentSets - 1) : null,
+                            icon: Icon(
+                              Icons.remove,
+                              size: 16,
+                              color: currentSets > 1 ? AppColors.accentBlue : Colors.grey,
+                            ),
+                            padding: const EdgeInsets.all(6),
+                            constraints: const BoxConstraints(),
+                          ),
+                        ),
+                        
+                        // Sets Display
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            border: Border.symmetric(
+                              vertical: BorderSide(color: theme.borderColor.withOpacity(0.3)),
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                "$currentSets",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.accentBlue,
+                                ),
+                              ),
+                              Text(
+                                "sets",
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  color: themeData.colorScheme.onSurface.withOpacity(0.6),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        // Increase Button
+                        Container(
+                          decoration: BoxDecoration(
+                            color: currentSets < 10 ? AppColors.accentBlue.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                            borderRadius: const BorderRadius.only(
+                              topRight: Radius.circular(10),
+                              bottomRight: Radius.circular(10),
+                            ),
+                          ),
+                          child: IconButton(
+                            onPressed: currentSets < 10 ? () => _updateSets(index, currentSets + 1) : null,
+                            icon: Icon(
+                              Icons.add,
+                              size: 16,
+                              color: currentSets < 10 ? AppColors.accentBlue : Colors.grey,
+                            ),
+                            padding: const EdgeInsets.all(6),
+                            constraints: const BoxConstraints(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Remove Button
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: IconButton(
+                      onPressed: () => _removeExerciseWithConfirmation(index),
+                      icon: Icon(
+                        Icons.delete_outline,
+                        color: AppColors.orange,
+                        size: 18,
+                      ),
+                      padding: const EdgeInsets.all(6),
+                      tooltip: 'Remove exercise',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExerciseTypeChip(String type, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(
+        type,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDifficultyBadge(String difficulty) {
+    Color color;
+    switch (difficulty.toLowerCase()) {
+      case "easy":
+        color = AppColors.green;
+        break;
+      case "medium":
+        color = AppColors.orange;
+        break;
+      case "hard":
+        color = AppColors.orange;
+        break;
+      default:
+        color = AppColors.accentBlue;
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        difficulty,
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExerciseStat(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 12, color: Colors.grey[600]),
+        const SizedBox(width: 2),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color _getTypeColor(String type) {
+    switch (type.toLowerCase()) {
+      case "cardio":
+        return AppColors.orange;
+      case "strength":
+        return AppColors.accentBlue;
+      case "legs":
+        return AppColors.accentPurple;
+      case "core":
+        return AppColors.accentCyan;
+      default:
+        return AppColors.accentBlue;
+    }
+  }
+
+  IconData _getTypeIcon(String type) {
+    switch (type.toLowerCase()) {
+      case "cardio":
+        return Icons.favorite;
+      case "strength":
+        return Icons.fitness_center;
+      case "legs":
+        return Icons.directions_run;
+      case "core":
+        return Icons.accessibility_new;
+      default:
+        return Icons.fitness_center;
+    }
+  }
+}
 /// ---------------------- WorkoutRunner ----------------------
 class WorkoutRunner extends StatefulWidget {
   final List<Exercise> exercises;
@@ -1067,7 +2658,7 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
       _finishWorkout();
     } else {
       debugPrint('➡️ Moving to next exercise');
-      _advanceToNextExercise();
+      _startCooldown();
     }
   }
 
@@ -1099,7 +2690,9 @@ class _WorkoutRunnerState extends State<WorkoutRunner> {
     });
     
     debugPrint('New current index: $currentIndex');
-    debugPrint('Next exercise: ${widget.exercises[currentIndex].name}');
+    if (currentIndex < widget.exercises.length) {
+      debugPrint('Next exercise: ${widget.exercises[currentIndex].name}');
+    }
   }
 
   void _skipCooldown() {

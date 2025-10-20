@@ -67,18 +67,18 @@ class _OnboardingPageState extends State<OnboardingPage> {
   String? _targetDuration;
 
   // --- Constants for Dropdown Options ---
-  final List<String> _sexOptions = const ["Male", "Female", "Other"];
+  final List<String> _sexOptions = const ["Male", "Female"];
   final List<String> _allergyOptions = const [
-    "None", "Pollen", "Peanuts", "Seafood", "Dust", "Medication", "Others"
+    "None", "Pollen", "Peanuts", "Seafood", "Dust", "Medication"
   ];
   final List<String> _conditionOptions = const [
-    "None", "Diabetes", "Hypertension", "Asthma", "Heart Disease", "Thyroid Issues", "Others"
+    "None", "Diabetes", "Hypertension", "Asthma", "Heart Disease", "Thyroid Issues"
   ];
   final List<String> _dietTypeOptions = const [
-    "Keto", "Vegan", "Vegetarian", "Low Carb", "Balanced", "High Protein", "Others"
+    "Keto", "Vegan", "Vegetarian", "Low Carb", "Balanced", "High Protein", "Pescatarian"
   ];
   final List<String> _dietRestrictionOptions = const [
-    "None", "Gluten-free", "Lactose-free", "Halal", "Low Sodium", "Others"
+    "None", "Gluten-free", "Lactose-free", "Halal", "Low Sodium"
   ];
   final List<String> _activityOptions = const ["Sedentary", "Lightly Active", "Moderately Active", "Very Active", "Extra Active"];
   
@@ -377,8 +377,32 @@ class _OnboardingPageState extends State<OnboardingPage> {
     dataToSave["email"] = user.email!;
     dataToSave["onboardingCompleted"] = true; // Add completion flag
     dataToSave["onboardingCompletedAt"] = FieldValue.serverTimestamp();
+    
+    // Convert goal type to lowercase for consistency
+    if (_userData["targetGoal"] != null) {
+      String goalType = _userData["targetGoal"]!.toLowerCase();
+      
+      // Map the goal types to your internal format
+      if (goalType.contains("weight loss")) {
+        dataToSave["goalType"] = "lose";
+      } else if (goalType.contains("weight gain")) {
+        dataToSave["goalType"] = "gain";
+      } else if (goalType.contains("muscle")) {
+        dataToSave["goalType"] = "muscle building";
+      } else if (goalType.contains("endurance")) {
+        dataToSave["goalType"] = "endurance & stamina";
+      } else if (goalType.contains("general")) {
+        dataToSave["goalType"] = "general fitness";
+      } else if (goalType.contains("maintenance")) {
+        dataToSave["goalType"] = "maintenance";
+      } else {
+        dataToSave["goalType"] = goalType;
+      }
+    }
+    
     // Remove goalWeight if present
     dataToSave.remove("goalWeight");
+
     try {
       // Save main user_info document
       await FirebaseFirestore.instance
